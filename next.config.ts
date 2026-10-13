@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname : undefined;
 
+const SW_PATHS = ["/sw.js", "/service-worker.js", "/serviceworker.js", "/serviceWorker.js", "/sw-v2.js", "/firebase-messaging-sw.js", "/OneSignalSDKWorker.js"];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Put metadata in <head> for every client (not streamed), so all crawlers and audits see descriptions.
@@ -36,6 +38,15 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
+      // The old flameph.org saved itself in visitors' browsers (a service worker). Browsers re-fetch the worker file
+      // from here on their next visit; these headers make them wipe the old saved copy and unregister it.
+      ...SW_PATHS.map((source) => ({
+        source,
+        headers: [
+          { key: "Clear-Site-Data", value: '"cache", "storage"' },
+          { key: "Cache-Control", value: "no-store, max-age=0" },
+        ],
+      })),
     ];
   },
 };
