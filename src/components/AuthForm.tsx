@@ -6,14 +6,16 @@ import { createClient } from "@/lib/supabase/browser";
 
 const GOOGLE_ON = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "1";
 
-export function AuthForm({ mode, next = "/account" }: { mode: "join" | "login"; next?: string }) {
+export function AuthForm({ mode, next = "/account", haveCode = false }: { mode: "join" | "login"; next?: string; haveCode?: boolean }) {
   const supabase = createClient();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [consent, setConsent] = useState(false);
   const [marketing, setMarketing] = useState(false);
-  const [step, setStep] = useState<"start" | "code">("start");
+  const [step, setStep] = useState<"start" | "code">(haveCode ? "code" : "start");
+  // True when they arrived with a code already in hand, so we still need their email.
+  const [askEmail, setAskEmail] = useState(haveCode);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -44,7 +46,7 @@ export function AuthForm({ mode, next = "/account" }: { mode: "join" | "login"; 
     });
     setBusy(false);
     if (error) setError(mode === "login" && /signups? not allowed|not found/i.test(error.message) ? "No account with that email yet. Join free instead." : error.message);
-    else setStep("code");
+    else { setAskEmail(false); setStep("code"); }
   }
 
   async function verify(e: React.FormEvent) {
@@ -60,14 +62,18 @@ export function AuthForm({ mode, next = "/account" }: { mode: "join" | "login"; 
   if (step === "code") {
     return (
       <form onSubmit={verify} className="space-y-4">
-        <p role="status" className="rounded-lg bg-ok-soft p-3 text-ok">We sent an email to <b>{email}</b>. Tap the link in it, or type the code here.</p>
+        {askEmail ? (
+          <div><label htmlFor="em2" className="label">Your email</label><input id="em2" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input" /></div>
+        ) : (
+          <p role="status" className="rounded-lg bg-ok-soft p-3 text-ok">We sent an email to <b>{email}</b>. Type the 6-digit code from it here. Check your Spam or Promotions folder if you don&apos;t see it.</p>
+        )}
         <div>
           <label htmlFor="otp" className="label">Code from your email</label>
           <input id="otp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,10}" required value={code} onChange={(e) => setCode(e.target.value)} className="input text-center text-2xl tracking-[0.4em]" />
         </div>
         {error && <p role="alert" className="font-semibold text-red-700 dark:text-red-300">{error}</p>}
         <button className="btn btn-primary w-full" disabled={busy}>{busy ? "Checking…" : "Continue"}</button>
-        <button type="button" className="btn btn-ghost w-full" onClick={() => setStep("start")}>Use a different email</button>
+        <button type="button" className="btn btn-ghost w-full" onClick={() => { setAskEmail(false); setStep("start"); }}>{askEmail ? "Email me a new code" : "Use a different email"}</button>
       </form>
     );
   }
@@ -104,6 +110,7 @@ export function AuthForm({ mode, next = "/account" }: { mode: "join" | "login"; 
         {error && <p role="alert" className="font-semibold text-red-700 dark:text-red-300">{error}</p>}
         <button className="btn btn-flame w-full" disabled={busy}>{busy ? "Sending…" : mode === "join" ? "Email me a sign-up code" : "Email me a login code"}</button>
       </form>
+      <button type="button" className="text-sm font-semibold text-mph underline" onClick={() => { setError(""); setAskEmail(true); setStep("code"); }}>I already have a code from my email</button>
       <p className="text-sm text-muted">No password needed. We email you a fresh one-time code every time you log in, so there&apos;s no password to forget or reset.</p>
     </div>
   );
