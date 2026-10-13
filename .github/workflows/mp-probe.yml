@@ -5,9 +5,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          for q in "Paano ko ipe-presyo ang homemade na ube jam ko?" "Saan makakabili ng packaging para sa coffee?" "Paano mag-register ng BMBE?"; do
-            echo "=== $q"
-            curl -sS -m 40 -X POST https://www.flameph.org/api/marketplace/products -H 'content-type: application/json' --data "{\"question\":\"$q\",\"answer\":\"\"}" | head -c 1500; echo
+          for h in negosyodepot.com www.negosyodepot.com; do
+            echo "=== $h"; dig +short A $h; dig +short CNAME $h; dig +short NS negosyodepot.com
+            curl -sS -I -m 20 https://$h | grep -iE '^HTTP|^server|^x-powered|^location|^x-vercel|^set-cookie|^link' || true
           done
-          echo "=== search page sample"
-          curl -sSL -m 20 "https://www.marketplaceph.com/search?q=ube" | grep -oE '/listing/[0-9a-f-]{36}' | sort -u | head -3
+          curl -sSL -m 20 https://www.negosyodepot.com/ -o nd.html || curl -sSL -m 20 https://negosyodepot.com/ -o nd.html
+          grep -oiE '<title>[^<]*|<meta name="generator"[^>]*>|wp-content|woocommerce|cdn\.shopify|_next/static|supabase\.co|login|sign[ -]?in|my-account|wp-login' nd.html | sort | uniq -c | head -25
