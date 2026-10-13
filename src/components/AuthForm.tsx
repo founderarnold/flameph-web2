@@ -55,6 +55,8 @@ export function AuthForm({ mode, next = "/account", haveCode = false }: { mode: 
     const { error } = await supabase!.auth.verifyOtp({ email, token: code.trim(), type: "email" });
     setBusy(false);
     if (error) return setError("Mali o expired ang code. Try again or request a new one.");
+    // Signing in for another FLAME PH site: a full page load lets /sso send them back there.
+    if (next.startsWith("/sso/")) return window.location.assign(next);
     router.replace(next);
     router.refresh();
   }
