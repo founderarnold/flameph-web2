@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { NavGroup } from "@/lib/nav";
 import type { Lang } from "@/lib/i18n";
 import { LangToggle } from "./LangToggle";
@@ -24,7 +25,8 @@ export function MobileMenu({ groups, lang, signedIn, labels }: { groups: NavGrou
       <button type="button" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="mobile-drawer" className="btn btn-ghost h-11 w-11 p-0" aria-label={labels.menu}>
         <svg aria-hidden width="24" height="24" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
       </button>
-      {open && (
+      {/* Portal to <body>: the header's backdrop-blur makes it the containing block for fixed children, which squashed the drawer to header height. */}
+      {open && createPortal(
         <div id="mobile-drawer" role="dialog" aria-modal="true" aria-label={labels.menu} className="fixed inset-0 z-50 flex flex-col bg-bg">
           <div className="flex h-16 items-center justify-between border-b border-line px-4">
             <span className="font-display text-lg font-extrabold text-primary">{labels.menu}</span>
@@ -64,7 +66,8 @@ export function MobileMenu({ groups, lang, signedIn, labels }: { groups: NavGrou
               <div className="flex justify-center pt-2"><LangToggle lang={lang} /></div>
             </div>
           </nav>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
