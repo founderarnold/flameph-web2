@@ -3,6 +3,7 @@ import premiumId from "@/assets/premium-id.webp";
 import Link from "next/link";
 import { StatsStrip, HeroStats } from "@/components/StatsStrip";
 import { PrincipleDiagram } from "@/components/PrincipleDiagram";
+import { HowWeHelp } from "@/components/HowWeHelp";
 import { FeatureCard, Grid, Initials, Section } from "@/components/ui";
 import * as I from "@/components/icons";
 import { FOUNDERS, TAGLINES, TRUST_LINE } from "@/lib/site";
@@ -116,6 +117,8 @@ export default async function Home() {
           <PrincipleDiagram />
         </div>
       </section>
+
+      <HowWeHelp />
 
       <Section title="Paano makakatulong ang FLAME PH?" intro="Four example scenarios showing how a member could use the platform. These are illustrations, not real members.">
         <Grid cols={4}>
