@@ -113,6 +113,7 @@ export default async function Home() {
               Small businesses often pay more for supplies, delivery, training and services because they buy alone. FLAME PH brings MSMEs together so they can learn together, share costs and open doors as a group.
             </p>
             <p className="mt-3 font-semibold">{TAGLINES.notAlone}</p>
+            <Link href="/join" className="btn btn-flame mt-6 text-lg">Join for Free Today!</Link>
           </div>
           <PrincipleDiagram />
         </div>
