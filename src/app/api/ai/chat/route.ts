@@ -26,10 +26,11 @@ export async function POST(req: Request) {
   if (!input) return NextResponse.json({ error: "Please type a question (up to 2,000 characters)." }, { status: 400 });
 
   const admin = createAdminClient();
-  if (!admin || !process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: "Ka-FLAME AI is not connected yet. Please try again soon." }, { status: 503 });
+  if (!admin || !process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: "FLAME AI is not connected yet. Please try again soon." }, { status: 503 });
 
   const supabase = await createClient();
   const userId = supabase ? (await supabase.auth.getUser()).data.user?.id ?? null : null;
+  if (!userId) return NextResponse.json({ error: "Please log in or join free to use FLAME AI.", guest: true, limit: true }, { status: 401 });
   const who = { userId, anonId: await getAnonId(), ipHash: await clientIpHash() };
 
   const gate = await checkGate(admin, who);

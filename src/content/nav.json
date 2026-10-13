@@ -17,7 +17,7 @@
     { "label": "Volunteering", "href": "/volunteering" },
     { "label": "Free POS for MSMEs", "href": "/pos" },
     { "label": "Free Business Directory", "href": "/directory" },
-    { "label": "FLAME PH BizConsult AI (Ka-FLAME AI)", "href": "/bizconsult-ai" }
+    { "label": "Biz Consult with FLAME AI", "href": "/bizconsult-ai" }
   ]},
   { "key": "supportUs", "label": "Support Us", "fil": "Suportahan Kami", "items": [
     { "label": "FLAME PH Merchs", "href": "/merch" },
