@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/browser";
+import { createClient, createEmailLinkClient } from "@/lib/supabase/browser";
 
 const GOOGLE_ON = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "1";
 
@@ -65,12 +65,12 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
         // Already a member: try their password, otherwise point them to log in.
         const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password });
         setBusy(false);
-        return error ? setError("May account na ang email na ito. Log in instead, or use \"Email me a code\".") : finish();
+        return error ? setError("May account na ang email na ito. Log in instead, or use \"Email me a link\".") : finish();
       }
     }
     const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
-    if (error) return setError(mode === "login" ? "Mali ang email o password. No password yet? Tap \"Email me a code\"." : "Account created, but we couldn't log you in. Please log in.");
+    if (error) return setError(mode === "login" ? "Mali ang email o password. No password yet? Tap \"Email me a link\"." : "Account created, but we couldn't log you in. Please log in.");
     finish();
   }
 
@@ -79,10 +79,11 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
     if (needConsent) return setError("Please agree to the Privacy Notice first.");
     if (!email.trim()) return setError("Type your email first.");
     setBusy(true); setError("");
-    const { error } = await supabase!.auth.signInWithOtp({
+    const target = resetting ? "/account/password" : next;
+    const { error } = await (createEmailLinkClient() ?? supabase!).auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: callback(),
+        emailRedirectTo: `${window.location.origin}/auth/link?next=${encodeURIComponent(target)}`,
         shouldCreateUser: mode === "join",
         data: mode === "join" ? { full_name: name, consent_privacy: true, consent_marketing: marketing } : undefined,
       },
@@ -98,7 +99,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
     setBusy(true); setError("");
     const { error } = await supabase!.auth.verifyOtp({ email: email.trim(), token, type: "email" });
     setBusy(false);
-    if (error) { setCode(""); return setError("Mali o expired ang code. Check the newest email, or tap \"Send a new code\"."); }
+    if (error) { setCode(""); return setError("Mali o expired ang code. Check the newest email, or tap \"Send a new link\"."); }
     finish(resetting ? "/account/password" : next);
   }
 
@@ -107,7 +108,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
       {(["password", "code"] as const).map((m) => (
         <button key={m} type="button" role="tab" aria-selected={method === m} onClick={() => { setMethod(m); setError(""); setResetting(false); }}
           className={`min-h-11 rounded-lg ${method === m ? "bg-bg text-primary shadow-sm" : "text-muted"}`}>
-          {m === "password" ? "Password" : "Email me a code"}
+          {m === "password" ? "Password" : "Email me a link"}
         </button>
       ))}
     </div>
@@ -173,16 +174,17 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
           )}
           {emailField}
           {consentBox}
-          {resetting && <p className="text-sm text-muted">We&apos;ll email you a 6-digit code. After you type it, you can set a new password.</p>}
+          {resetting && <p className="text-sm text-muted">We&apos;ll email you a sign-in link. After you tap it, you can set a new password.</p>}
           {error && <p role="alert" className="font-semibold text-red-700 dark:text-red-300">{error}</p>}
-          <button className="btn btn-flame w-full text-lg" disabled={busy}>{busy ? "Sending…" : "Email me a code"}</button>
+          <button className="btn btn-flame w-full text-lg" disabled={busy}>{busy ? "Sending…" : "Email me a sign-in link"}</button>
           <button type="button" className="w-full text-center text-sm font-semibold text-mph underline" onClick={() => { setCodeSent(true); setError(""); }}>I already have a code</button>
         </form>
       ) : (
         <form onSubmit={(e) => { e.preventDefault(); verify(code.trim()); }} className="space-y-4">
           {emailField}
           <div>
-            <label htmlFor="otp" className="label">6-digit code from your email</label>
+            <p role="status" className="mb-3 rounded-lg bg-ok-soft p-3 text-ok">Check your email and <b>tap the sign-in link</b>. It works on any phone or app. If your email shows a 6-digit code instead, type it here.</p>
+            <label htmlFor="otp" className="label">6-digit code (if your email has one)</label>
             <input id="otp" inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={10} required value={code}
               onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); setCode(v); if (v.length === 6) verify(v); }}
               className="input text-center text-3xl tracking-[0.5em]" placeholder="••••••" />
@@ -190,7 +192,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
           </div>
           {error && <p role="alert" className="font-semibold text-red-700 dark:text-red-300">{error}</p>}
           <button className="btn btn-primary w-full" disabled={busy || code.length < 6}>{busy ? "Checking…" : "Continue"}</button>
-          <button type="button" className="btn btn-ghost w-full" disabled={busy} onClick={() => sendCode()}>Send a new code</button>
+          <button type="button" className="btn btn-ghost w-full" disabled={busy} onClick={() => sendCode()}>Send a new link</button>
         </form>
       )}
     </div>

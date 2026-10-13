@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { BottomBar } from "@/components/BottomBar";
 import { RegisterSW } from "@/components/RegisterSW";
+import { EmailLinkSignIn } from "@/components/EmailLinkSignIn";
 import { KaFlameFab } from "@/components/KaFlameFab";
 import { cookies } from "next/headers";
 import { getDict, getLang } from "@/lib/i18n";
@@ -61,6 +62,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         {signedIn && <KaFlameFab />}
         <RegisterSW />
+        <EmailLinkSignIn />
         <Analytics />
       </body>
     </html>
