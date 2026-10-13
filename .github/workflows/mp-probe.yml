@@ -1,0 +1,16 @@
+name: mp-probe
+on: push
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          B=https://www.marketplaceph.com
+          for p in / /robots.txt /sitemap.xml /sitemap_index.xml /product-sitemap.xml "/wp-json/wc/store/v1/products?per_page=3" /wp-json/ /products.json "/shop/" /feed/; do
+            echo "=================== $p"
+            curl -sSL -m 20 -A "Mozilla/5.0 FLAMEPH-probe" -D /tmp/h -o /tmp/b "$B$p" -w "code=%{http_code} type=%{content_type} url=%{url_effective} size=%{size_download}\n" || true
+            grep -iE '^(server|x-powered-by|link|set-cookie):' /tmp/h | head -5
+            head -c 1500 /tmp/b | tr -s '\n' ; echo
+          done
+          echo "=================== home generator/meta"
+          curl -sSL -m 20 $B/ | grep -oiE '<meta name="generator"[^>]*>|wp-content|cdn.shopify|__NEXT_DATA__|_next/static|woocommerce|dokan|wcfm|<title>[^<]*' | sort | uniq -c | head -20
