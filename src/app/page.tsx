@@ -1,4 +1,5 @@
 import Image from "next/image";
+import premiumId from "@/assets/premium-id.webp";
 import Link from "next/link";
 import { StatsStrip } from "@/components/StatsStrip";
 import { PrincipleDiagram } from "@/components/PrincipleDiagram";
@@ -60,9 +61,9 @@ export default async function Home() {
             </div>
             <p className="mt-6 text-sm font-semibold text-muted">{TRUST_LINE}</p>
           </div>
-          <div className="mx-auto w-48 sm:w-64 lg:w-80">
-            <Image src="/brand/flameph-icon.png" alt="" width={320} height={320} priority sizes="(min-width:1024px) 320px, (min-width:640px) 256px, 192px" className="h-auto w-full drop-shadow-xl" />
-          </div>
+          <Link href="/join" aria-label={`${t.joinFree}: FLAME PH Premium Community Member ID`} className="group mx-auto block w-full max-w-sm rounded-2xl sm:max-w-md">
+            <Image src={premiumId} alt="FLAME PH Premium Community Member ID card" priority placeholder="blur" sizes="(min-width:640px) 448px, calc(100vw - 32px)" className="h-auto w-full rounded-2xl shadow-xl transition-transform duration-200 group-hover:-translate-y-1 group-hover:scale-[1.02]" />
+          </Link>
         </div>
       </section>
 
