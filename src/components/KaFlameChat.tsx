@@ -2,7 +2,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-type Msg = { role: "user" | "ai"; text: string; id?: string | null; sources?: { title: string; slug: string }[]; rated?: boolean | null; error?: boolean };
+type Product = { id: string; name: string; description: string; price: string; image: string | null; url: string; store: { name: string; url: string | null } };
+type Msg = { role: "user" | "ai"; text: string; id?: string | null; sources?: { title: string; slug: string }[]; rated?: boolean | null; error?: boolean; products?: Product[] };
 
 const STARTERS = [
   "Paano mag-register ng BMBE?",
@@ -71,13 +72,24 @@ function Chat() {
         if (j.limit) setLimitMsg({ text: j.error, guest: j.guest });
         return;
       }
-      const final = await readStream(res, (t) => setMsgs((m) => { const c = [...m]; c[c.length - 1] = { ...c[c.length - 1], text: c[c.length - 1].text + t }; return c; }));
+      let answer = "";
+      const final = await readStream(res, (t) => (answer += t, setMsgs((m) => { const c = [...m]; c[c.length - 1] = { ...c[c.length - 1], text: c[c.length - 1].text + t }; return c; })));
       if (final.conversationId) setConv(final.conversationId);
       setMsgs((m) => { const c = [...m]; c[c.length - 1] = { ...c[c.length - 1], id: final.messageId, sources: final.sources }; return c; });
+      void showProducts(q, answer, final.messageId ?? null);
     } catch {
       setMsgs((m) => m.slice(0, -1).concat({ role: "ai", text: navigator.onLine === false ? "Offline ka yata. Your question is still in the box; try again when you're back online." : "May problema sa connection. Please try again.", error: true }));
       setInput(q);
     } finally { setBusy(false); }
+  }
+
+  // Sample MarketplacePH products related to the question or answer, shown under the answer once it's done.
+  async function showProducts(question: string, answer: string, id: string | null) {
+    try {
+      const res = await fetch("/api/marketplace/products", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question, answer }) });
+      const { items } = (await res.json()) as { items?: Product[] };
+      if (items?.length) setMsgs((all) => all.map((x) => (x.role === "ai" && (id ? x.id === id : x.text === answer) ? { ...x, products: items } : x)));
+    } catch {}
   }
 
   async function rate(i: number, helpful: boolean) {
@@ -105,6 +117,7 @@ function Chat() {
               {m.sources && m.sources.length > 0 && (
                 <p className="mt-2 text-sm">Sources: {m.sources.map((s, j) => <span key={s.slug}>{j > 0 && ", "}<Link className="underline" href={`/resources/${s.slug}`}>{s.title}</Link></span>)}</p>
               )}
+              {m.products && m.products.length > 0 && <Products items={m.products} />}
               {m.role === "ai" && m.id && (
                 <div className="mt-2 flex items-center gap-1 text-sm">
                   {m.rated == null ? (<>
@@ -127,6 +140,30 @@ function Chat() {
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(input); } }} />
         <button className="btn btn-primary shrink-0" disabled={busy || !input.trim()}>{busy ? "…" : "Send"}</button>
       </form>
+    </div>
+  );
+}
+
+function Products({ items }: { items: Product[] }) {
+  return (
+    <div className="mt-3 whitespace-normal border-t border-line pt-3">
+      <p className="text-sm font-bold text-mph">🛍️ Related on MarketplacePH</p>
+      <ul className="mt-2 grid gap-2">
+        {items.map((p) => (
+          <li key={p.id} className="flex gap-3 rounded-xl border border-line bg-bg p-2">
+            {p.image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={p.image} alt="" width={64} height={64} loading="lazy" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+            )}
+            <div className="min-w-0 text-sm">
+              <a href={p.url} target="_blank" rel="noopener" className="font-semibold underline">{p.name}</a>
+              {p.price && <span className="ml-1 text-muted">· {p.price}</span>}
+              {p.description && <p className="line-clamp-2 text-muted">{p.description}</p>}
+              <p className="text-xs">Store: {p.store.url ? <a href={p.store.url} target="_blank" rel="noopener" className="underline">{p.store.name}</a> : p.store.name}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
