@@ -10,14 +10,14 @@ import { list, type EventRow } from "@/lib/content";
 import type { Status } from "@/components/StatusBadge";
 
 const NEEDS = [
-  { label: "Magsimula ng negosyo", sub: "Start a business", href: "/resources?stage=start", icon: <I.IconSpark /> },
-  { label: "Mag-register ng business", sub: "Permits & registration guides", href: "/resources?topic=permits", icon: <I.IconFile /> },
-  { label: "Magtanong kay Ka-FLAME AI", sub: "Free business Q&A", href: "/bizconsult-ai", icon: <I.IconChat /> },
-  { label: "Ilista ang negosyo ko", sub: "Free business directory", href: "/directory", icon: <I.IconStore /> },
-  { label: "Magbenta online", sub: "MarketplacePH", href: "https://www.marketplaceph.com", icon: <I.IconCart />, external: true },
-  { label: "Sumali sa workshop", sub: "Workshops & trainings", href: "/workshops", icon: <I.IconCalendar /> },
-  { label: "Humanap ng mentor", sub: "Volunteer mentors", href: "/about/mentors", icon: <I.IconUsers /> },
-  { label: "Sumali sa chapter", sub: "Chapters near you", href: "/chapters", icon: <I.IconMap /> },
+  { label: "Magsimula ng negosyo", sub: "Start a business", href: "https://negosyodepot.com", art: "start-business", external: true },
+  { label: "Mag-register ng business", sub: "Permits & registration guides", href: "/resources?topic=permits", art: "register-business" },
+  { label: "Magtanong kay Ka-FLAME AI", sub: "Free business Q&A", href: "/bizconsult-ai", art: "ask-kaflame" },
+  { label: "Ilista ang negosyo ko", sub: "Free business directory", href: "/directory", art: "list-business" },
+  { label: "Magbenta online", sub: "MarketplacePH", href: "https://www.marketplaceph.com", art: "sell-online", external: true },
+  { label: "Sumali sa workshop", sub: "Workshops & trainings", href: "/workshops", art: "join-workshop" },
+  { label: "Humanap ng mentor", sub: "Volunteer mentors", href: "/about/mentors", art: "find-mentor" },
+  { label: "Sumali sa chapter", sub: "Chapters near you", href: "/chapters", art: "join-chapter" },
 ];
 
 const BENEFITS: { title: string; text: string; status: Status; href: string; icon: React.ReactNode }[] = [
@@ -71,7 +71,8 @@ export default async function Home() {
           {NEEDS.map((n) => {
             const inner = (
               <>
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-flame-soft text-flame-strong">{n.icon}</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/illustrations/${n.art}.svg`} alt="" width={64} height={64} loading="lazy" className="h-16 w-16 transition-transform group-hover:-translate-y-0.5" />
                 <span className="mt-2 block font-bold leading-snug">{n.label}</span>
                 <span className="block text-sm text-muted">{n.sub}{n.external ? " ↗" : ""}</span>
               </>
@@ -79,9 +80,9 @@ export default async function Home() {
             return (
               <li key={n.href}>
                 {n.external ? (
-                  <a href={n.href} target="_blank" rel="noopener" className="card block h-full p-4 hover:border-primary">{inner}</a>
+                  <a href={n.href} target="_blank" rel="noopener" className="group card block h-full p-4 hover:border-primary">{inner}</a>
                 ) : (
-                  <Link href={n.href} className="card block h-full p-4 hover:border-primary">{inner}</Link>
+                  <Link href={n.href} className="group card block h-full p-4 hover:border-primary">{inner}</Link>
                 )}
               </li>
             );
