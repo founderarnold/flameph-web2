@@ -1,0 +1,16 @@
+name: dns-check
+on: push
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for h in flameph.org www.flameph.org; do
+            echo "=== $h"
+            for r in 8.8.8.8 1.1.1.1 9.9.9.9; do echo "A@$r: $(dig +short A $h @$r | tr '\n' ' ')  CNAME: $(dig +short CNAME $h @$r)"; done
+            echo "NS: $(dig +short NS flameph.org @8.8.8.8 | tr '\n' ' ')"
+            curl -sS -I -m 20 https://$h | grep -iE '^HTTP|^server|^location|^x-vercel|^age|^cache-control|^x-powered|^last-modified' || true
+            echo "-- title:"; curl -sSL -m 20 https://$h | grep -o '<title>[^<]*' | head -1
+          done
+          echo "=== authoritative"
+          for ns in $(dig +short NS flameph.org); do echo "$ns: @=$(dig +short A flameph.org @$ns | tr '\n' ' ') www=$(dig +short www.flameph.org @$ns | tr '\n' ' ')"; done
