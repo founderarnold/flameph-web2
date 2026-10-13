@@ -45,3 +45,27 @@ export async function StatsStrip() {
     </section>
   );
 }
+
+/** Hero card under the member ID: live member and city counts from the database. */
+export async function HeroStats() {
+  const stats = await getStats();
+  const items: { key: keyof Stats; label: string }[] = [
+    { key: "members", label: "registered members" },
+    { key: "cities", label: "local connections" },
+  ];
+  return (
+    <section aria-labelledby="hero-stats-h" className="rounded-2xl bg-primary p-6 text-white shadow-xl">
+      <p className="font-display text-sm font-bold uppercase tracking-wider text-gold">Start where you are</p>
+      <h2 id="hero-stats-h" className="mt-2 text-2xl font-extrabold leading-tight">Build better business habits with people who understand the journey.</h2>
+      <dl className="mt-5 grid grid-cols-2 gap-3">
+        {items.map((it) => (
+          <div key={it.key} className="flex flex-col-reverse rounded-xl bg-white/10 p-4">
+            <dt className="text-sm text-white/85">{it.label}</dt>
+            <dd className="font-display text-3xl font-extrabold"><StatValue value={stats ? (stats[it.key] as number) : null} /></dd>
+          </div>
+        ))}
+      </dl>
+      <Link href="/join" className="mt-5 inline-flex min-h-11 items-center font-semibold text-gold underline">See membership options →</Link>
+    </section>
+  );
+}

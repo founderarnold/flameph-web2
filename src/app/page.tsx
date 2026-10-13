@@ -1,12 +1,12 @@
 import Image from "next/image";
 import premiumId from "@/assets/premium-id.webp";
 import Link from "next/link";
-import { StatsStrip } from "@/components/StatsStrip";
+import { StatsStrip, HeroStats } from "@/components/StatsStrip";
 import { PrincipleDiagram } from "@/components/PrincipleDiagram";
 import { FeatureCard, Grid, Initials, Section } from "@/components/ui";
 import * as I from "@/components/icons";
-import { FOUNDERS, PURPOSE, TAGLINES, TRUST_LINE } from "@/lib/site";
-import { getDict, getLang, pick } from "@/lib/i18n";
+import { FOUNDERS, TAGLINES, TRUST_LINE } from "@/lib/site";
+import { getDict } from "@/lib/i18n";
 import { list, type EventRow } from "@/lib/content";
 import type { Status } from "@/components/StatusBadge";
 
@@ -38,7 +38,7 @@ const SCENARIOS = [
 ];
 
 export default async function Home() {
-  const [t, lang] = await Promise.all([getDict(), getLang()]);
+  const t = await getDict();
   const [events, posts] = await Promise.all([
     list<EventRow>({ table: "events", filters: { status: "scheduled" }, order: "starts_at", ascending: true, limit: 3 }),
     list<{ id: string; title: string; slug: string; excerpt: string | null; published_at: string | null }>({ table: "posts", order: "published_at", limit: 3 }),
@@ -50,20 +50,27 @@ export default async function Home() {
       <section className="bg-bg-warm">
         <div className="container-x grid items-center gap-8 py-10 lg:grid-cols-[1.3fr_1fr] lg:py-16">
           <div>
-            <p className="font-display text-lg font-bold text-flame-strong">{TAGLINES.noOneAlone}</p>
+            <p className="font-display text-lg font-bold text-flame-strong">BUILD Ecosystem. FUEL Leaders. EMPOWER Entrepreneurs.</p>
             <h1 className="mt-2 text-[2rem] font-extrabold leading-tight text-primary sm:text-5xl">
-              {pick(lang, "Build Ecosystem. Fuel Leaders. Empower Entrepreneurs.", "Bumuo ng ecosystem. Palakasin ang mga lider. Itaguyod ang mga negosyante.")}
+              {TAGLINES.notAlone}
             </h1>
-            <p className="mt-4 max-w-xl text-lg text-muted">{PURPOSE}</p>
+            <p className="mt-4 max-w-xl text-lg text-muted">
+              Join thousands of Filipino entrepreneurs building businesses together to break the chains of poverty among Filipino households and towards a first-world Philippines for the next Filipino generation.
+            </p>
+            <p className="mt-3 max-w-xl font-semibold">Learn. Connect. Find suppliers. Promote your business. Use business tools. Find opportunities.</p>
+            <p className="mt-3 inline-block rounded-full bg-flame-soft px-3 py-1 font-display text-sm font-extrabold tracking-wide text-flame-strong">₱0 TO JOIN</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/join" className="btn btn-flame text-lg">{t.joinFree}</Link>
               <Link href="/bizconsult-ai" className="btn btn-outline text-lg">{t.tryKaflame}</Link>
             </div>
             <p className="mt-6 text-sm font-semibold text-muted">{TRUST_LINE}</p>
           </div>
-          <Link href="/join" aria-label={`${t.joinFree}: FLAME PH Premium Community Member ID`} className="group mx-auto block w-full max-w-sm rounded-2xl sm:max-w-md">
-            <Image src={premiumId} alt="FLAME PH Premium Community Member ID card" priority placeholder="blur" sizes="(min-width:640px) 448px, calc(100vw - 32px)" className="h-auto w-full rounded-2xl shadow-xl transition-transform duration-200 group-hover:-translate-y-1 group-hover:scale-[1.02]" />
-          </Link>
+          <div className="mx-auto grid w-full max-w-sm gap-5 sm:max-w-md">
+            <Link href="/join" aria-label={`${t.joinFree}: FLAME PH Premium Community Member ID`} className="group block rounded-2xl">
+              <Image src={premiumId} alt="FLAME PH Premium Community Member ID card" priority placeholder="blur" sizes="(min-width:640px) 448px, calc(100vw - 32px)" className="h-auto w-full rounded-2xl shadow-xl transition-transform duration-200 group-hover:-translate-y-1 group-hover:scale-[1.02]" />
+            </Link>
+            <HeroStats />
+          </div>
         </div>
       </section>
 
