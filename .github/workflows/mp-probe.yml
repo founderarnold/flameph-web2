@@ -5,9 +5,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          for h in negosyodepot.com www.negosyodepot.com; do
-            echo "=== $h"; dig +short A $h; dig +short CNAME $h; dig +short NS negosyodepot.com
-            curl -sS -I -m 20 https://$h | grep -iE '^HTTP|^server|^x-powered|^location|^x-vercel|^set-cookie|^link' || true
-          done
-          curl -sSL -m 20 https://www.negosyodepot.com/ -o nd.html || curl -sSL -m 20 https://negosyodepot.com/ -o nd.html
-          grep -oiE '<title>[^<]*|<meta name="generator"[^>]*>|wp-content|woocommerce|cdn\.shopify|_next/static|supabase\.co|login|sign[ -]?in|my-account|wp-login' nd.html | sort | uniq -c | head -25
+          UA="Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/129 Mobile Safari/537.36"
+          echo "=== 1. Fresh visitor to MarketplacePH (follow every hop)"
+          curl -sS -L -m 40 -A "$UA" -H "Accept: text/html" -c jar -b jar -o /dev/null -w "final=%{url_effective} code=%{http_code} hops=%{num_redirects}\n" -D - https://www.marketplaceph.com/ | grep -iE "^HTTP|^location|^set-cookie: flame_sso|^final" 
+          echo "=== 2. Second visit (should not bounce again)"
+          curl -sS -m 20 -A "$UA" -H "Accept: text/html" -b jar -o /dev/null -w "code=%{http_code} redirect=%{redirect_url}\n" https://www.marketplaceph.com/
+          echo "=== 3. Bot visit (should not bounce)"
+          curl -sS -m 20 -A "Googlebot/2.1" -H "Accept: text/html" -o /dev/null -w "code=%{http_code} redirect=%{redirect_url}\n" https://www.marketplaceph.com/
+          echo "=== 4. Hub, not silent, not logged in (should go to login)"
+          curl -sS -m 20 -o /dev/null -w "code=%{http_code} redirect=%{redirect_url}\n" "https://www.flameph.org/sso/authorize?client=marketplaceph&return=https%3A%2F%2Fwww.marketplaceph.com%2F"
+          echo "=== 5. Hub with an unknown site (should refuse)"
+          curl -sS -m 20 -o /dev/null -w "code=%{http_code}\n" "https://www.flameph.org/sso/authorize?client=evil&return=https%3A%2F%2Fevil.com%2F"
+          echo "=== 6. Forged token on MarketplacePH (should be ignored)"
+          curl -sS -m 20 -o /dev/null -w "code=%{http_code} redirect=%{redirect_url}\n" "https://www.marketplaceph.com/auth/flame?token=v1.eyJ4IjoxfQ.abc&next=https%3A%2F%2Fwww.marketplaceph.com%2Fmy"
