@@ -46,7 +46,8 @@ async function product(id: string): Promise<MarketProduct | null> {
   if (!name) return null;
   // The listing page describes itself as "<price> · <store> — <description>".
   const [price = "", rest = ""] = metaOf(html, "og:description").split(/ · ([\s\S]*)/);
-  const [storeName = "", description = ""] = rest.split(/ — ([\s\S]*)/);
+  const [storeName = "", desc = ""] = rest.split(/ — ([\s\S]*)/);
+  const description = desc.trim() === name.trim() ? "" : desc;
   const slug = html.match(/href="\/store\/([a-z0-9-]+)"/)?.[1];
   return {
     id, name, price: price.trim(), description: description.trim(), image: metaOf(html, "og:image") || null,
