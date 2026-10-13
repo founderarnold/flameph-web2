@@ -33,9 +33,14 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <Link href="/account/business" className="btn btn-primary mt-3">{biz ? "Edit listing" : "List my business free"}</Link>
           </div>
           <div className="card p-5">
-            <h2 className="text-lg font-bold">Ka-FLAME AI</h2>
+            <h2 className="text-lg font-bold">Login</h2>
+            <p className="mt-1 text-muted">Set a password so you can log in instantly, without waiting for an email code.</p>
+            <Link href="/account/password" className="btn btn-outline mt-3">Set or change password</Link>
+          </div>
+          <div className="card p-5">
+            <h2 className="text-lg font-bold">FLAME AI</h2>
             <p className="mt-1 text-muted">Ask a business question or write a product listing.</p>
-            <div className="mt-3 flex flex-wrap gap-2"><Link href="/bizconsult-ai" className="btn btn-flame">Open Ka-FLAME AI</Link><Link href="/account/ai" className="btn btn-outline">My history</Link></div>
+            <div className="mt-3 flex flex-wrap gap-2"><Link href="/bizconsult-ai" className="btn btn-flame">Open FLAME AI</Link><Link href="/account/ai" className="btn btn-outline">My history</Link></div>
           </div>
           <div className="card p-5">
             <h2 className="text-lg font-bold">My event registrations</h2>
