@@ -18,3 +18,4 @@ jobs:
           curl -sS -m 20 -o /dev/null -w "code=%{http_code}\n" "https://www.flameph.org/sso/authorize?client=evil&return=https%3A%2F%2Fevil.com%2F"
           echo "=== 6. Forged token on MarketplacePH (should be ignored)"
           curl -sS -m 20 -o /dev/null -w "code=%{http_code} redirect=%{redirect_url}\n" "https://www.marketplaceph.com/auth/flame?token=v1.eyJ4IjoxfQ.abc&next=https%3A%2F%2Fwww.marketplaceph.com%2Fmy"
+# rerun 1791930380
