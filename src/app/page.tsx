@@ -166,14 +166,20 @@ export default async function Home() {
         </Grid>
       </Section>
 
-      <section className="container-x pb-6">
-        <div className="rounded-2xl bg-primary px-6 py-10 text-center text-white sm:px-10">
-          <h2 className="text-2xl font-extrabold sm:text-3xl">{TAGLINES.notAlone}</h2>
-          <p className="mx-auto mt-2 max-w-xl text-white/85">{TAGLINES.growth} Free to join.</p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link href="/join" className="btn bg-white text-primary">{t.joinFree}</Link>
-            <Link href="/get-involved" className="btn border-2 border-white text-white">Get involved</Link>
+      <section aria-labelledby="together-h" className="bg-gradient-to-br from-primary via-[#0047b3] to-[#0a2f6b] text-white">
+        <div className="container-x py-16 text-center sm:py-20">
+          <p className="font-display text-sm font-bold uppercase tracking-wider text-gold">Growing Filipino MSMEs together</p>
+          <h2 id="together-h" className="mx-auto mt-3 max-w-5xl text-3xl font-extrabold leading-tight sm:text-5xl lg:text-6xl">
+            Hindi mo kailangang mag-isa. Sumama na sa pinakamalaking komunidad ng negosyanteng Pilipino.
+          </h2>
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-white/90">
+            Thousands of sari-sari owners, food manufacturers, creators, and enterprise builders are already collaborating inside FLAME PH to negotiate better, learn faster, and grow sustainably.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link href="/join" className="btn rounded-full bg-[#c00a0a] px-7 text-lg text-white shadow-lg hover:bg-[#a30808]">Join FLAME PH Free →</Link>
+            <Link href="/membership/more-benefits" className="btn rounded-full bg-white/15 px-7 text-lg text-white hover:bg-white/25">Get More MSME Benefits</Link>
           </div>
+          <p className="mt-6 text-sm font-semibold text-white/75">No credit card required • 100% Filipino-Owned Ecosystem • Instant Digital Member Pass</p>
         </div>
       </section>
     </>
