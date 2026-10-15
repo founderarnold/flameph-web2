@@ -3,7 +3,7 @@ import type { Role } from "@/lib/auth";
 export type AdminField = {
   name: string;
   label: string;
-  type: "text" | "textarea" | "number" | "date" | "datetime" | "bool" | "select" | "image" | "images" | "privateFile" | "links" | "benefits" | "url";
+  type: "text" | "textarea" | "number" | "date" | "datetime" | "bool" | "select" | "image" | "images" | "privateFile" | "links" | "benefits" | "url" | "tags";
   options?: string[];
   required?: boolean;
   help?: string;
@@ -26,6 +26,70 @@ const CONTENT: Role[] = ["super_admin", "admin", "editor"];
 const ADMIN: Role[] = ["super_admin", "admin"];
 
 export const ADMIN_TABLES: AdminTable[] = [
+  {
+    table: "opportunities", label: "Opportunities", singular: "opportunity", roles: CONTENT, columns: ["title", "kind", "province", "deadline", "published"],
+    order: { column: "created_at", ascending: false },
+    fields: [
+      { name: "title", label: "Title", type: "text", required: true },
+      { name: "kind", label: "Type", type: "select", options: ["grant", "loan", "trade_fair", "bazaar", "training", "buyer_request", "program", "competition", "other"], required: true },
+      { name: "organizer", label: "Organizer (e.g. DTI Region V, DOST, Landbank)", type: "text" },
+      { name: "summary", label: "What it is, who can apply, what to prepare", type: "textarea" },
+      { name: "url", label: "Official link", type: "url", help: "Link to the organizer's own page so members can verify." },
+      { name: "province", label: "Province (leave empty for nationwide)", type: "text" },
+      { name: "sectors", label: "Sectors", type: "tags", help: "Use the directory's sector names, e.g. Food & beverage, Agriculture. Leave empty for all sectors." },
+      { name: "stages", label: "Stages", type: "tags", help: "Any of: discover, start, build, grow, scale. Leave empty for all stages." },
+      { name: "deadline", label: "Application deadline", type: "date" },
+      { name: "starts_on", label: "Event or program start", type: "date" },
+      { name: "members_only", label: "Only signed-in members can see it", type: "bool" },
+      { name: "published", label: "Published", type: "bool" },
+    ],
+  },
+  {
+    table: "deals", label: "Buy-together deals", singular: "deal", roles: ADMIN, columns: ["title", "supplier", "deal_price", "deadline", "status", "published"],
+    order: { column: "created_at", ascending: false },
+    fields: [
+      { name: "title", label: "What members are buying", type: "text", required: true },
+      { name: "supplier", label: "Supplier", type: "text" },
+      { name: "description", label: "Details (specs, pickup or delivery, payment)", type: "textarea" },
+      { name: "unit", label: "Unit (e.g. pack of 100, kilo)", type: "text" },
+      { name: "deal_price", label: "Group price per unit (₱)", type: "number" },
+      { name: "regular_price", label: "Regular price per unit (₱)", type: "number" },
+      { name: "target_members", label: "Members needed", type: "number", required: true },
+      { name: "deadline", label: "Join by", type: "date" },
+      { name: "status", label: "Status", type: "select", options: ["open", "reached", "closed"], required: true },
+      { name: "photo_path", label: "Photo", type: "image" },
+      { name: "published", label: "Published", type: "bool" },
+    ],
+  },
+  {
+    table: "reward_items", label: "Rewards catalog", singular: "reward", roles: ADMIN, columns: ["title", "points_cost", "stock", "published"],
+    order: { column: "points_cost", ascending: true },
+    fields: [
+      { name: "title", label: "Reward", type: "text", required: true },
+      { name: "description", label: "Details and how it's delivered", type: "textarea" },
+      { name: "points_cost", label: "Points needed", type: "number", required: true },
+      { name: "stock", label: "How many available (empty = unlimited)", type: "number" },
+      { name: "photo_path", label: "Photo", type: "image" },
+      { name: "published", label: "Published", type: "bool" },
+    ],
+  },
+  {
+    table: "reward_redemptions", label: "Reward claims", singular: "claim", roles: ADMIN, columns: ["item_title", "points", "status", "created_at"],
+    order: { column: "created_at", ascending: false },
+    fields: [
+      { name: "status", label: "Status", type: "select", options: ["pending", "fulfilled", "cancelled"], required: true, help: "Cancelling gives the points back." },
+      { name: "note", label: "Note (e.g. delivered on, tracking number)", type: "textarea" },
+    ],
+  },
+  {
+    table: "business_reviews", label: "Listing reviews", singular: "review", roles: ADMIN, columns: ["reviewer_name", "rating", "body", "hidden", "created_at"],
+    order: { column: "created_at", ascending: false },
+    fields: [
+      { name: "rating", label: "Rating", type: "number" },
+      { name: "body", label: "Review", type: "textarea" },
+      { name: "hidden", label: "Hide this review (spam or abusive)", type: "bool" },
+    ],
+  },
   {
     table: "events", label: "Events", singular: "event", roles: [...CONTENT, "chapter_leader"], columns: ["title", "type", "starts_at", "status", "published"],
     order: { column: "starts_at", ascending: false }, slugFrom: "title",

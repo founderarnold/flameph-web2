@@ -19,7 +19,7 @@ const CHECKS: Check[] = [
   { key: "logo", label: "Logo", tip: "Add your logo so customers recognise you.", done: (b) => has(b.logo_url), needs: "logo_url" },
   { key: "photos", label: "3 or more photos", tip: "Listings with 3+ photos get more inquiries.", done: (b) => (b.photos?.length ?? 0) >= 3 },
   { key: "description", label: "About your business", tip: "Write 2 to 3 sentences about what you offer. FLAME AI can help.", done: (b) => String(b.description ?? "").trim().length >= 80 },
-  { key: "products", label: "Products & services", tip: "List what you sell, with prices if you can.", done: (b) => has(b.products) },
+  { key: "products", label: "Products & services", tip: "List what you sell, with prices if you can.", done: (b) => has(b.products) || Number(b.product_count ?? 0) > 0 },
   { key: "chat", label: "Messenger or Viber", tip: "Add Messenger or Viber so buyers can message you.", done: (b) => has(b.contact_messenger) || has(b.contact_viber) },
   { key: "phone", label: "Phone number", tip: "Add a number buyers can call.", done: (b) => has(b.contact_phone) },
   { key: "shop", label: "MarketplacePH shop", tip: "Link your free MarketplacePH store so people can order.", done: (b) => has(b.marketplaceph_url) },

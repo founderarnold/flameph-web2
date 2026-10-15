@@ -4,12 +4,19 @@ import { requireUser, isStaffRole } from "@/lib/auth";
 export const metadata = { title: "My account", robots: { index: false } };
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
-  const { roles } = await requireUser();
+  const { roles, supabase, user } = await requireUser();
+  // Unread inquiries for the badge; zero until the 0003 database update is run.
+  const { count: unread } = await supabase.from("business_inquiries").select("id", { count: "exact", head: true }).eq("owner_id", user.id).eq("status", "new");
   const tabs = [
-    { href: "/account", label: "Dashboard" },
-    { href: "/account/profile", label: "Profile" },
+    { href: "/account", label: "Home" },
     { href: "/account/business", label: "My business" },
-    { href: "/account/ai", label: "Ka-FLAME history" },
+    { href: "/account/inquiries", label: unread ? `Inquiries (${unread})` : "Inquiries" },
+    { href: "/opportunities", label: "Opportunities" },
+    { href: "/deals", label: "Buy together" },
+    { href: "/account/growth", label: "Growth path" },
+    { href: "/account/rewards", label: "Rewards" },
+    { href: "/account/profile", label: "Profile" },
+    { href: "/account/ai", label: "FLAME AI history" },
     ...(isStaffRole(roles) ? [{ href: "/admin", label: "Admin" }] : []),
   ];
   return (

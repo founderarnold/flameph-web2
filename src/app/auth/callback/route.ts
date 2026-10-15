@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -22,6 +22,16 @@ export async function GET(req: Request) {
       consent_marketing: url.searchParams.get("mkt") === "1",
       consent_at: new Date().toISOString(),
     }).eq("id", data.user.id);
+    // Invite link (/join?ref=FP-…): credit the member who invited them, only for a brand-new account.
+    const ref = url.searchParams.get("ref")?.toUpperCase();
+    const admin = createAdminClient();
+    const isNew = Date.now() - new Date(data.user.created_at).getTime() < 15 * 60 * 1000;
+    if (admin && ref && /^FP-\d{1,10}$/.test(ref) && isNew) {
+      const { data: inviter } = await admin.from("profiles").select("id").eq("member_code", ref).maybeSingle();
+      if (inviter && inviter.id !== data.user.id) {
+        await admin.from("profiles").update({ referred_by: inviter.id }).eq("id", data.user.id).is("referred_by", null);
+      }
+    }
   }
   return NextResponse.redirect(new URL(next, req.url));
 }
