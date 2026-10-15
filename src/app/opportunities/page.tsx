@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PageHero, Section, EmptyState } from "@/components/ui";
 import { meta } from "@/lib/meta";
+import { MemberNav } from "@/components/MemberNav";
 import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SECTORS } from "@/app/directory/page";
@@ -30,6 +31,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ k
 
   return (
     <>
+      <MemberNav />
       <PageHero status="live" fil="Mga oportunidad para sa negosyo" title="Opportunities" path="/opportunities"
         intro="Grants, financing, trade fairs, bazaars, trainings and buyer requests that FLAME PH has checked. Always confirm details with the organizer before you apply." />
       <Section>
