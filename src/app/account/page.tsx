@@ -87,7 +87,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <section aria-label="This month" className="grid grid-cols-3 gap-3">
         <Link href="/account/inquiries" className="card p-4 hover:border-primary"><p className="font-display text-2xl font-extrabold tabular-nums text-primary">{biz ? views : "–"}</p><p className="text-sm text-muted">listing views, 30 days</p></Link>
         <Link href="/account/inquiries" className={`card p-4 hover:border-primary ${newInquiries ? "border-flame" : ""}`}><p className="font-display text-2xl font-extrabold tabular-nums text-primary">{newInquiries ?? 0}</p><p className="text-sm text-muted">new inquiries</p></Link>
-        <Link href="/opportunities" className="card p-4 hover:border-primary"><p className="font-display text-2xl font-extrabold tabular-nums text-primary">{matched.length}</p><p className="text-sm text-muted">opportunities for you</p></Link>
+        <Link href="/opportunities?mine=1" className="card p-4 hover:border-primary"><p className="font-display text-2xl font-extrabold tabular-nums text-primary">{matched.length}</p><p className="text-sm text-muted">opportunities for you</p></Link>
       </section>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <section className="card p-5">

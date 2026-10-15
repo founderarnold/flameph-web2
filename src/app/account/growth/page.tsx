@@ -41,7 +41,7 @@ export default async function Growth() {
               <StagePicker back="/account/growth" only={[next]} />
             </div>
           )}
-          <p className="mt-3 text-sm"><Link href="/opportunities" className="font-semibold text-mph underline">See opportunities for your stage</Link> · <Link href="/bizconsult-ai" className="font-semibold text-mph underline">Ask FLAME AI what to do next</Link></p>
+          <p className="mt-3 text-sm"><Link href="/opportunities?mine=1" className="font-semibold text-mph underline">See opportunities for your stage</Link> · <Link href="/bizconsult-ai" className="font-semibold text-mph underline">Ask FLAME AI what to do next</Link></p>
         </section>
       )}
 

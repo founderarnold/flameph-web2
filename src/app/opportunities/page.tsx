@@ -20,7 +20,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ k
     user && session ? session.from("businesses").select("sector, province").eq("owner_id", user.id).limit(1).maybeSingle() : null,
   ]);
   const me = { province: biz?.data?.province ?? profile?.data?.province, sector: biz?.data?.sector, stage: profile?.data?.business_stage };
-  const mine = Boolean(user) && sp.mine !== "0";
+  const mine = Boolean(user) && sp.mine === "1";
   const all = ((error ? [] : data) ?? []) as Opportunity[];
   const rows = all.filter((o) => notExpired(o.deadline)
     && (!sp.kind || o.kind === sp.kind)
@@ -37,7 +37,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ k
       <Section>
         {user ? (
           <p className="mb-4 text-muted">
-            {mine ? <>Showing opportunities that fit your {[me.province && "province", me.sector && "sector", me.stage && "stage"].filter(Boolean).join(", ") || "profile"}. <Link href="/opportunities?mine=0" className="font-semibold text-mph underline">Show all</Link></> : <><Link href="/opportunities" className="font-semibold text-mph underline">Show only what fits me</Link></>}
+            {mine ? <>Showing opportunities that fit your {[me.province && "province", me.sector && "sector", me.stage && "stage"].filter(Boolean).join(", ") || "profile"}. <Link href="/opportunities" className="font-semibold text-mph underline">Show all</Link></> : <>Showing all open opportunities. <Link href="/opportunities?mine=1" className="font-semibold text-mph underline">Show only what fits me</Link></>}
             {(!me.province || !me.stage) && <> · <Link href="/account/profile" className="font-semibold text-mph underline">Complete your profile</Link> for better matches.</>}
           </p>
         ) : <p className="mb-4 text-muted"><Link href="/join" className="font-semibold text-mph underline">Join free</Link> to see opportunities matched to your province, sector and stage, plus members-only programs.</p>}
@@ -50,7 +50,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ k
         </form>
         <div className="mt-6">
           {rows.length === 0 ? (
-            <EmptyState title={all.length ? "Nothing matches right now." : "New opportunities are coming soon."} text={all.length ? "Try fewer filters, or check back next week." : "FLAME PH posts grants, trade fairs and buyer requests here. Check back next week."} />
+            mine && all.length ? (
+              <EmptyState title="None of the open opportunities fit your profile yet." text="There are other opportunities open now. Take a look, or complete your profile for better matches." cta={{ href: "/opportunities", label: "Show all opportunities" }} />
+            ) : (
+              <EmptyState title={all.length ? "Nothing matches these filters." : "New opportunities are coming soon."} text={all.length ? "Try fewer filters, or check back next week." : "FLAME PH posts grants, trade fairs and buyer requests here. Check back next week."} cta={all.length ? { href: "/opportunities", label: "Clear filters" } : undefined} />
+            )
           ) : (
             <ul className="grid gap-4 md:grid-cols-2">
               {rows.map((o) => {
