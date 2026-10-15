@@ -2,6 +2,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { sendEmail, NOTIFY_TO } from "@/lib/email";
 
 const STAGES = ["discover", "start", "build", "grow", "scale"];
 const s = (v: FormDataEntryValue | null, max = 120) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -76,4 +77,17 @@ export async function joinDeal(fd: FormData) {
   revalidatePath("/deals");
   revalidatePath("/account");
   redirect(`/deals?${error ? "error=1" : fd.get("leave") === "1" ? "left=1" : "joined=1"}#deal-${deal}`);
+}
+
+/** Spend points on a reward FLAME PH posted. The database checks the balance and stock. */
+export async function redeemReward(fd: FormData) {
+  const { supabase, user } = await requireUser("/account/rewards");
+  const item = s(fd.get("item_id"), 40);
+  const { data: result } = await supabase.rpc("redeem_reward", { item });
+  if (result === "ok") {
+    const { data: it } = await supabase.from("reward_items").select("title, points_cost").eq("id", item).single();
+    await sendEmail({ to: NOTIFY_TO, subject: `Reward claimed: ${it?.title ?? item}`, text: `${user.email} claimed "${it?.title}" for ${it?.points_cost} points.\n\nFulfil it in Admin → Reward claims.` });
+  }
+  revalidatePath("/account/rewards");
+  redirect(`/account/rewards?redeem=${typeof result === "string" ? result : "error"}#catalog`);
 }

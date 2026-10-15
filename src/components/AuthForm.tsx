@@ -49,7 +49,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
   async function google() {
     if (needConsent) return setError("Please agree to the Privacy Notice first.");
     setBusy(true);
-    const { error } = await supabase!.auth.signInWithOAuth({ provider: "google", options: { redirectTo: callback(mode === "join" ? `&consent=1&mkt=${marketing ? 1 : 0}` : "") } });
+    const { error } = await supabase!.auth.signInWithOAuth({ provider: "google", options: { redirectTo: callback(mode === "join" ? `&consent=1&mkt=${marketing ? 1 : 0}${referral ? `&ref=${encodeURIComponent(referral)}` : ""}` : "") } });
     if (error) { setError("Google sign-in isn't available right now. Use your email instead."); setBusy(false); }
   }
 

@@ -62,6 +62,26 @@ export const ADMIN_TABLES: AdminTable[] = [
     ],
   },
   {
+    table: "reward_items", label: "Rewards catalog", singular: "reward", roles: ADMIN, columns: ["title", "points_cost", "stock", "published"],
+    order: { column: "points_cost", ascending: true },
+    fields: [
+      { name: "title", label: "Reward", type: "text", required: true },
+      { name: "description", label: "Details and how it's delivered", type: "textarea" },
+      { name: "points_cost", label: "Points needed", type: "number", required: true },
+      { name: "stock", label: "How many available (empty = unlimited)", type: "number" },
+      { name: "photo_path", label: "Photo", type: "image" },
+      { name: "published", label: "Published", type: "bool" },
+    ],
+  },
+  {
+    table: "reward_redemptions", label: "Reward claims", singular: "claim", roles: ADMIN, columns: ["item_title", "points", "status", "created_at"],
+    order: { column: "created_at", ascending: false },
+    fields: [
+      { name: "status", label: "Status", type: "select", options: ["pending", "fulfilled", "cancelled"], required: true, help: "Cancelling gives the points back." },
+      { name: "note", label: "Note (e.g. delivered on, tracking number)", type: "textarea" },
+    ],
+  },
+  {
     table: "business_reviews", label: "Listing reviews", singular: "review", roles: ADMIN, columns: ["reviewer_name", "rating", "body", "hidden", "created_at"],
     order: { column: "created_at", ascending: false },
     fields: [

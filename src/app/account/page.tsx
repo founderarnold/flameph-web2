@@ -4,6 +4,7 @@ import { MemberCard } from "@/components/MemberCard";
 import { Notice } from "@/components/ui";
 import { ListingStrength } from "@/components/ListingStrength";
 import { StagePicker } from "@/components/StagePicker";
+import { PushToggle } from "@/components/PushToggle";
 import { hasExtras, type Listing } from "@/lib/listing";
 import { list } from "@/lib/content";
 import { OPPORTUNITY_KINDS, STAGES, type Opportunity, type Stage, dateLabel, matches, notExpired } from "@/lib/growth";
@@ -125,6 +126,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             ) : <p className="mt-1 text-muted">You haven&apos;t listed a business yet.</p>}
             <Link href="/account/business" className="btn btn-primary mt-3">{biz ? "Edit listing" : "List my business free"}</Link>
           </div>
+          <PushToggle userId={user.id} />
           <div className="card p-5">
             <h2 className="text-lg font-bold">Login</h2>
             <p className="mt-1 text-muted">Set a password so you can log in instantly, without waiting for an email code.</p>

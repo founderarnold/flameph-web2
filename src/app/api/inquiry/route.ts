@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
+import { sendPush } from "@/lib/push";
 
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
@@ -47,5 +48,6 @@ export async function POST(req: Request) {
       text: `${name} sent an inquiry through your FLAME PH listing.\n\n${product ? `Interested in: ${product}\n` : ""}Message:\n${message}\n\nReply to: ${[email, mobile].filter(Boolean).join(" / ")}\n\nSee all inquiries: https://flameph.org/account/inquiries`,
     });
   }
+  await sendPush(biz.owner_id, { title: `New inquiry for ${biz.name}`, body: `${name}: ${message.slice(0, 120)}`, url: "/account/inquiries" });
   return NextResponse.json({ ok: true });
 }

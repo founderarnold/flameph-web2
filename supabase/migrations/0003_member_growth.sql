@@ -1,5 +1,5 @@
 -- FLAME PH member growth features: products, inquiries, reviews, listing stats,
--- opportunities, buy-together deals, growth milestones and referrals.
+-- opportunities, buy-together deals, growth milestones, referrals, rewards and push notifications.
 -- Safe to run more than once on an existing database (Supabase → SQL Editor → paste → Run).
 
 -- ---------------------------------------------------------------------------
@@ -53,7 +53,8 @@ create table if not exists public.business_reviews (
   unique (business_id, user_id)
 );
 
-create or replace function public.protect_review() returns trigger language plpgsql security definer set search_path = public as $$
+-- Not security definer: is_trusted() must see the real caller so members can't unhide their own review.
+create or replace function public.protect_review() returns trigger language plpgsql set search_path = public as $$
 begin
   if exists (select 1 from public.businesses b where b.id = new.business_id and b.owner_id = new.user_id) then
     raise exception 'You cannot review your own business.';
@@ -245,3 +246,103 @@ create policy deal_participants_self on public.deal_participants for all
 
 drop policy if exists milestones_self on public.member_milestones;
 create policy milestones_self on public.member_milestones for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ---------------------------------------------------------------------------
+-- Rewards: points are computed from activity; members spend them on items FLAME PH posts
+-- ---------------------------------------------------------------------------
+create table if not exists public.reward_items (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text,
+  points_cost int not null check (points_cost > 0),
+  stock int check (stock is null or stock >= 0), -- empty means unlimited
+  photo_path text,
+  published boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+drop trigger if exists reward_items_touch on public.reward_items;
+create trigger reward_items_touch before update on public.reward_items for each row execute function public.touch_updated_at();
+
+create table if not exists public.reward_redemptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  item_id uuid not null references public.reward_items(id) on delete restrict,
+  item_title text not null,
+  points int not null check (points > 0),
+  status text not null default 'pending' check (status in ('pending','fulfilled','cancelled')),
+  note text,
+  created_at timestamptz not null default now()
+);
+
+-- Same weights as POINTS in src/lib/growth.ts
+create or replace function public.member_points(uid uuid default auth.uid()) returns table (earned bigint, spent bigint, balance bigint)
+language sql stable security definer set search_path = public as $$
+  with e as (
+    select
+      (select count(*) from public.profiles p join auth.users u on u.id = p.id where p.referred_by = uid and u.email_confirmed_at is not null) * 50
+    + (select count(*) from public.business_reviews where user_id = uid) * 10
+    + (select count(*) from public.event_registrations where user_id = uid) * 20
+    + (select count(*) from public.member_milestones where user_id = uid) * 15
+    + (select count(*) from public.deal_participants where user_id = uid) * 10 as earned
+  ), s as (
+    select coalesce(sum(points),0) as spent from public.reward_redemptions where user_id = uid and status <> 'cancelled'
+  )
+  select e.earned, s.spent, e.earned - s.spent from e, s
+  where uid = auth.uid() or public.is_admin();
+$$;
+grant execute on function public.member_points(uuid) to authenticated;
+
+create or replace function public.redeem_reward(item uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare it public.reward_items; bal bigint;
+begin
+  if auth.uid() is null then return 'login'; end if;
+  select * into it from public.reward_items where id = item and published for update;
+  if not found then return 'missing'; end if;
+  if it.stock is not null and it.stock <= 0 then return 'out'; end if;
+  select balance into bal from public.member_points(auth.uid());
+  if coalesce(bal,0) < it.points_cost then return 'points'; end if;
+  insert into public.reward_redemptions (user_id, item_id, item_title, points) values (auth.uid(), it.id, it.title, it.points_cost);
+  if it.stock is not null then update public.reward_items set stock = stock - 1 where id = it.id; end if;
+  return 'ok';
+end; $$;
+grant execute on function public.redeem_reward(uuid) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Push notifications (phone and desktop) for members who turn them on
+-- ---------------------------------------------------------------------------
+create table if not exists public.push_subscriptions (
+  endpoint text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.reward_items enable row level security;
+alter table public.reward_redemptions enable row level security;
+alter table public.push_subscriptions enable row level security;
+
+drop policy if exists reward_items_staff_all on public.reward_items;
+create policy reward_items_staff_all on public.reward_items for all using (public.is_admin()) with check (public.is_admin());
+drop policy if exists reward_items_public on public.reward_items;
+create policy reward_items_public on public.reward_items for select using (published);
+drop policy if exists redemptions_self on public.reward_redemptions;
+create policy redemptions_self on public.reward_redemptions for select using (user_id = auth.uid() or public.is_admin());
+drop policy if exists redemptions_admin on public.reward_redemptions;
+create policy redemptions_admin on public.reward_redemptions for update using (public.is_admin()) with check (public.is_admin());
+drop policy if exists push_self on public.push_subscriptions;
+create policy push_self on public.push_subscriptions for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ---------------------------------------------------------------------------
+-- Add Opportunities and Buy Together to the saved site menu (Membership group), once.
+-- ---------------------------------------------------------------------------
+update public.settings set value = (
+  select jsonb_agg(
+    case when g->>'key' = 'membership' and not (g->'items' @> '[{"href":"/opportunities"}]'::jsonb)
+      then jsonb_set(g, '{items}', (g->'items') || '[{"label":"Opportunities for MSMEs","href":"/opportunities"},{"label":"Buy Together Deals","href":"/deals"}]'::jsonb)
+      else g end
+    order by ord)
+  from jsonb_array_elements(value) with ordinality as t(g, ord)
+) where key = 'menu' and jsonb_typeof(value) = 'array';
