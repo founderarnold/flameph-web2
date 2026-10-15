@@ -34,3 +34,13 @@ export async function deleteAiConversation(fd: FormData) {
   else await supabase.from("ai_conversations").delete().eq("id", id).eq("user_id", user.id);
   revalidatePath("/account/ai");
 }
+
+/** One-tap answer to "Where is your business now?" from the dashboard or the welcome page. */
+export async function setStage(fd: FormData) {
+  const { supabase, user } = await requireUser();
+  const stage = s(fd.get("stage"));
+  if (STAGES.includes(stage)) await supabase.from("profiles").update({ business_stage: stage }).eq("id", user.id);
+  revalidatePath("/account");
+  const back = s(fd.get("back"), 200);
+  redirect(back.startsWith("/account") ? back : "/account");
+}
