@@ -59,7 +59,7 @@ export async function GET(req: Request) {
       `Kumusta${p.full_name ? `, ${p.full_name.split(" ")[0]}` : ""}! Here's your FLAME PH week.`,
       "",
       ...(biz ? [`Your listing: ${views} view${views === 1 ? "" : "s"} and ${newInq} new inquir${newInq === 1 ? "y" : "ies"} this week.`, newInq ? `Reply here: ${ORG.url}/account/inquiries` : `Make it stronger: ${ORG.url}/account/business`, ""] : [`List your business free: ${ORG.url}/account/business`, ""]),
-      ...(mine.length ? ["Opportunities for you:", ...mine.map((o) => `- ${o.title} (${OPPORTUNITY_KINDS[o.kind] ?? "Opportunity"}${o.deadline ? `, apply by ${dateLabel(o.deadline)}` : ""})`), `  ${ORG.url}/opportunities`, ""] : []),
+      ...(mine.length ? ["Opportunities for you:", ...mine.map((o) => `- ${o.title} (${OPPORTUNITY_KINDS[o.kind] ?? "Opportunity"}${o.deadline ? `, apply by ${dateLabel(o.deadline)}` : ""})`), `  ${ORG.url}/opportunities?mine=1`, ""] : []),
       ...((deals ?? []).length ? ["Buy together this week:", ...(deals ?? []).slice(0, 2).map((d) => `- ${d.title}${d.deadline ? ` (join by ${dateLabel(d.deadline)})` : ""}`), `  ${ORG.url}/deals`, ""] : []),
       ...((events ?? []).length ? ["Coming up:", ...(events ?? []).map((e) => `- ${e.title}, ${new Date(e.starts_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" })}${e.city ? `, ${e.city}` : ""}`), ""] : []),
       `Your growth path: ${ORG.url}/account/growth`,
@@ -69,7 +69,7 @@ export async function GET(req: Request) {
     const ok = await sendEmail({ to: email, subject: newInq ? `${newInq} new inquir${newInq === 1 ? "y" : "ies"} + your FLAME PH week` : "Your FLAME PH week: opportunities and events", text: lines.join("\n") });
     if (ok) sent++; else skipped++;
     if (mine.length || newInq) {
-      await sendPush(p.id, { title: "Your FLAME PH week", body: newInq ? `${newInq} new inquiries and ${mine.length} opportunities for you` : `${mine.length} new opportunities for you`, url: newInq ? "/account/inquiries" : "/opportunities" });
+      await sendPush(p.id, { title: "Your FLAME PH week", body: newInq ? `${newInq} new inquiries and ${mine.length} opportunities for you` : `${mine.length} new opportunities for you`, url: newInq ? "/account/inquiries" : "/opportunities?mine=1" });
     }
   }
   return NextResponse.json({ ok: true, sent, skipped });
