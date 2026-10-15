@@ -20,6 +20,7 @@ function parseField(f: AdminField, fd: FormData): unknown {
     case "number": return v === null || v === "" ? null : Number(v);
     case "datetime": return v ? new Date(`${v}:00+08:00`).toISOString() : null; // inputs are Manila time
     case "date": return v || null;
+    case "tags": return typeof v === "string" ? [...new Set(v.split(",").map((x) => x.trim()).filter(Boolean))] : [];
     case "links": {
       const lines = String(v || "").split("\n").map((l) => l.trim()).filter(Boolean);
       return lines.map((l) => { const [label, url] = l.split("|").map((x) => x.trim()); return { label: url ? label : label, url: url || label }; }).filter((x) => /^https?:\/\//.test(x.url));

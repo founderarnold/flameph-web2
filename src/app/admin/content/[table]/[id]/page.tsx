@@ -64,6 +64,8 @@ function FieldInput({ f, value, privateLink }: { f: AdminField; value: unknown; 
       return <div>{label}<input id={id} name={f.name} type="date" defaultValue={String(value ?? "")} required={f.required} className="input" />{help}</div>;
     case "datetime":
       return <div>{label}<input id={id} name={f.name} type="datetime-local" defaultValue={toLocal(value)} required={f.required} className="input" /><p className="mt-1 text-sm text-muted">Philippine time</p>{help}</div>;
+    case "tags":
+      return <div>{label}<input id={id} name={f.name} type="text" defaultValue={((value as string[]) ?? []).join(", ")} className="input" />{help ?? <p className="mt-1 text-sm text-muted">Separate with commas. Leave empty for all.</p>}</div>;
     case "links":
       return <div>{label}<textarea id={id} name={f.name} rows={3} defaultValue={((value as { label: string; url: string }[]) ?? []).map((l) => `${l.label} | ${l.url}`).join("\n")} placeholder="BIR | https://www.bir.gov.ph" className="input font-mono text-[15px]" /><p className="mt-1 text-sm text-muted">One per line: Label | https://…</p></div>;
     case "benefits":

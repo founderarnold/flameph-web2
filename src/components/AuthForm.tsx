@@ -7,13 +7,13 @@ import { createClient, createEmailLinkClient } from "@/lib/supabase/browser";
 const GOOGLE_ON = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "1";
 
 type Method = "password" | "code";
-type Props = { mode: "join" | "login"; next?: string; haveCode?: boolean; initialEmail?: string };
+type Props = { mode: "join" | "login"; next?: string; haveCode?: boolean; initialEmail?: string; referral?: string };
 
 /**
  * Join / log in. Default is email + password (no waiting for emails). The email-code option covers members
  * without a password and "forgot password". Codes are typed into one box that submits itself.
  */
-export function AuthForm({ mode, next = "/account", haveCode = false, initialEmail = "" }: Props) {
+export function AuthForm({ mode, next = "/account", haveCode = false, initialEmail = "", referral }: Props) {
   const supabase = createClient();
   const router = useRouter();
   const [method, setMethod] = useState<Method>(haveCode ? "code" : "password");
@@ -58,7 +58,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
     if (needConsent) return setError("Please agree to the Privacy Notice first.");
     setBusy(true); setError("");
     if (mode === "join") {
-      const res = await fetch("/api/auth/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, email, password, consent, marketing }) });
+      const res = await fetch("/api/auth/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, email, password, consent, marketing, ref: referral }) });
       const j = await res.json().catch(() => ({}));
       if (!res.ok && !j.exists) { setBusy(false); return setError(j.error || "May problema. Please try again."); }
       if (j.exists) {
@@ -85,7 +85,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
       options: {
         emailRedirectTo: `${window.location.origin}/auth/link?next=${encodeURIComponent(target)}`,
         shouldCreateUser: mode === "join",
-        data: mode === "join" ? { full_name: name, consent_privacy: true, consent_marketing: marketing } : undefined,
+        data: mode === "join" ? { full_name: name, consent_privacy: true, consent_marketing: marketing, ...(referral ? { ref: referral } : {}) } : undefined,
       },
     });
     setBusy(false);

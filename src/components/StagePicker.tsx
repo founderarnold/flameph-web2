@@ -9,11 +9,11 @@ export const STAGE_CHOICES = [
 ];
 
 /** Five big buttons; tapping one saves the member's business stage. */
-export function StagePicker({ back = "/account", narrow = false }: { back?: string; narrow?: boolean }) {
+export function StagePicker({ back = "/account", narrow = false, only }: { back?: string; narrow?: boolean; only?: string[] }) {
   return (
     <form action={setStage} className={`mt-3 grid grid-cols-2 gap-2 ${narrow ? "sm:grid-cols-3" : "sm:grid-cols-5"}`}>
       <input type="hidden" name="back" value={back} />
-      {STAGE_CHOICES.map((c) => (
+      {STAGE_CHOICES.filter((c) => !only || only.includes(c.value)).map((c) => (
         <button key={c.value} name="stage" value={c.value} className="rounded-xl border border-line bg-bg p-3 text-left hover:border-primary hover:bg-primary-soft">
           <span className="block font-bold">{c.label}</span>
           <span className="block text-sm text-muted">{c.text}</span>
