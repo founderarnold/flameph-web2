@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { saveProfile } from "../actions";
 import { Notice } from "@/components/ui";
+import { StagePicker } from "@/components/StagePicker";
 import { PROVINCES } from "@/content/ph-provinces";
 
 export default async function Profile({ searchParams }: { searchParams: Promise<{ welcome?: string; error?: string }> }) {
@@ -12,6 +13,13 @@ export default async function Profile({ searchParams }: { searchParams: Promise<
     <div className="max-w-xl">
       <h1 className="text-3xl font-extrabold text-primary">{sp.welcome ? "Maligayang pagdating!" : "My profile"}</h1>
       {sp.welcome && <p className="mt-2 text-muted">Tell us a bit about you so we can send the right resources and events.</p>}
+      {sp.welcome && !p?.business_stage && (
+        <div className="card mt-6 p-5">
+          <h2 className="text-lg font-extrabold">Nasaan na ang negosyo mo?</h2>
+          <p className="mt-1 text-sm text-muted">One tap. You can change it anytime below.</p>
+          <StagePicker back="/account/profile?welcome=1" narrow />
+        </div>
+      )}
       {sp.error === "consent" && <div className="mt-4"><Notice>Please agree to the Privacy Notice to save your profile.</Notice></div>}
       <form action={saveProfile} className="card mt-6 space-y-4 p-5">
         <div><label className="label" htmlFor="fn">Full name *</label><input id="fn" name="full_name" required defaultValue={p?.full_name ?? ""} autoComplete="name" className="input" /></div>

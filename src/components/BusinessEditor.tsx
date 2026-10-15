@@ -4,13 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { SUPABASE_URL } from "@/lib/env";
+import { EXTRA_FIELDS, SOCIALS } from "@/lib/listing";
+import { ListingStrength } from "./ListingStrength";
 
 type Biz = Record<string, unknown> & { id?: string; slug?: string; photos?: string[]; verification_docs?: string[]; verification_status?: string; verified?: boolean; published?: boolean };
 
 const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 50);
 const FIELDS: { name: string; label: string; type?: string; textarea?: boolean; required?: boolean; help?: string }[] = [
   { name: "name", label: "Business name", required: true },
-  { name: "description", label: "About your business", textarea: true, help: "Tip: Ka-FLAME AI's listing writer can help you write this." },
+  { name: "description", label: "About your business", textarea: true, help: "Tip: FLAME AI's listing writer can help you write this." },
   { name: "products", label: "Products & services", textarea: true },
   { name: "city", label: "City / Municipality", required: true },
   { name: "contact_messenger", label: "Facebook page username or m.me link" },
@@ -20,7 +22,10 @@ const FIELDS: { name: string; label: string; type?: string; textarea?: boolean; 
   { name: "marketplaceph_url", label: "Your MarketplacePH store link", type: "url" },
 ];
 
-export function BusinessEditor({ userId, initial, sectors, provinces }: { userId: string; initial: Biz | null; sectors: string[]; provinces: string[] }) {
+const pub = (p: string) => p.startsWith("http") ? p : `${SUPABASE_URL}/storage/v1/object/public/media/${p}`;
+const missingColumn = (m: string) => /column|schema cache/i.test(m) && EXTRA_FIELDS.some((f) => m.includes(f));
+
+export function BusinessEditor({ userId, initial, sectors, provinces, supportsExtras = true }: { userId: string; initial: Biz | null; sectors: string[]; provinces: string[]; supportsExtras?: boolean }) {
   const supabase = createClient();
   const router = useRouter();
   const [biz, setBiz] = useState<Biz>(initial ?? { photos: [], verification_docs: [], published: false });
@@ -42,6 +47,15 @@ export function BusinessEditor({ userId, initial, sectors, provinces }: { userId
     const files = Array.from(e.target.files ?? []).slice(0, 6 - (biz.photos?.length ?? 0));
     setBusy(true);
     try { const paths = await Promise.all(files.map((f) => upload(f, "media"))); set("photos", [...(biz.photos ?? []), ...paths]); }
+    catch (err) { setMsg({ ok: false, text: (err as Error).message }); }
+    setBusy(false);
+  }
+
+  async function onSingle(e: React.ChangeEvent<HTMLInputElement>, key: "logo_url" | "cover_url") {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try { set(key, await upload(file, "media")); }
     catch (err) { setMsg({ ok: false, text: (err as Error).message }); }
     setBusy(false);
   }
@@ -69,21 +83,29 @@ export function BusinessEditor({ userId, initial, sectors, provinces }: { userId
       photos: biz.photos ?? [], verification_docs: biz.verification_docs ?? [], published: Boolean(biz.published),
       verification_status: biz.verification_status === "pending" ? "pending" : (biz.verification_status ?? "none"),
     };
-    let error;
-    if (biz.id) ({ error } = await supabase!.from("businesses").update(payload).eq("id", biz.id));
-    else {
+    const extras = Object.fromEntries(EXTRA_FIELDS.map((f) => {
+      const v = typeof biz[f] === "string" ? String(biz[f]).trim() : "";
+      return [f, !v ? null : f.endsWith("_url") && !f.startsWith("logo") && !f.startsWith("cover") && !/^https?:\/\//i.test(v) ? `https://${v}` : v];
+    }));
+    const write = async (row: Record<string, unknown>) => {
+      if (biz.id) return (await supabase!.from("businesses").update(row).eq("id", biz.id)).error;
       const slug = `${slugify(String(biz.name || "negosyo"))}-${Math.random().toString(36).slice(2, 6)}`;
-      const res = await supabase!.from("businesses").insert({ ...payload, slug }).select("id, slug").single();
-      error = res.error;
+      const res = await supabase!.from("businesses").insert({ ...row, slug }).select("id, slug").single();
       if (res.data) setBiz((b) => ({ ...b, ...res.data }));
-    }
+      return res.error;
+    };
+    let error = await write(supportsExtras ? { ...payload, ...extras } : payload);
+    let partial = false;
+    // Until the 0002 database update runs, the new columns don't exist: save everything else instead of failing.
+    if (error && missingColumn(error.message)) { error = await write(payload); partial = !error; }
     setBusy(false);
     if (error) setMsg({ ok: false, text: error.message });
-    else { setMsg({ ok: true, text: "Saved!" }); router.refresh(); }
+    else { setMsg({ ok: true, text: partial ? "Saved! Logo, hours and links will be saved once FLAME PH finishes a database update." : "Saved!" }); router.refresh(); }
   }
 
   return (
     <form onSubmit={save} className="card mt-6 space-y-4 p-5">
+      <ListingStrength biz={biz} supportsExtras={supportsExtras} />
       {FIELDS.slice(0, 1).map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
       <div>
         <label className="label" htmlFor="sector">Sector</label>
@@ -101,6 +123,22 @@ export function BusinessEditor({ userId, initial, sectors, provinces }: { userId
       <fieldset className="space-y-4 rounded-xl border border-line p-4"><legend className="px-1 font-bold">Contact buttons</legend>
         {FIELDS.slice(4).map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
       </fieldset>
+      {supportsExtras && <>
+        <fieldset className="space-y-4 rounded-xl border border-line p-4"><legend className="px-1 font-bold">Logo & cover photo</legend>
+          <div className="flex flex-wrap gap-6">
+            <ImagePick label="Logo" hint="Square works best." path={biz.logo_url as string | undefined} round onPick={(e) => onSingle(e, "logo_url")} onClear={() => set("logo_url", null)} />
+            <ImagePick label="Cover photo" hint="Wide photo of your shop or products." path={biz.cover_url as string | undefined} onPick={(e) => onSingle(e, "cover_url")} onClear={() => set("cover_url", null)} />
+          </div>
+        </fieldset>
+        <fieldset className="space-y-4 rounded-xl border border-line p-4"><legend className="px-1 font-bold">Opening hours & location</legend>
+          <Input f={{ name: "hours", label: "Opening hours", help: "Example: Mon to Sat, 8am to 6pm" }} v={biz.hours} set={set} />
+          <Input f={{ name: "map_landmark", label: "Landmark or barangay for directions", help: "Something public like \"near Robinsons Place\" or \"Brgy. San Jose\". Never your home address." }} v={biz.map_landmark} set={set} />
+        </fieldset>
+        <fieldset className="space-y-4 rounded-xl border border-line p-4"><legend className="px-1 font-bold">Online links</legend>
+          <p className="text-sm text-muted">Paste your page or shop link, like facebook.com/yourpage</p>
+          {SOCIALS.map((x) => <Input key={x.key} f={{ name: x.key, label: x.label }} v={biz[x.key]} set={set} />)}
+        </fieldset>
+      </>}
       <div>
         <p className="label">Photos (up to 6)</p>
         <div className="flex flex-wrap gap-2">
@@ -130,7 +168,23 @@ export function BusinessEditor({ userId, initial, sectors, provinces }: { userId
   );
 }
 
-function Input({ f, v, set }: { f: (typeof FIELDS)[number]; v: unknown; set: (k: string, v: unknown) => void }) {
+function ImagePick({ label, hint, path, round, onPick, onClear }: { label: string; hint: string; path?: string | null; round?: boolean; onPick: (e: React.ChangeEvent<HTMLInputElement>) => void; onClear: () => void }) {
+  return (
+    <div>
+      <p className="label">{label}</p>
+      {path ? (
+        <div className="relative inline-block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={pub(path)} alt="" className={round ? "h-20 w-20 rounded-full object-cover" : "h-20 w-36 rounded-lg object-cover"} />
+          <button type="button" aria-label={`Remove ${label.toLowerCase()}`} onClick={onClear} className="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full bg-fg text-bg">×</button>
+        </div>
+      ) : <p className="text-sm text-muted">{hint}</p>}
+      <input type="file" accept="image/*" onChange={onPick} className="mt-2 block min-h-11" aria-label={`Upload ${label.toLowerCase()}`} />
+    </div>
+  );
+}
+
+function Input({ f, v, set }: { f: { name: string; label: string; type?: string; textarea?: boolean; required?: boolean; help?: string }; v: unknown; set: (k: string, v: unknown) => void }) {
   const id = `biz-${f.name}`;
   return (
     <div>
