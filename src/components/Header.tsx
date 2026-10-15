@@ -4,6 +4,7 @@ import { Logo } from "./Logo";
 import { DesktopNav } from "./DesktopNav";
 import { MobileMenu } from "./MobileMenu";
 import { LangToggle } from "./LangToggle";
+import { AccountMenu } from "./AccountMenu";
 import { NAV } from "@/lib/nav";
 import { getDict, getLang } from "@/lib/i18n";
 
@@ -20,7 +21,7 @@ export async function Header() {
         <div className="ml-auto flex items-center gap-2">
           <div className="hidden lg:block"><LangToggle lang={lang} /></div>
           {signedIn ? (
-            <Link href="/account" className="btn btn-ghost hidden lg:inline-flex">{t.account}</Link>
+            <AccountMenu label={t.account} />
           ) : (
             <Link href="/login" className="btn btn-ghost hidden lg:inline-flex">{t.login}</Link>
           )}

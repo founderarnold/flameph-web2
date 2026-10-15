@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PageHero, Section, EmptyState, Notice } from "@/components/ui";
 import { meta } from "@/lib/meta";
+import { MemberNav } from "@/components/MemberNav";
 import { getSession } from "@/lib/auth";
 import { createPublicClient } from "@/lib/supabase/server";
 import { mediaUrl } from "@/lib/content";
@@ -26,6 +27,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ j
 
   return (
     <>
+      <MemberNav />
       <PageHero status="live" fil="Sama-samang pagbili" title="Buy Together" path="/deals"
         intro="Members pool their orders so small businesses get wholesale prices. Join a deal to reserve your share. FLAME PH contacts everyone with payment and pickup details once the target is reached." />
       <Section>

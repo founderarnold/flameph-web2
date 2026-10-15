@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import type { NavGroup } from "@/lib/nav";
 import type { Lang } from "@/lib/i18n";
 import { LangToggle } from "./LangToggle";
+import { MEMBER_LINKS, isActive } from "@/lib/member-nav";
 
 type Labels = { menu: string; close: string; login: string; account: string; joinFree: string };
 
@@ -35,6 +36,22 @@ export function MobileMenu({ groups, lang, signedIn, labels }: { groups: NavGrou
             </button>
           </div>
           <nav aria-label="Main" className="flex-1 overflow-y-auto px-4 pb-8">
+            {signedIn && (
+              <details open className="group border-b border-line">
+                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between text-lg font-bold">
+                  {labels.account}
+                  <svg aria-hidden width="16" height="16" viewBox="0 0 12 12" className="transition-transform group-open:rotate-180"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" /></svg>
+                </summary>
+                <ul className="pb-3">
+                  {MEMBER_LINKS.map((it) => (
+                    <li key={it.href}>
+                      <Link href={it.href} aria-current={isActive(pathname, it.href) ? "page" : undefined}
+                        className={`flex min-h-11 items-center rounded-lg px-3 text-base hover:bg-bg-soft ${isActive(pathname, it.href) ? "bg-primary-soft font-semibold text-primary" : "text-muted"}`}>{it.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
             {groups.map((g) => (
               <details key={g.key} className="group border-b border-line">
                 <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between text-lg font-bold">
