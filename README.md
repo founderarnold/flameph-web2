@@ -1,5 +1,19 @@
 # flameph.org
 
+## FLAME PH RideSafe (`/ridesafe`)
+
+The RideSafe route is served at `https://www.flameph.org/ridesafe` after deployment. It currently provides:
+
+- Interactive OpenStreetMap tiles with attribution and zoom controls.
+- Browser geolocation only after a visitor taps the location control; the selected point stays in page memory and is not sent to FLAME PH.
+- Destination entry that hands off to Google Maps or Waze, plus category searches handed off to Google Maps. These providers supply their own routes, traffic and listings; RideSafe does not calculate in-app routes or verify third-party results.
+- Car, motorcycle, EV, hybrid and truck filters, and an emergency flow with a direct `tel:911` action, coordinates, and explicit location sharing.
+- FLAME PH account links. The FLAME PH sign-in is reused on this origin; identity federation across NegosyoDepot, MarketplacePH and ManagersPizza is not configured by this RideSafe change.
+
+The default public OpenStreetMap tile endpoint is suitable for low-volume beta use. Follow the tile provider's usage policy and set `NEXT_PUBLIC_RIDESAFE_MAP_TILE_URL` plus its matching `NEXT_PUBLIC_RIDESAFE_MAP_ATTRIBUTION` before traffic grows. No map API key is needed for the current beta tile layer. The FLAME PH response policy permits geolocation on this same origin.
+
+Verified service listings, in-app directions/traffic, dispatch, saved vehicle/trip data and cross-site SSO still require provider agreements, trusted data, identity setup and backend work. Do not represent these as live.
+
 The website and member platform of **FLAME PH — Federation of Leaders Advancing MSME Ecosystem in the Philippines** (SEC Reg. No. 2024050150009-15).
 
 Next.js (App Router, TypeScript) · Tailwind CSS · Supabase (Postgres, Auth, Storage, Row Level Security) · Anthropic Claude API (Ka-FLAME AI) · Vercel.
