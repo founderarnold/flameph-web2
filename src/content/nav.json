@@ -1,6 +1,7 @@
 [
   { "key": "whatWeDo", "label": "What We Do", "fil": "Ano ang Ginagawa Namin", "items": [
     { "label": "Programs & MSME Ecosystem", "href": "/programs-ecosystem" },
+    { "label": "FLAME PH RideSafe", "href": "/ridesafe" },
     { "label": "FLAME PH Academy", "href": "/academy" },
     { "label": "FLAME PH NegosyoTalks", "href": "/negosyo-talks" },
     { "label": "Educational Workshops", "href": "/workshops" },
