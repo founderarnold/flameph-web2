@@ -6,6 +6,31 @@ import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 type MapView =
   | { mode: "search"; query: string; point?: [number, number] }
   | { mode: "directions"; destination: string; origin: [number, number] | null; point?: [number, number] };
+type MapTheme = "day" | "night";
+
+const dayMapStyle: google.maps.MapTypeStyle[] = [
+  { featureType: "poi", elementType: "labels", stylers: [{ visibility: "on" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#edf2eb" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#f5d78d" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#cfe5e5" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#52675c" }] },
+];
+
+const nightMapStyle: google.maps.MapTypeStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#171c21" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#d2dbe0" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#171c21" }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#3b454c" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#20292c" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#242d30" }] },
+  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#9eb5ad" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#333c44" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#222a30" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#655337" }] },
+  { featureType: "transit", elementType: "geometry", stylers: [{ color: "#2e363d" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#111d28" }] },
+];
 
 let loaderConfigured = false;
 let mapsReady: Promise<google.maps.MapsLibrary> | null = null;
@@ -20,10 +45,11 @@ export async function loadMaps() {
   return mapsReady;
 }
 
-export default function RideSafeMap({ view, position, driving, onRouteSummary }: {
+export default function RideSafeMap({ view, position, driving, theme, onRouteSummary }: {
   view: MapView;
   position: [number, number] | null;
   driving: boolean;
+  theme: MapTheme;
   onRouteSummary: (summary: { distance: string; duration: string } | null) => void;
 }) {
   const canvas = useRef<HTMLDivElement>(null);
@@ -51,7 +77,7 @@ export default function RideSafeMap({ view, position, driving, onRouteSummary }:
         : position ? { lat: position[0], lng: position[1] } : { lat: 14.5547, lng: 121.0244 };
       map.current = new library.Map(canvas.current, {
         center, zoom: 13, mapTypeControl: false, streetViewControl: false, fullscreenControl: true,
-        clickableIcons: true, gestureHandling: "greedy", mapId: "DEMO_MAP_ID",
+        clickableIcons: true, gestureHandling: "greedy", styles: theme === "night" ? nightMapStyle : dayMapStyle,
       });
       if (position) userMarker.current = new google.maps.Marker({ map: map.current, position: { lat: position[0], lng: position[1] }, title: "Your location", zIndex: 1000, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4289e8", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 3 } });
       setMapLoaded(true);
@@ -61,6 +87,10 @@ export default function RideSafeMap({ view, position, driving, onRouteSummary }:
     // Initialize once; later map changes are handled below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey]);
+
+  useEffect(() => {
+    if (mapLoaded && map.current) map.current.setOptions({ styles: theme === "night" ? nightMapStyle : dayMapStyle });
+  }, [mapLoaded, theme]);
 
   useEffect(() => {
     if (!mapLoaded || !map.current || !canvas.current) return;

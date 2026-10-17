@@ -21,3 +21,537 @@ body:has([data-ridesafe-root="true"])>main{max-width:none;margin:0;padding:0}
 @media(max-width:720px){.ridesafe-app .ridesafe-google-map{min-height:350px}.ridesafe-app .map-setup-card{padding:20px}.ridesafe-app .provider-grid{grid-template-columns:1fr}.ridesafe-app .map-unconfigured .map-setup-card{position:relative;right:auto;bottom:auto;width:calc(100% - 24px);margin:12px}.ridesafe-app .map-unconfigured .ridesafe-map-fallback{position:relative;height:350px;min-height:350px}.ridesafe-app .local-provider{gap:6px;padding:8px}.ridesafe-app .local-provider>a,.ridesafe-app .local-provider>button{padding:6px}}
 .ridesafe-app .trip-search{position:relative;z-index:6}.ridesafe-app .autocomplete-results{position:absolute;top:54px;left:0;right:0;max-height:min(45vh,320px);overflow-y:auto;margin:0;overscroll-behavior:contain}.ridesafe-app .route-card{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:12px;border:1px solid #dce9df;border-radius:13px;background:#f5faf6}.ridesafe-app .route-card-copy{display:flex;align-items:center;gap:9px;min-width:0}.ridesafe-app .route-icon{display:grid;width:34px;height:34px;flex:none;place-items:center;border-radius:10px;background:#e2f2e7;color:#176c53;font-size:18px}.ridesafe-app .route-card-copy strong,.ridesafe-app .route-card-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ridesafe-app .route-card-copy strong{color:#183a2b;font-size:11px}.ridesafe-app .route-card-copy small{max-width:250px;margin-top:4px;color:#748279;font-size:9px}.ridesafe-app .route-start,.ridesafe-app .route-end{flex:none;padding:9px 12px;border:0;border-radius:9px;background:#176c53;color:#fff;font-size:10px;font-weight:700}.ridesafe-app .route-start:disabled{opacity:.55;cursor:wait}.ridesafe-app .route-end{background:#f0e9e8;color:#9b3932}.ridesafe-app .provider-category-label{display:block;margin-top:12px;color:#64746b;font-size:10px;font-weight:700}.ridesafe-app .provider-category-select{width:100%;min-height:42px;margin-top:6px;padding:0 11px;border:1px solid #dfe7df;border-radius:10px;background:white;color:#31473b;font-size:12px}.ridesafe-app .provider-main-cta{min-height:42px;font-size:11px}
 @media(max-width:720px){.ridesafe-app .autocomplete-results{max-height:38vh}.ridesafe-app .route-card{align-items:stretch;flex-direction:column}.ridesafe-app .route-card-copy small{max-width:calc(100vw - 112px)}.ridesafe-app .route-start,.ridesafe-app .route-end{width:100%;min-height:43px;font-size:12px}.ridesafe-app .provider-join{padding:15px}.ridesafe-app .provider-category-select{min-height:46px;font-size:14px}.ridesafe-app .provider-main-cta{min-height:46px;font-size:12px}}
+
+
+/* Standalone, map-first RideSafe app shell */
+body:has([data-ridesafe-root="true"]) {
+  overflow: hidden;
+  background: #f3f5f1;
+}
+body:has([data-ridesafe-root="true"][data-theme="night"]) { background: #0d1114; }
+body:has([data-ridesafe-root="true"]) > header,
+body:has([data-ridesafe-root="true"]) > footer,
+body:has([data-ridesafe-root="true"]) > nav[aria-label="Quick links"] {
+  display: none !important;
+}
+body:has([data-ridesafe-root="true"]) > main#main {
+  width: 100%;
+  max-width: none;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+}
+.ridesafe-app[data-theme="day"] {
+  --ink: #15251f;
+  --muted: #697970;
+  --line: #e1e7e1;
+  --green: #176c53;
+  --bg: #f3f5f1;
+  --surface: #fff;
+  --surface-raised: #fff;
+  --surface-muted: #f1f5f1;
+  --field: #f7f9f7;
+  --map-control: #fff;
+  color-scheme: light;
+}
+.ridesafe-app[data-theme="night"] {
+  --ink: #eef2f4;
+  --muted: #a2adb2;
+  --line: #353d43;
+  --green: #45c29b;
+  --bg: #0d1114;
+  --surface: #171c21;
+  --surface-raised: #20262b;
+  --surface-muted: #252c31;
+  --field: #292f34;
+  --map-control: #20262b;
+  color-scheme: dark;
+}
+.ridesafe-app {
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body), Arial, sans-serif;
+  transition: background-color .2s ease, color .2s ease;
+}
+.ridesafe-app .app-shell {
+  display: grid;
+  grid-template-rows: 72px minmax(0, 1fr) 62px 26px;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  min-height: 0;
+  margin: 0;
+  padding: 0 28px;
+}
+.ridesafe-app .ridesafe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+}
+.ridesafe-app .ridesafe-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.ridesafe-app .ridesafe-brand img {
+  display: block;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+.ridesafe-app .ridesafe-brand small,
+.ridesafe-app .ridesafe-brand strong {
+  display: block;
+}
+.ridesafe-app .ridesafe-brand small {
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+.ridesafe-app .ridesafe-brand strong {
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: -.04em;
+}
+.ridesafe-app .header-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ridesafe-app .theme-mode {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.ridesafe-app .theme-mode > span {
+  color: var(--green);
+  font-size: 18px;
+}
+.ridesafe-app .theme-toggle,
+.ridesafe-app .account-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.ridesafe-app .theme-toggle {
+  width: 40px;
+  font-size: 19px;
+}
+.ridesafe-app .account-link {
+  gap: 8px;
+  padding: 4px 11px 4px 5px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.ridesafe-app .account-avatar {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--surface-muted);
+  color: var(--green);
+}
+.ridesafe-app .workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(350px, 390px);
+  gap: 16px;
+  min-height: 0;
+  padding: 14px 0;
+}
+.ridesafe-app .map-panel,
+.ridesafe-app .side-panel {
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 30px #172a2312;
+  color: var(--ink);
+}
+.ridesafe-app .map-panel {
+  height: 100%;
+  border-radius: 20px;
+}
+.ridesafe-app .map-topline {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  width: auto;
+  height: auto;
+  padding: 0;
+}
+.ridesafe-app .location-label {
+  max-width: calc(100% - 52px);
+  padding: 8px 13px 8px 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-raised);
+  box-shadow: 0 3px 14px #111a1a18;
+}
+.ridesafe-app .location-label strong { color: var(--ink); }
+.ridesafe-app .map-icon-button {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: var(--map-control);
+  color: var(--ink);
+  box-shadow: 0 3px 14px #111a1a18;
+}
+.ridesafe-app .ridesafe-map-wrap,
+.ridesafe-app .ridesafe-google-map {
+  min-height: 0;
+  height: 100%;
+}
+.ridesafe-app .map-footer {
+  position: absolute;
+  right: 12px;
+  bottom: 7px;
+  left: 12px;
+  z-index: 2;
+  height: 28px;
+  padding: 0 3px;
+  color: var(--muted);
+  font-size: 10px;
+  pointer-events: none;
+}
+.ridesafe-app .map-footer .live-dot { background: #39b887; }
+.ridesafe-app .map-status {
+  bottom: 12px;
+  left: 12px;
+  border-color: var(--line);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: 11px;
+}
+.ridesafe-app .side-panel {
+  display: block;
+  height: 100%;
+  overflow-y: auto;
+  padding: 22px;
+  border-radius: 20px;
+}
+.ridesafe-app .sheet-grabber { display: none; }
+.ridesafe-app .welcome h1 {
+  color: var(--ink);
+  font-size: 29px;
+}
+.ridesafe-app .welcome p,
+.ridesafe-app .vehicle-row,
+.ridesafe-app .place-copy > p,
+.ridesafe-app .trust-note,
+.ridesafe-app .provider-join p {
+  color: var(--muted);
+}
+.ridesafe-app .search-box {
+  background: var(--field);
+  border-color: var(--line);
+}
+.ridesafe-app .search-box input {
+  background: transparent;
+  color: var(--ink);
+}
+.ridesafe-app .vehicle-switch,
+.ridesafe-app .filter-chip,
+.ridesafe-app .provider-category-select {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+.ridesafe-app .vehicle-switch button { color: var(--muted); }
+.ridesafe-app .vehicle-switch button.selected {
+  background: var(--surface-raised);
+  color: var(--green);
+}
+.ridesafe-app .filter-chip {
+  border-color: var(--line);
+  color: var(--muted);
+}
+.ridesafe-app .filter-chip.active {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+.ridesafe-app .service-row,
+.ridesafe-app .place-card,
+.ridesafe-app .local-provider { border-color: var(--line); }
+.ridesafe-app .service-row h3,
+.ridesafe-app .local-provider strong { color: var(--ink); }
+.ridesafe-app .service-row p,
+.ridesafe-app .local-provider small { color: var(--muted); }
+.ridesafe-app .route-card,
+.ridesafe-app .provider-join,
+.ridesafe-app .local-providers,
+.ridesafe-app .emergency-coordinates {
+  border-color: var(--line);
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+.ridesafe-app .route-card-copy strong { color: var(--ink); }
+.ridesafe-app .route-card-copy small { color: var(--muted); }
+.ridesafe-app .provider-category-label { color: var(--muted); }
+.ridesafe-app .provider-category-select {
+  border-color: var(--line);
+  color: var(--ink);
+}
+.ridesafe-app .ridesafe-dock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.ridesafe-app .dock-item {
+  display: flex;
+  min-width: 72px;
+  min-height: 48px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  text-decoration: none;
+}
+.ridesafe-app .dock-item > span { font-size: 20px; line-height: 1; }
+.ridesafe-app .dock-item small { font-size: 10px; font-weight: 650; }
+.ridesafe-app .dock-item.dock-active { color: var(--green); }
+.ridesafe-app .dock-help {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 14px;
+  background: #e14d47;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.ridesafe-app .dock-help-icon {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border-radius: 9px;
+  background: #ffffff2b;
+  font-size: 18px;
+}
+.ridesafe-app .ridesafe-legal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 9px;
+}
+.ridesafe-app .toast {
+  bottom: 82px;
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+.ridesafe-app .help-modal {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+.ridesafe-app .help-modal h2 { color: var(--ink); }
+.ridesafe-app .help-modal > p,
+.ridesafe-app .modal-footnote { color: var(--muted); }
+.ridesafe-app .close-modal {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+.ridesafe-app .vehicle-help,
+.ridesafe-app .share-location {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+.ridesafe-app .autocomplete-results {
+  border-color: var(--line);
+  background: var(--surface-raised);
+}
+.ridesafe-app .autocomplete-results > button {
+  border-color: var(--line);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+.ridesafe-app .autocomplete-results strong { color: var(--ink); }
+.ridesafe-app .autocomplete-results small { color: var(--muted); }
+
+@media (max-width: 1024px) {
+  .ridesafe-app .app-shell {
+    grid-template-rows: 60px minmax(0, 1fr) 74px;
+    height: 100dvh;
+    padding: 0;
+  }
+  .ridesafe-app .ridesafe-header {
+    position: relative;
+    z-index: 10;
+    height: 60px;
+    padding: 0 14px;
+    border: 0;
+    background: var(--surface);
+  }
+  .ridesafe-app .ridesafe-brand img { width: 38px; height: 38px; }
+  .ridesafe-app .ridesafe-brand strong { font-size: 18px; }
+  .ridesafe-app .workspace {
+    position: relative;
+    display: block;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+  }
+  .ridesafe-app .map-panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .ridesafe-app .map-topline { top: 12px; left: 12px; right: 12px; }
+  .ridesafe-app .ridesafe-map-wrap,
+  .ridesafe-app .ridesafe-google-map { min-height: 0 !important; }
+  .ridesafe-app .map-footer { display: none; }
+  .ridesafe-app .map-provider-note { display: none; }
+  .ridesafe-app .side-panel {
+    position: absolute;
+    z-index: 5;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    max-height: calc(100% - 24px);
+    height: 96px;
+    overflow-y: hidden;
+    padding: 7px 13px 13px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--surface);
+    box-shadow: 0 12px 40px #09110f38;
+    transition: height .22s ease;
+  }
+  .ridesafe-app .side-panel.sheet-open {
+    height: min(48vh, 440px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .ridesafe-app .sheet-grabber {
+    display: grid;
+    width: 100%;
+    height: 15px;
+    place-items: start center;
+    margin: 0 0 5px;
+    border: 0;
+    background: transparent;
+  }
+  .ridesafe-app .sheet-grabber span {
+    width: 38px;
+    height: 4px;
+    border-radius: 9px;
+    background: #9ca7a4;
+  }
+  .ridesafe-app .welcome { display: none; }
+  .ridesafe-app .trip-search { margin: 0; }
+  .ridesafe-app .search-box {
+    height: 50px;
+    border-radius: 16px;
+    padding: 0 11px;
+  }
+  .ridesafe-app .search-box input { font-size: 15px; }
+  .ridesafe-app .search-box > button { width: 35px; height: 35px; font-size: 21px; }
+  .ridesafe-app .route-actions { padding-top: 10px; }
+  .ridesafe-app .route-actions small { font-size: 10px; }
+  .ridesafe-app .route-actions button { min-height: 40px; font-size: 11px; }
+  .ridesafe-app .side-panel.sheet-collapsed .welcome,
+  .ridesafe-app .side-panel.sheet-collapsed .route-actions,
+  .ridesafe-app .side-panel.sheet-collapsed .route-card,
+  .ridesafe-app .side-panel.sheet-collapsed .vehicle-row,
+  .ridesafe-app .side-panel.sheet-collapsed .section-heading,
+  .ridesafe-app .side-panel.sheet-collapsed .filter-row,
+  .ridesafe-app .side-panel.sheet-collapsed .service-list,
+  .ridesafe-app .side-panel.sheet-collapsed .local-providers,
+  .ridesafe-app .side-panel.sheet-collapsed .provider-join,
+  .ridesafe-app .side-panel.sheet-collapsed .trust-note {
+    display: none;
+  }
+  .ridesafe-app .autocomplete-results {
+    top: 56px;
+    max-height: min(34vh, 280px);
+  }
+  .ridesafe-app .route-card { margin-top: 12px; }
+  .ridesafe-app .ridesafe-dock {
+    position: relative;
+    z-index: 10;
+    justify-content: space-around;
+    gap: 3px;
+    min-height: 74px;
+    padding: 4px 7px calc(4px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 22px #111a1a0c;
+  }
+  .ridesafe-app .dock-item { flex: 0 0 58px; min-width: 48px; min-height: 54px; }
+  .ridesafe-app .dock-item > span { font-size: 21px; }
+  .ridesafe-app .dock-item small { font-size: 9px; }
+  .ridesafe-app .dock-help {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 46px;
+    max-width: 190px;
+    padding: 0 9px;
+    border-radius: 15px;
+    font-size: 11px;
+  }
+  .ridesafe-app .dock-help-icon { width: 29px; height: 29px; }
+  .ridesafe-app .ridesafe-legal { display: none; }
+  .ridesafe-app .toast { bottom: calc(88px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 520px) {
+  .ridesafe-app .app-shell { grid-template-rows: 56px minmax(0, 1fr) 72px; }
+  .ridesafe-app .ridesafe-header { height: 56px; padding: 0 10px; }
+  .ridesafe-app .ridesafe-brand { gap: 8px; }
+  .ridesafe-app .ridesafe-brand img { width: 34px; height: 34px; }
+  .ridesafe-app .ridesafe-brand small { font-size: 8px; }
+  .ridesafe-app .ridesafe-brand strong { font-size: 16px; }
+  .ridesafe-app .header-tools { gap: 6px; }
+  .ridesafe-app .theme-mode { font-size: 10px; }
+  .ridesafe-app .theme-toggle { width: 36px; min-height: 36px; }
+  .ridesafe-app .account-link { min-height: 36px; padding-right: 5px; }
+  .ridesafe-app .account-link-label { display: none; }
+  .ridesafe-app .account-avatar { width: 27px; height: 27px; }
+  .ridesafe-app .side-panel { right: 8px; bottom: 8px; left: 8px; }
+  .ridesafe-app .side-panel.sheet-open { height: min(50vh, 430px); }
+  .ridesafe-app .ridesafe-dock { min-height: 72px; padding-right: 4px; padding-left: 4px; }
+  .ridesafe-app .dock-item { flex-basis: 50px; }
+  .ridesafe-app .dock-item small { font-size: 8px; }
+  .ridesafe-app .dock-help { font-size: 10px; }
+  .ridesafe-app .map-topline { top: 9px; left: 9px; right: 9px; }
+  .ridesafe-app .map-topline .location-label strong { max-width: 215px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ridesafe-app *, .ridesafe-app *::before, .ridesafe-app *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
