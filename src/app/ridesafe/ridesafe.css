@@ -78,7 +78,7 @@ body:has([data-ridesafe-root="true"]) > main#main {
 }
 .ridesafe-app .app-shell {
   display: grid;
-  grid-template-rows: 72px minmax(0, 1fr) 62px 26px;
+  grid-template-rows: 72px minmax(0, 1fr) 26px;
   width: 100%;
   max-width: none;
   height: 100dvh;
@@ -313,7 +313,7 @@ body:has([data-ridesafe-root="true"]) > main#main {
   color: var(--ink);
 }
 .ridesafe-app .ridesafe-dock {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   gap: 10px;
@@ -402,7 +402,7 @@ body:has([data-ridesafe-root="true"]) > main#main {
 
 @media (max-width: 1024px) {
   .ridesafe-app .app-shell {
-    grid-template-rows: 60px minmax(0, 1fr) 74px;
+    grid-template-rows: 60px minmax(0, 1fr);
     height: 100dvh;
     padding: 0;
   }
@@ -531,7 +531,7 @@ body:has([data-ridesafe-root="true"]) > main#main {
   .ridesafe-app .toast { bottom: calc(88px + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 520px) {
-  .ridesafe-app .app-shell { grid-template-rows: 56px minmax(0, 1fr) 72px; }
+  .ridesafe-app .app-shell { grid-template-rows: 56px minmax(0, 1fr); }
   .ridesafe-app .ridesafe-header { height: 56px; padding: 0 10px; }
   .ridesafe-app .ridesafe-brand { gap: 8px; }
   .ridesafe-app .ridesafe-brand img { width: 34px; height: 34px; }
