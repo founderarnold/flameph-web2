@@ -605,3 +605,23 @@ body:has([data-ridesafe-root="true"]) > main#main {
   .ridesafe-app.ridesafe-search-mode .recent-heading button { border:0; background:transparent; color:var(--green); font:inherit; }
   .ridesafe-app.ridesafe-search-mode .empty-recents { padding:0 20px; color:var(--muted); font-size:14px; }
 }
+
+.ridesafe-app .driving-guidance { position:absolute; z-index:6; top:68px; left:14px; right:14px; display:flex; align-items:center; gap:13px; min-height:76px; padding:12px 16px; border:1px solid #ffffff24; border-radius:18px; background:#171c21f2; color:#f6f8f9; box-shadow:0 8px 30px #0004; }
+.ridesafe-app .guidance-turn { display:grid; width:46px; height:46px; flex:none; place-items:center; border-radius:13px; background:#252d32; color:#43c3a0; font-size:31px; font-weight:800; }
+.ridesafe-app .driving-guidance small,.ridesafe-app .driving-guidance strong { display:block; }
+.ridesafe-app .driving-guidance small { margin-bottom:4px; color:#43c3a0; font-size:13px; font-weight:750; }
+.ridesafe-app .driving-guidance strong { display:-webkit-box; overflow:hidden; font-size:15px; line-height:1.3; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+.ridesafe-app .driving-speed { position:absolute; z-index:6; bottom:20px; left:18px; display:grid; width:64px; height:64px; align-content:center; justify-items:center; border:2px solid #ffffff28; border-radius:50%; background:#171c21e8; color:#fff; box-shadow:0 4px 16px #0004; }
+.ridesafe-app .driving-speed strong { font-size:22px; line-height:1; }
+.ridesafe-app .driving-speed small { margin-top:3px; color:#b6c0c4; font-size:10px; }
+.ridesafe-app .driving-end-trip { position:absolute; z-index:7; right:16px; bottom:24px; min-height:46px; padding:0 18px; border:0; border-radius:24px; background:#df504c; color:#fff; font-weight:800; box-shadow:0 5px 18px #0004; }
+.ridesafe-app .map-location-pending { display:grid; place-items:center; padding:24px; background:var(--surface-muted); text-align:center; }
+.ridesafe-app .map-location-pending strong { font-size:18px; }
+.ridesafe-app .map-location-pending p { color:var(--muted); font-size:13px; }
+.ridesafe-app .map-location-pending button { min-height:44px; padding:0 16px; border:0; border-radius:12px; background:var(--green); color:#fff; font-weight:750; }
+@media (max-width:1024px) {
+  .ridesafe-app .side-panel.trip-driving { display:none; }
+  .ridesafe-app .driving-guidance { top:62px; left:10px; right:10px; min-height:70px; }
+  .ridesafe-app .driving-speed { bottom:16px; left:14px; }
+  .ridesafe-app .map-panel:has(~ .side-panel.trip-driving) .map-status { display:none; }
+}

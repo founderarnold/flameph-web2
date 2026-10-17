@@ -37,8 +37,11 @@ export default function RideSafeHome() {
   const [searching, setSearching] = useState(false);
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [routeSummary, setRouteSummary] = useState<{ distance: string; duration: string } | null>(null);
+  const [navigationStep, setNavigationStep] = useState<{ instruction: string; distance: string } | null>(null);
+  const [speedKph, setSpeedKph] = useState<number | null>(null);
+  const [heading, setHeading] = useState<number | null>(null);
   const [driving, setDriving] = useState(false);
-  const [mapView, setMapView] = useState<MapView>({ mode: "search", query: "Makati, Metro Manila" });
+  const [mapView, setMapView] = useState<MapView>({ mode: "search", query: "" });
   const [locationState, setLocationState] = useState("Location not shared");
   const [helpOpen, setHelpOpen] = useState(false);
   const [notice, setNotice] = useState("");
@@ -147,7 +150,7 @@ export default function RideSafeHome() {
           pendingRoute.current = null;
           setMapView({ mode: "directions", destination: requestedRoute.destination, origin: point, point: requestedRoute.point });
         } else {
-          setMapView((current) => current.mode === "directions" ? { ...current, origin: point } : { mode: "search", query: "nearby roadside help", point });
+          setMapView((current) => current.mode === "directions" ? { ...current, origin: point } : { mode: "search", query: "", point });
         }
       },
       (error) => {
@@ -158,7 +161,22 @@ export default function RideSafeHome() {
     );
   }, []);
 
+  const requestReroute = useCallback((point: [number, number]) => {
+    setMapView((current) => current.mode === "directions" ? { ...current, origin: point } : current);
+  }, []);
+
   useEffect(() => { locate(); }, [locate]);
+
+  useEffect(() => {
+    if (!driving || !navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(({ coords }) => {
+      setPosition([coords.latitude, coords.longitude]);
+      setSpeedKph(coords.speed === null ? null : Math.max(0, Math.round(coords.speed * 3.6)));
+      setHeading(Number.isFinite(coords.heading) ? coords.heading : null);
+      setLocationState("Driving mode · GPS updating");
+    }, () => setLocationState("GPS signal lost · trying to reconnect"), { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 });
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [driving]);
 
   useEffect(() => {
     const updateTheme = () => setTimeTheme(getLocalTimeTheme());
@@ -194,6 +212,7 @@ export default function RideSafeHome() {
     }
     setDriving(false);
     setMapView({ mode: "directions", destination, origin: position, point });
+    setNavigationStep(null);
     setRouteSummary(null);
     setMobilePanelOpen(true);
   };
@@ -228,11 +247,14 @@ export default function RideSafeHome() {
         <div className="workspace" id="home">
           <section className="map-panel" id="ridesafe-map" aria-label="Google Maps">
             <div className="map-topline"><div className="location-label"><span className="pin-small">⌖</span><span><small>GOOGLE MAPS</small><strong>{locationState}</strong></span></div><button className="map-icon-button" aria-label="Use my current location" onClick={locate}>⌖</button></div>
-            <RideSafeMap view={mapView} position={position} driving={driving} theme={theme} onRouteSummary={setRouteSummary} />
+            <RideSafeMap view={mapView} position={position} heading={heading} driving={driving} theme={theme} onRouteSummary={setRouteSummary} onNavigationStep={setNavigationStep} onRerouteRequest={requestReroute} onRequestLocation={locate} />
+            {driving && <div className="driving-guidance" aria-live="assertive"><span className="guidance-turn">↱</span><span><small>{navigationStep?.distance ?? "Following your route"}</small><strong>{navigationStep?.instruction ?? `Continue toward ${mapView.mode === "directions" ? mapView.destination : "your destination"}`}</strong></span></div>}
+            {driving && <div className="driving-speed" aria-label={speedKph === null ? "Speed unavailable" : `Speed ${speedKph} kilometres per hour`}><strong>{speedKph ?? "—"}</strong><small>km/h</small></div>}
+            {driving && <button type="button" className="driving-end-trip" onClick={() => { setDriving(false); setSpeedKph(null); setLocationState("Your location · just now"); setMobilePanelOpen(true); }}>End trip</button>}
             <div className="map-footer"><span><span className="live-dot" /> Google Maps · in RideSafe</span><span className="map-provider-note">Route and place data by Google</span></div>
           </section>
 
-          <aside className={`side-panel ${mobilePanelOpen ? "sheet-open" : "sheet-collapsed"}`}>
+          <aside className={`side-panel ${mobilePanelOpen ? "sheet-open" : "sheet-collapsed"}${driving ? " trip-driving" : ""}`}>
             <button type="button" className="sheet-grabber" onClick={() => setMobilePanelOpen((open) => !open)} aria-label={mobilePanelOpen ? "Collapse search panel" : "Expand search panel"}><span /></button>
             <section className="welcome"><div><span className="eyebrow">YOUR ROAD COMPANION</span><h1>Where are you<br />headed today?</h1><p>Plan a route or find help nearby.</p></div><span className="sun-mark">✳</span></section>
             <button type="button" className="search-back" onClick={() => { setSearchMode(false); setMobilePanelOpen(false); }} aria-label="Back to map">‹</button>
@@ -257,8 +279,8 @@ export default function RideSafeHome() {
             {mapView.mode === "directions" && <section className="route-card" aria-live="polite">
               <div className="route-card-copy"><span className="route-icon">↗</span><div><strong>{routeSummary ? `${routeSummary.distance} · ${routeSummary.duration}` : "Preparing your driving route…"}</strong><small>{driving ? "Driving mode is on · follow your route on the map" : `To ${mapView.destination}`}</small></div></div>
               {driving
-                ? <button type="button" className="route-end" onClick={() => { setDriving(false); setLocationState("Your location · just now"); }}>End trip</button>
-                : <button type="button" className="route-start" disabled={!routeSummary || !position} onClick={() => { if (!position) { tell("Allow location access to start driving mode."); locate(); return; } setDriving(true); setLocationState("Driving mode · location updating"); }}>Start Driving <span>→</span></button>}
+                ? <button type="button" className="route-end" onClick={() => { setDriving(false); setSpeedKph(null); setLocationState("Your location · just now"); setMobilePanelOpen(true); }}>End trip</button>
+                : <button type="button" className="route-start" disabled={!routeSummary || !position} onClick={() => { if (!position) { tell("Allow location access to start driving mode."); locate(); return; } setMobilePanelOpen(false); setDriving(true); setLocationState("Driving mode · location updating"); }}>Start Driving <span>→</span></button>}
             </section>}
             <div className="vehicle-row"><span>Vehicle</span><div className="vehicle-switch" role="group" aria-label="Choose vehicle">{vehicles.map((item) => <button type="button" key={item} className={vehicle === item ? "selected" : ""} onClick={() => setVehicle(item)}>{item === "EV" ? "ϟ" : item === "Motorcycle" ? "⌁" : item === "Car" ? "▰" : "◈"}<span>{item}</span></button>)}</div></div>
             <div className="section-heading"><div><span className="eyebrow">SEARCH NEAR YOU</span><h2>Find a service</h2></div><button type="button" className="text-button" onClick={() => mapSearch(query || "roadside assistance")}>Search map <span>↗</span></button></div>
