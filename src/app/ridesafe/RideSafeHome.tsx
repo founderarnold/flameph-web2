@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import RideSafeMap, { loadMaps } from "./RideSafeMap";
 
@@ -28,6 +28,8 @@ export default function RideSafeHome() {
   const [suggestions, setSuggestions] = useState<google.maps.places.PlacePrediction[]>([]);
   const [searching, setSearching] = useState(false);
   const [position, setPosition] = useState<[number, number] | null>(null);
+  const [routeSummary, setRouteSummary] = useState<{ distance: string; duration: string } | null>(null);
+  const [driving, setDriving] = useState(false);
   const [mapView, setMapView] = useState<MapView>({ mode: "search", query: "Makati, Metro Manila" });
   const [locationState, setLocationState] = useState("Location not shared");
   const [helpOpen, setHelpOpen] = useState(false);
@@ -35,6 +37,8 @@ export default function RideSafeHome() {
   const [filter, setFilter] = useState("All");
   const [copied, setCopied] = useState(false);
   const [providers, setProviders] = useState<RideSafeProvider[]>([]);
+  const pendingRoute = useRef<{ destination: string; point?: [number, number] } | null>(null);
+  const [providerCategory, setProviderCategory] = useState(categories[0].provider);
   const tell = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(""), 3500); };
 
   useEffect(() => {
@@ -83,12 +87,23 @@ export default function RideSafeHome() {
         const point: [number, number] = [coords.latitude, coords.longitude];
         setPosition(point);
         setLocationState("Your location · just now");
-        setMapView((current) => current.mode === "directions" ? { ...current, origin: point } : { mode: "search", query: "nearby roadside help", point });
+        const requestedRoute = pendingRoute.current;
+        if (requestedRoute) {
+          pendingRoute.current = null;
+          setMapView({ mode: "directions", destination: requestedRoute.destination, origin: point, point: requestedRoute.point });
+        } else {
+          setMapView((current) => current.mode === "directions" ? { ...current, origin: point } : { mode: "search", query: "nearby roadside help", point });
+        }
       },
-      (error) => setLocationState(error.code === error.PERMISSION_DENIED ? "Location permission denied" : "Could not get location"),
+      (error) => {
+        pendingRoute.current = null;
+        setLocationState(error.code === error.PERMISSION_DENIED ? "Location permission denied" : "Could not get location");
+      },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
     );
   }, []);
+
+  useEffect(() => { locate(); }, [locate]);
 
   const mapSearch = (search: string) => {
     const term = [search, vehicle === "Motorcycle" ? "motorcycle" : vehicle === "EV" ? "electric vehicle" : ""].filter(Boolean).join(" ");
@@ -98,10 +113,17 @@ export default function RideSafeHome() {
 
   const openRoute = () => {
     if (!query.trim()) { tell("Type a destination and choose a Google Maps suggestion first."); return; }
-    if (!position) { tell("Tap My location first so RideSafe can show a driving route."); locate(); return; }
     const point = mapView.mode === "search" ? mapView.point : undefined;
+    if (!position) {
+      pendingRoute.current = { destination: query.trim(), point };
+      tell("Finding your location, then we’ll show your route.");
+      locate();
+      return;
+    }
+    setDriving(false);
     setMapView({ mode: "directions", destination: query.trim(), origin: position, point });
-    document.querySelector("#ridesafe-map")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    setRouteSummary(null);
+    document.querySelector("#ridesafe-map")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const shareLocation = async () => {
@@ -122,7 +144,7 @@ export default function RideSafeHome() {
         <div className="workspace" id="home">
           <section className="map-panel" id="ridesafe-map" aria-label="Google Maps">
             <div className="map-topline"><div className="location-label"><span className="pin-small">⌖</span><span><small>GOOGLE MAPS</small><strong>{locationState}</strong></span></div><button className="map-icon-button" aria-label="Use my current location" onClick={locate}>⌖</button></div>
-            <RideSafeMap view={mapView} position={position} />
+            <RideSafeMap view={mapView} position={position} driving={driving} onRouteSummary={setRouteSummary} />
             <div className="map-footer"><span><span className="live-dot" /> Google Maps · in RideSafe</span><span className="map-provider-note">Route and place data by Google</span></div>
           </section>
 
@@ -134,12 +156,18 @@ export default function RideSafeHome() {
               {!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && <p className="api-key-hint">Google Maps suggestions will activate when the Maps API key is configured.</p>}
               <div className="route-actions"><small>Choose a Google Maps suggestion for the best match</small><button type="submit">Show driving route <span>↑</span></button></div>
             </form>
+            {mapView.mode === "directions" && <section className="route-card" aria-live="polite">
+              <div className="route-card-copy"><span className="route-icon">↗</span><div><strong>{routeSummary ? `${routeSummary.distance} · ${routeSummary.duration}` : "Preparing your driving route…"}</strong><small>{driving ? "Driving mode is on · follow your route on the map" : `To ${mapView.destination}`}</small></div></div>
+              {driving
+                ? <button type="button" className="route-end" onClick={() => { setDriving(false); setLocationState("Your location · just now"); }}>End trip</button>
+                : <button type="button" className="route-start" disabled={!routeSummary || !position} onClick={() => { if (!position) { tell("Allow location access to start driving mode."); locate(); return; } setDriving(true); setLocationState("Driving mode · location updating"); }}>Start Driving <span>→</span></button>}
+            </section>}
             <div className="vehicle-row"><span>Vehicle</span><div className="vehicle-switch" role="group" aria-label="Choose vehicle">{vehicles.map((item) => <button type="button" key={item} className={vehicle === item ? "selected" : ""} onClick={() => setVehicle(item)}>{item === "EV" ? "ϟ" : item === "Motorcycle" ? "⌁" : item === "Car" ? "▰" : "◈"}<span>{item}</span></button>)}</div></div>
             <div className="section-heading"><div><span className="eyebrow">SEARCH NEAR YOU</span><h2>Find a service</h2></div><button type="button" className="text-button" onClick={() => mapSearch(query || "roadside assistance")}>Search map <span>↗</span></button></div>
             <div className="filter-row" aria-label="Filter service categories">{["All", ...categories.map((item) => item.title)].map((item) => <button type="button" key={item} className={`filter-chip ${filter === item ? "active" : ""}`} onClick={() => setFilter(item)}>{item}</button>)}</div>
             <div className="service-list">{visibleCategories.map((item) => <article className="service-row" key={item.title}><span className={`place-icon ${item.tone}`}>{item.icon}</span><div><h3>{item.title}</h3><p>Google Maps results · verify details before travelling</p></div><button type="button" aria-label={`Search ${item.title} on Google Maps`} onClick={() => mapSearch(item.query)}>Find <span>↗</span></button></article>)}</div>
             {providers.length > 0 && <section className="local-providers" aria-label="RideSafe providers"><div className="local-providers-heading"><strong>FLAME PH RideSafe providers</strong><span>Member businesses</span></div>{providers.filter((business) => filter === "All" || business.products?.toLowerCase().includes(categories.find((item) => item.title === filter)?.provider.toLowerCase() ?? filter.toLowerCase())).map((business) => <article className="local-provider" key={business.id}><span className="provider-pin">✦</span><div><strong>{business.name}</strong><small>{[business.city, business.province].filter(Boolean).join(" · ") || "Philippines"}</small>{business.products && <small>{business.products.replace(/^.*RideSafe provider service:\s*/i, "")}</small>}</div>{business.contact_phone && <a href={`tel:${business.contact_phone}`} aria-label={`Call ${business.name}`}>Call</a>}<button type="button" aria-label={`Find ${business.name} on the map`} onClick={() => mapSearch(`${business.name} ${business.city ?? ""} ${business.province ?? ""}`)}>Map ↗</button></article>)}</section>}
-            <div className="provider-join"><div><span className="eyebrow">BUSINESS OWNERS</span><h2>Help drivers find you</h2><p>Join RideSafe using your FLAME PH account and add your service to your business listing.</p></div><div className="provider-grid">{categories.map((item) => <Link key={item.provider} href={`/ridesafe/providers/apply?category=${encodeURIComponent(item.provider)}`} className="provider-signup">+ {item.provider}<span>Join ↗</span></Link>)}</div><Link href="/ridesafe/providers/apply?category=Roadside%20assistance" className="provider-main-cta">Add a roadside service <span>→</span></Link></div>
+            <div className="provider-join"><div><span className="eyebrow">BUSINESS OWNERS</span><h2>Help drivers find you</h2><p>Join RideSafe using your FLAME PH account and add your service to your business listing.</p></div><label className="provider-category-label" htmlFor="provider-category">What kind of business do you run?</label><select id="provider-category" className="provider-category-select" value={providerCategory} onChange={(event) => setProviderCategory(event.target.value)}>{categories.map((item) => <option key={item.provider} value={item.provider}>{item.provider}</option>)}<option value="Roadside assistance">Other roadside assistance</option></select><Link href={`/ridesafe/providers/apply?category=${encodeURIComponent(providerCategory)}`} className="provider-main-cta">Continue to business signup <span>→</span></Link></div>
             <div className="trust-note"><span>✦</span><p>Search results are supplied by Google Maps. FLAME PH has not verified these listings.</p></div>
           </aside>
         </div>

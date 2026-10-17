@@ -20,11 +20,18 @@ export async function loadMaps() {
   return mapsReady;
 }
 
-export default function RideSafeMap({ view, position }: { view: MapView; position: [number, number] | null }) {
+export default function RideSafeMap({ view, position, driving, onRouteSummary }: {
+  view: MapView;
+  position: [number, number] | null;
+  driving: boolean;
+  onRouteSummary: (summary: { distance: string; duration: string } | null) => void;
+}) {
   const canvas = useRef<HTMLDivElement>(null);
   const map = useRef<google.maps.Map | null>(null);
   const routeLines = useRef<google.maps.Polyline[]>([]);
   const markers = useRef<google.maps.Marker[]>([]);
+  const userMarker = useRef<google.maps.Marker | null>(null);
+  const cameraBounds = useRef<google.maps.LatLngBounds | google.maps.LatLngBoundsLiteral | null>(null);
   const [status, setStatus] = useState("Loading Google Maps…");
   const [mapLoaded, setMapLoaded] = useState(false);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -46,6 +53,7 @@ export default function RideSafeMap({ view, position }: { view: MapView; positio
         center, zoom: 13, mapTypeControl: false, streetViewControl: false, fullscreenControl: true,
         clickableIcons: true, gestureHandling: "greedy", mapId: "DEMO_MAP_ID",
       });
+      if (position) userMarker.current = new google.maps.Marker({ map: map.current, position: { lat: position[0], lng: position[1] }, title: "Your location", zIndex: 1000, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4289e8", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 3 } });
       setMapLoaded(true);
       setStatus("Google Maps is ready");
     }).catch(() => { if (active) setStatus("Google Maps could not load. Check the API key and enabled APIs."); });
@@ -55,11 +63,46 @@ export default function RideSafeMap({ view, position }: { view: MapView; positio
   }, [apiKey]);
 
   useEffect(() => {
+    if (!mapLoaded || !map.current || !canvas.current) return;
+    const resizeObserver = new ResizeObserver(() => {
+      if (!map.current) return;
+      google.maps.event.trigger(map.current, "resize");
+      if (cameraBounds.current) map.current.fitBounds(cameraBounds.current, 48);
+    });
+    resizeObserver.observe(canvas.current);
+    return () => resizeObserver.disconnect();
+  }, [mapLoaded]);
+
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !position) return;
+    const location = { lat: position[0], lng: position[1] };
+    if (!userMarker.current) userMarker.current = new google.maps.Marker({ map: map.current, position: location, title: "Your location", zIndex: 1000, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4289e8", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 3 } });
+    else userMarker.current.setPosition(location);
+    if (driving) map.current.panTo(location);
+  }, [driving, mapLoaded, position]);
+
+  useEffect(() => {
+    if (!driving || !navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(({ coords }) => {
+      const currentPosition: [number, number] = [coords.latitude, coords.longitude];
+      // Keep the route's original start point stable while following the driver.
+      if (map.current) {
+        const location = { lat: currentPosition[0], lng: currentPosition[1] };
+        if (!userMarker.current) userMarker.current = new google.maps.Marker({ map: map.current, position: location, title: "Your location", zIndex: 1000, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4289e8", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 3 } });
+        else userMarker.current.setPosition(location);
+        map.current.panTo(location);
+      }
+    }, () => setStatus("Driving mode needs location access to follow you on the map."), { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 });
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [driving]);
+
+  useEffect(() => {
     if (!mapLoaded || !map.current) return;
     if (view.point) map.current.panTo({ lat: view.point[0], lng: view.point[1] });
     routeLines.current.forEach((line) => line.setMap(null));
     routeLines.current = [];
     if (view.mode === "directions") {
+      onRouteSummary(null);
       if (!view.origin) {
         map.current.setZoom(14);
         setStatus("Choose My location first to show a driving route.");
@@ -80,14 +123,21 @@ export default function RideSafeMap({ view, position }: { view: MapView; positio
         routeLines.current = route.createPolylines({
           polylineOptions: { map: map.current, strokeColor: "#0f766e", strokeOpacity: 0.95, strokeWeight: 6 },
         });
-        if (route.viewport) map.current.fitBounds(route.viewport);
+        if (route.viewport) {
+          cameraBounds.current = route.viewport;
+          map.current.fitBounds(route.viewport, 48);
+        }
         const values = route.localizedValues;
+        onRouteSummary({ distance: values?.distance ?? "Route ready", duration: values?.duration ?? "" });
         setStatus(values?.distance && values.duration
           ? `Driving route · ${values.distance} · ${values.duration}`
           : "Driving route ready");
-      }).catch(() => setStatus("No driving route found. Check that Routes API is enabled, then try a nearby destination."));
+      }).catch(() => { onRouteSummary(null); setStatus("No driving route found. Check that Routes API is enabled, then try a nearby destination."); });
       return;
     }
+
+    cameraBounds.current = null;
+    onRouteSummary(null);
 
     for (const marker of markers.current) marker.setMap(null);
     markers.current = [];
@@ -115,7 +165,7 @@ export default function RideSafeMap({ view, position }: { view: MapView; positio
         setStatus(`${found.length} Google Maps results for ${term}`);
       } else setStatus(`No nearby Google Maps results for ${term}. Try another search.`);
     }).catch(() => setStatus("Could not search nearby places. Please try again."));
-  }, [mapLoaded, view, position]);
+  }, [mapLoaded, view, onRouteSummary]);
 
   if (!apiKey) return <div className="ridesafe-map-wrap map-unconfigured"><iframe className="ridesafe-google-map ridesafe-map-fallback" src={`https://www.google.com/maps?${fallbackParams.toString()}`} title="Google Maps fallback preview" loading="lazy" referrerPolicy="strict-origin-when-cross-origin" /><div className="map-setup-card"><span className="setup-icon">⌖</span><strong>Interactive map setup needed</strong><p>The current map preview still works. Add <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> in Vercel with website restrictions for <code>flameph.org</code>, and enable Maps JavaScript API, Places API (New), and Routes API to turn on live suggestions, nearby results, and in-page driving routes.</p><a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank" rel="noreferrer">Google Maps setup guide ↗</a></div></div>;
 
