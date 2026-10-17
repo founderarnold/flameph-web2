@@ -555,3 +555,53 @@ body:has([data-ridesafe-root="true"]) > main#main {
 @media (prefers-reduced-motion: reduce) {
   .ridesafe-app *, .ridesafe-app *::before, .ridesafe-app *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+/* RideSafe-only menu and Waze-inspired destination search. */
+.ridesafe-app .ridesafe-menu-button { display:flex; width:40px; height:40px; flex:none; flex-direction:column; align-items:center; justify-content:center; gap:5px; border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink); cursor:pointer; }
+.ridesafe-app .ridesafe-menu-button span { width:17px; height:2px; border-radius:2px; background:currentColor; }
+.ridesafe-app .search-back,.ridesafe-app .destination-tools { display:none; }
+.ridesafe-app .ridesafe-menu-backdrop { position:fixed; z-index:1000; inset:0; display:flex; align-items:stretch; background:#07100d80; }
+.ridesafe-app .ridesafe-menu { width:min(340px,88vw); padding:calc(16px + env(safe-area-inset-top)) 18px calc(20px + env(safe-area-inset-bottom)); background:var(--surface); color:var(--ink); box-shadow:12px 0 44px #0003; }
+.ridesafe-app .ridesafe-menu-top { display:flex; align-items:center; justify-content:space-between; padding:4px 0 18px; margin-bottom:12px; border-bottom:1px solid var(--line); }
+.ridesafe-app .ridesafe-menu-top small,.ridesafe-app .ridesafe-menu-top strong { display:block; }
+.ridesafe-app .ridesafe-menu-top small { color:var(--muted); font-size:10px; letter-spacing:.12em; }
+.ridesafe-app .ridesafe-menu-top strong { font-size:20px; }
+.ridesafe-app .ridesafe-menu-top button { width:38px; height:38px; border:0; border-radius:12px; background:var(--surface-muted); color:var(--ink); font-size:24px; }
+.ridesafe-app .ridesafe-menu > button,.ridesafe-app .ridesafe-menu > a { display:flex; width:100%; min-height:54px; align-items:center; gap:16px; padding:0 8px; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--ink); font:inherit; font-size:19px; text-align:left; text-decoration:none; cursor:pointer; }
+.ridesafe-app .ridesafe-menu > button span,.ridesafe-app .ridesafe-menu > a span { font-size:14px; font-weight:650; }
+@media (max-width:1024px) {
+  .ridesafe-app .ridesafe-header { justify-content:flex-start; gap:10px; }
+  .ridesafe-app .header-tools { margin-left:auto; }
+  .ridesafe-app .ridesafe-menu-button { width:36px; height:36px; }
+  .ridesafe-app.ridesafe-search-mode { position:fixed; z-index:30; inset:0; height:var(--ridesafe-app-height,100dvh); min-height:0; }
+  .ridesafe-app.ridesafe-search-mode .app-shell { display:block; height:var(--ridesafe-app-height,100dvh); min-height:0; }
+  .ridesafe-app.ridesafe-search-mode .ridesafe-header,.ridesafe-app.ridesafe-search-mode .ridesafe-dock,.ridesafe-app.ridesafe-search-mode .ridesafe-legal { display:none; }
+  .ridesafe-app.ridesafe-search-mode .workspace { position:absolute; inset:0; height:100%; }
+  .ridesafe-app.ridesafe-search-mode .map-panel { display:none; }
+  .ridesafe-app.ridesafe-search-mode .side-panel { position:absolute; inset:0; width:100%; height:100%; max-height:none; overflow-y:auto; padding:calc(12px + env(safe-area-inset-top)) 0 calc(20px + env(safe-area-inset-bottom)); border:0; border-radius:0; box-shadow:none; background:var(--surface); }
+  .ridesafe-app.ridesafe-search-mode .sheet-grabber,.ridesafe-app.ridesafe-search-mode .welcome { display:none; }
+  .ridesafe-app.ridesafe-search-mode .search-back { display:block; position:absolute; z-index:4; top:calc(18px + env(safe-area-inset-top)); left:16px; width:30px; height:42px; border:0; background:transparent; color:var(--muted); font-size:34px; line-height:1; }
+  .ridesafe-app.ridesafe-search-mode .trip-search { position:sticky; top:0; z-index:3; padding:calc(8px + env(safe-area-inset-top)) 16px 8px 52px; background:var(--surface); }
+  .ridesafe-app.ridesafe-search-mode .search-box { height:54px; border-radius:28px; padding:0 11px 0 13px; }
+  .ridesafe-app.ridesafe-search-mode .search-box > button,.ridesafe-app.ridesafe-search-mode .route-actions,.ridesafe-app.ridesafe-search-mode .api-key-hint { display:none; }
+  .ridesafe-app.ridesafe-search-mode .search-box input { font-size:16px; }
+  .ridesafe-app.ridesafe-search-mode .autocomplete-results { position:relative; top:auto; left:auto; right:auto; max-height:38vh; margin-top:7px; border-radius:14px; box-shadow:0 8px 24px #0001; }
+  .ridesafe-app.ridesafe-search-mode .destination-tools { display:block; padding:10px 0 24px; }
+  .ridesafe-app.ridesafe-search-mode .quick-place-row { display:flex; gap:10px; overflow-x:auto; padding:4px 16px 13px; scrollbar-width:none; }
+  .ridesafe-app.ridesafe-search-mode .quick-place-row::-webkit-scrollbar { display:none; }
+  .ridesafe-app.ridesafe-search-mode .quick-place { display:flex; min-width:88px; height:90px; flex-direction:column; align-items:center; justify-content:center; gap:8px; border:1px solid var(--line); border-radius:16px; background:var(--surface); color:var(--ink); }
+  .ridesafe-app.ridesafe-search-mode .quick-place > span { color:var(--green); font-size:24px; font-weight:800; }
+  .ridesafe-app.ridesafe-search-mode .quick-place small { font-size:13px; font-weight:650; }
+  .ridesafe-app.ridesafe-search-mode .saved-place-list { border-top:1px solid var(--line); }
+  .ridesafe-app.ridesafe-search-mode .destination-row { display:flex; width:100%; min-height:74px; align-items:center; gap:14px; padding:10px 20px; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--ink); text-align:left; }
+  .ridesafe-app.ridesafe-search-mode .destination-icon { display:grid; width:34px; flex:none; place-items:center; color:var(--ink); font-size:23px; }
+  .ridesafe-app.ridesafe-search-mode .destination-row > span:nth-child(2) { display:block; min-width:0; flex:1; }
+  .ridesafe-app.ridesafe-search-mode .destination-row strong,.ridesafe-app.ridesafe-search-mode .destination-row small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ridesafe-app.ridesafe-search-mode .destination-row strong { font-size:17px; }
+  .ridesafe-app.ridesafe-search-mode .destination-row small { margin-top:4px; color:var(--muted); font-size:13px; }
+  .ridesafe-app.ridesafe-search-mode .destination-row > b { color:var(--green); font-size:24px; }
+  .ridesafe-app.ridesafe-search-mode .destination-arrow { color:var(--muted); font-size:20px; }
+  .ridesafe-app.ridesafe-search-mode .recent-heading { display:flex; justify-content:space-between; padding:17px 20px 5px; color:var(--muted); font-size:14px; }
+  .ridesafe-app.ridesafe-search-mode .recent-heading button { border:0; background:transparent; color:var(--green); font:inherit; }
+  .ridesafe-app.ridesafe-search-mode .empty-recents { padding:0 20px; color:var(--muted); font-size:14px; }
+}
