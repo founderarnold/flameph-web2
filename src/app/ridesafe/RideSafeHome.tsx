@@ -243,10 +243,10 @@ export default function RideSafeHome() {
               <div className="route-actions"><small>Choose a Google Maps suggestion for the best match</small><button type="submit">Show driving route <span>↑</span></button></div>
             </form>
             <section className="destination-tools" aria-label="Places and recent destinations">
-              <div className="quick-place-row">
+              {query.trim().length > 0 && <div className="quick-place-row">
                 {[{ name: "Saved", icon: "▣", action: () => document.querySelector("#ridesafe-saved-places")?.scrollIntoView({ block: "nearest" }) }, { name: "Crisis", icon: "⌂", action: () => setHelpOpen(true) }, { name: "Gas", icon: "⛽", action: () => mapSearch("gas station") }, { name: "Food", icon: "♨", action: () => mapSearch("restaurant") }, { name: "Parking", icon: "P", action: () => mapSearch("parking") }, ...(moreSearchesOpen ? [{ name: "Hospitals", icon: "+", action: () => mapSearch("hospital") }, { name: "Towing", icon: "↗", action: () => mapSearch("towing service") }, { name: "Charging", icon: "ϟ", action: () => mapSearch("EV charging station") }] : [])].map((item) => <button type="button" className="quick-place" key={item.name} onClick={item.action}><span>{item.icon}</span><small>{item.name}</small></button>)}
                 <button type="button" className="quick-place quick-more" onClick={() => setMoreSearchesOpen((open) => !open)}><span>{moreSearchesOpen ? "−" : "•••"}</span><small>{moreSearchesOpen ? "Less" : "More"}</small></button>
-              </div>
+              </div>}
               <div className="saved-place-list" id="ridesafe-saved-places">
                 {(["home", "work"] as const).map((key) => <button type="button" className="destination-row" key={key} onClick={() => savedPlaces[key] ? openRoute(savedPlaces[key]!.address, savedPlaces[key]!.point) : (setSaveNextAs(key), setQuery(""), tell(`Search for your ${key} address, then choose a result to save it.`), window.setTimeout(() => document.querySelector<HTMLInputElement>("#ridesafe-destination")?.focus({ preventScroll: true }), 40))}><span className="destination-icon">{key === "home" ? "⌂" : "▣"}</span><span><strong>{savedPlaces[key]?.label ?? (key === "home" ? "Home" : "Work")}</strong><small>{savedPlaces[key]?.address ?? `Tap to add your ${key} address`}</small></span>{!savedPlaces[key] && <b>+</b>}</button>)}
               </div>
