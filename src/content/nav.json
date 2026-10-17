@@ -1,7 +1,6 @@
 [
   { "key": "whatWeDo", "label": "What We Do", "fil": "Ano ang Ginagawa Namin", "items": [
     { "label": "Programs & MSME Ecosystem", "href": "/programs-ecosystem" },
-    { "label": "FLAME PH RideSafe", "href": "/ridesafe" },
     { "label": "FLAME PH Academy", "href": "/academy" },
     { "label": "FLAME PH NegosyoTalks", "href": "/negosyo-talks" },
     { "label": "Educational Workshops", "href": "/workshops" },
@@ -10,6 +9,7 @@
     { "label": "Annual Awards for MSMEs", "href": "/awards" }
   ]},
   { "key": "membership", "label": "Membership", "fil": "Membership", "items": [
+    { "label": "Free RideSafe App", "href": "/ridesafe" },
     { "label": "Avail Free MSME Benefits", "href": "/membership/free-benefits" },
     { "label": "Get More MSME Benefits", "href": "/membership/more-benefits" },
     { "label": "Resources", "href": "/resources" },

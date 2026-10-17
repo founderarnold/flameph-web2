@@ -4,13 +4,13 @@
 
 The RideSafe route is served at `https://www.flameph.org/ridesafe` after deployment. It currently provides:
 
-- Interactive OpenStreetMap tiles with attribution and zoom controls.
+- Interactive Google Maps embedded inside RideSafe, including in-app map searches and route results.
 - Browser geolocation only after a visitor taps the location control; the selected point stays in page memory and is not sent to FLAME PH.
-- Destination entry that hands off to Google Maps or Waze, plus category searches handed off to Google Maps. These providers supply their own routes, traffic and listings; RideSafe does not calculate in-app routes or verify third-party results.
+- Destination entry, service-category search and emergency roadside search update the embedded Google Map instead of opening a new tab. Google supplies its own routes, traffic and listings; RideSafe does not verify third-party results.
 - Car, motorcycle, EV, hybrid and truck filters, and an emergency flow with a direct `tel:911` action, coordinates, and explicit location sharing.
 - FLAME PH account links. The FLAME PH sign-in is reused on this origin; identity federation across NegosyoDepot, MarketplacePH and ManagersPizza is not configured by this RideSafe change.
 
-The default public OpenStreetMap tile endpoint is suitable for low-volume beta use. Follow the tile provider's usage policy and set `NEXT_PUBLIC_RIDESAFE_MAP_TILE_URL` plus its matching `NEXT_PUBLIC_RIDESAFE_MAP_ATTRIBUTION` before traffic grows. No map API key is needed for the current beta tile layer. The FLAME PH response policy permits geolocation on this same origin.
+The map is embedded through Google Maps. Its signed-in account depends on the Google session and cookie settings in the visitor's browser; FLAME PH authentication does not provide Google credentials to the embedded map. The FLAME PH response policy permits geolocation on this same origin.
 
 Verified service listings, in-app directions/traffic, dispatch, saved vehicle/trip data and cross-site SSO still require provider agreements, trusted data, identity setup and backend work. Do not represent these as live.
 
