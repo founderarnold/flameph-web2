@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const client = sp.get("client") ?? "";
   const back = allowedReturn(client, sp.get("return"));
-  if (!ssoEnabled() || !back) return new NextResponse("Unknown site", { status: 400 });
+  if (!ssoEnabled(client) || !back) return new NextResponse("Unknown site", { status: 400 });
 
   const callback = new URL(CLIENTS[client].callback);
   callback.searchParams.set("next", back);

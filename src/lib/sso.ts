@@ -11,33 +11,43 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const HUB = "flameph";
 
-type Client = { callback: string; origins: string[] };
+/** `secretEnv`: a site that has its own shared secret instead of SSO_SECRET (the same value is set in both projects). */
+type Client = { callback: string; origins: string[]; secretEnv?: string };
 export const CLIENTS: Record<string, Client> = {
   marketplaceph: { callback: "https://www.marketplaceph.com/auth/flame", origins: ["https://www.marketplaceph.com", "https://marketplaceph.com"] },
   negosyodepot: { callback: "https://www.negosyodepot.com/auth/flame", origins: ["https://www.negosyodepot.com", "https://negosyodepot.com"] },
+  managerspizza: {
+    callback: "https://www.managerspizza.com/auth/flame",
+    origins: ["https://www.managerspizza.com", "https://managerspizza.com"],
+    secretEnv: "SSO_SECRET_MANAGERSPIZZA",
+  },
 };
 
 export type SsoClaims = { iss: string; aud: string; email: string; name?: string; iat: number; exp: number };
 
-const secret = () => {
-  const s = process.env.SSO_SECRET;
+/** The secret shared with one site (its own, or SSO_SECRET). */
+const secret = (client?: string) => {
+  const env = (client && CLIENTS[client]?.secretEnv) || "SSO_SECRET";
+  const s = process.env[env];
   return s && s.length >= 32 ? s : null; // refuse to run with a missing or weak secret
 };
-export const ssoEnabled = () => secret() !== null;
+export const ssoEnabled = (client?: string) => secret(client) !== null;
+/** The site at the other end of a token: the audience when the hub signs, the issuer when a site signs. */
+const peer = (c: { iss?: string; aud: string }) => (c.aud === HUB ? c.iss : c.aud);
 
 const b64 = (b: Buffer | string) => Buffer.from(b).toString("base64url");
 const mac = (key: string, data: string) => createHmac("sha256", key).update(data).digest();
 
 export function signToken(c: Omit<SsoClaims, "iat" | "exp">, ttlSeconds = 120): string {
-  const key = secret();
-  if (!key) throw new Error("SSO_SECRET is not set");
+  const key = secret(peer(c));
+  if (!key) throw new Error("SSO secret is not set");
   const now = Math.floor(Date.now() / 1000);
   const body = b64(JSON.stringify({ ...c, email: c.email.toLowerCase(), iat: now, exp: now + ttlSeconds }));
   return `v1.${body}.${b64(mac(key, body))}`;
 }
 
 export function verifyToken(token: string, expect: { iss?: string; aud: string }): SsoClaims | null {
-  const key = secret();
+  const key = secret(peer(expect));
   const [v, body, sig] = token.split(".");
   if (!key || v !== "v1" || !body || !sig) return null;
   const want = mac(key, body);
