@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PageHero, Section, EmptyState } from "@/components/ui";
 import { list } from "@/lib/content";
 import { meta } from "@/lib/meta";
+import { FlameAdSlot } from "@/components/FlameAdSlot";
 
 export const metadata = meta("Chapters Near You", "Find a FLAME PH chapter in your region, province or city, or start one.", "/chapters");
 
@@ -41,6 +42,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
           )}
         </div>
         {rows.length > 0 && <p className="mt-6">Hindi mo makita ang lugar mo? <Link className="font-semibold text-mph underline" href="/get-involved/chapter-leader">Start a chapter</Link>.</p>}
+        <FlameAdSlot slot="FOOTER_SPONSOR" category="chapter-partner" region={q.toLowerCase().replace(/[^a-z0-9]+/g,"-") || undefined} className="mt-8" />
       </Section>
     </>
   );

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { PageHero, Section, Notice } from "@/components/ui";
 import { list } from "@/lib/content";
 import { Markdown } from "@/components/Markdown";
+import { FlameAdSlot } from "@/components/FlameAdSlot";
 
 type R = { id: string; title: string; slug: string; summary: string | null; body: string | null; type: string; stage: string | null; topic: string | null; file_path: string | null; external_url: string | null; last_reviewed: string | null; source_links: { label: string; url: string }[] };
 
@@ -21,6 +22,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   return (
     <>
       <PageHero title={r.title} intro={r.summary} path={`/resources/${r.slug}`} fil={[r.type, r.stage, r.topic].filter(Boolean).join(" · ")} />
+      <div className="container-x pt-6"><FlameAdSlot slot="ARTICLE_INLINE" category={r.topic?.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") || "msme-resources"} /></div>
       <Section>
         <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
           <article className="prose-flame max-w-none">{r.body ? <Markdown text={r.body} /> : null}</article>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PageHero, Section, EmptyState } from "@/components/ui";
 import { list, mediaUrl } from "@/lib/content";
 import { meta } from "@/lib/meta";
+import { FlameAdSlot } from "@/components/FlameAdSlot";
 
 export const metadata = meta("Free Business Directory", "Find Filipino MSMEs who are FLAME PH members. List your business for free.", "/directory");
 
@@ -32,6 +33,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
           </select>
           <button className="btn btn-primary">Search</button>
         </form>
+        <FlameAdSlot slot="LISTING_FEATURED" category={sp.sector?.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") || "msme-directory"} region={sp.region?.toLowerCase().replace(/[^a-z0-9]+/g,"-")} className="mt-5" />
         <div className="mt-6">
           {rows.length === 0 ? (
             <EmptyState title={all.length ? "Walang tugma sa search mo." : "Wala pang nakalistang negosyo dito."} text={all.length ? "Try another sector or province." : "Be the first — list your business for free."} cta={{ href: "/account/business", label: "List your business" }} />

@@ -10,6 +10,7 @@ import { FOUNDERS, TAGLINES, TRUST_LINE } from "@/lib/site";
 import { getDict } from "@/lib/i18n";
 import { list, type EventRow } from "@/lib/content";
 import type { Status } from "@/components/StatusBadge";
+import { FlameAdSlot } from "@/components/FlameAdSlot";
 
 const NEEDS = [
   { label: "Magsimula ng negosyo", sub: "Start a business", href: "https://negosyodepot.com", art: "start-business", external: true },
@@ -74,6 +75,10 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <div className="container-x py-5 sm:py-7">
+        <FlameAdSlot slot="HOME_AFTER_HERO" />
+      </div>
 
       <Section title={t.needPicker} intro="Piliin ang kailangan mo, at dadalhin ka namin sa tamang lugar.">
         <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">

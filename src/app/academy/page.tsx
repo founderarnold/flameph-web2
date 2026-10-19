@@ -3,6 +3,7 @@ import { SubmissionForm } from "@/components/SubmissionForm";
 import { FORMS } from "@/lib/forms";
 import { list } from "@/lib/content";
 import { meta } from "@/lib/meta";
+import { FlameAdSlot } from "@/components/FlameAdSlot";
 
 export const metadata = meta("FLAME PH Academy", "Structured learning tracks for Filipino entrepreneurs, from first idea to scaling up.", "/academy");
 
@@ -22,6 +23,7 @@ export default async function Page() {
     <>
       <PageHero status={courses.length ? "live" : "soon"} fil="Matuto ayon sa yugto ng negosyo mo" title="FLAME PH Academy" path="/academy"
         intro="Learning tracks organized by business stage. Courses appear here as soon as they are published." />
+      <div className="container-x pt-6"><FlameAdSlot slot="ARTICLE_INLINE" category="business-education" /></div>
       <Section title="Learning tracks">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {TRACKS.map((t) => {
