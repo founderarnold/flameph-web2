@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, createEmailLinkClient } from "@/lib/supabase/browser";
 
-const GOOGLE_ON = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "1";
-const FACEBOOK_ON = process.env.NEXT_PUBLIC_FACEBOOK_AUTH === "1";
+/** "1" turns a button on. Tolerates stray whitespace or a byte-order mark in the Vercel value. */
+const flag = (v: string | undefined) => (v ?? "").replace(/^﻿/, "").trim() === "1";
+const GOOGLE_ON = flag(process.env.NEXT_PUBLIC_GOOGLE_AUTH);
+const FACEBOOK_ON = flag(process.env.NEXT_PUBLIC_FACEBOOK_AUTH);
 
 type Method = "password" | "code";
 type Props = { mode: "join" | "login"; next?: string; haveCode?: boolean; initialEmail?: string; referral?: string };
