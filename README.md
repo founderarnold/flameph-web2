@@ -32,7 +32,7 @@ Every statistic on the site is counted live from the database. On launch day the
 
 ### 2. Vercel
 1. Import this GitHub repo in [vercel.com/new](https://vercel.com/new). Framework: Next.js (auto-detected).
-2. Add the environment variables from [`.env.example`](.env.example) for **Production** and **Preview**. The required ones are `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY` and `NEXT_PUBLIC_SITE_URL`.
+2. Add the environment variables from [`.env.example`](.env.example) for **Production** and **Preview**. The required ones are `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY` and `NEXT_PUBLIC_SITE_URL`. Transactional email uses `RESEND_API_KEY`, `EMAIL_FROM`, `NOTIFY_EMAIL`, and the dedicated `REAL_ESTATE_ADMIN_EMAIL` recipient.
 3. Deploy. Every pull request gets its own preview URL; `main` deploys to production.
 4. Add the domain `flameph.org` under **Settings → Domains**.
 5. Optional: enable **Analytics** (privacy-friendly, no cookies). The site already includes the Vercel Analytics script.

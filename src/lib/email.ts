@@ -23,4 +23,5 @@ export async function sendEmail(mail: Mail): Promise<boolean> {
 }
 
 export const NOTIFY_TO = process.env.NOTIFY_EMAIL || ORG.emailPrimary;
+export const REAL_ESTATE_NOTIFY_TO = process.env.REAL_ESTATE_ADMIN_EMAIL || NOTIFY_TO;
 export const PARTNER_CC = ORG.emailPartnerships;

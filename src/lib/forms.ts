@@ -15,6 +15,7 @@ export type FormDef = {
   intro?: string;
   fields: Field[];
   partnership?: boolean; // CC the partnerships email
+  notificationAudience?: "general" | "real-estate";
   submitLabel?: string;
   success: string;
 };
