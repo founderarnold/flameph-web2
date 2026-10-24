@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { FORMS } from "@/lib/forms";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
-import { sendEmail, NOTIFY_TO, PARTNER_CC } from "@/lib/email";
+import { sendEmail, NOTIFY_TO, PARTNER_CC, REAL_ESTATE_NOTIFY_TO } from "@/lib/email";
 import { clientIpHash } from "@/lib/request";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
   const lines = Object.entries(clean).map(([k, v]) => `${k}: ${v}`).join("\n");
   await sendEmail({
-    to: NOTIFY_TO,
+    to: def.notificationAudience === "real-estate" ? REAL_ESTATE_NOTIFY_TO : NOTIFY_TO,
     cc: def.partnership ? [PARTNER_CC] : undefined,
     subject: `[flameph.org] ${def.title}${name ? ` — ${name}` : ""}`,
     text: `New submission: ${def.title}\n\n${lines}${eventId ? `\nevent_id: ${eventId}` : ""}\n\nManage it at /admin/submissions`,
