@@ -110,6 +110,7 @@ a { text-underline-offset: 3px; }
   .admin-table-scroll-top::-webkit-scrollbar { height: 18px; }
   .admin-table-scroll-top::-webkit-scrollbar-track { border-top: 0; border-radius: 999px; }
   .admin-table-scroll-top::-webkit-scrollbar-thumb { border-width: 3px; }
+  .admin-table-sticky-controls { position: sticky; top: 72px; z-index: 35; margin: -4px -4px 0; padding: 8px 4px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 94%, transparent); box-shadow: 0 8px 18px rgb(20 22 28 / .08); backdrop-filter: blur(10px); }
   .admin-scroll-hint { display: flex; align-items: center; gap: .4rem; color: var(--fg-muted); font-size: .8rem; font-weight: 700; }
   .label { display: block; font-weight: 600; margin-bottom: .25rem; }
   .prose-flame p { margin-block: .75rem; }

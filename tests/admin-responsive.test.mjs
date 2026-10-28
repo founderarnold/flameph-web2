@@ -10,6 +10,8 @@ test("admin tables expose a visible horizontal scrollbar", () => {
   assert.match(css, /scrollbar-gutter:\s*stable/);
   assert.match(css, /::-webkit-scrollbar/);
   assert.match(css, /scrollbar-color/);
+  assert.match(css, /\.admin-table-sticky-controls\s*\{[^}]*position:\s*sticky/);
+  assert.match(css, /\.admin-table-sticky-controls\s*\{[^}]*top:\s*72px/);
 });
 
 test("members use mobile cards and a fixed-width scrollable desktop table", () => {
@@ -20,6 +22,7 @@ test("members use mobile cards and a fixed-width scrollable desktop table", () =
   assert.match(members, /min-w-\[1120px\]/);
   assert.match(members, /break-all/);
   assert.match(syncedScroll, /admin-table-scroll-top/);
+  assert.match(syncedScroll, /admin-table-sticky-controls/);
   assert.match(syncedScroll, /Drag the blue scrollbar/);
   assert.match(syncedScroll, /← Left/);
   assert.match(syncedScroll, /Right →/);

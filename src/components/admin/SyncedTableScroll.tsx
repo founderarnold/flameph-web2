@@ -48,22 +48,24 @@ export function SyncedTableScroll({ children, label }: { children: ReactNode; la
 
   return (
     <div className="hidden lg:block">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="admin-scroll-hint"><span aria-hidden="true">↔</span> Drag the blue scrollbar or use the buttons to see every column</p>
-        <div className="flex gap-2" aria-label="Table horizontal scroll controls">
-          <button type="button" className="btn btn-outline min-h-10 px-4 py-1 text-sm" onClick={() => move(-360)} aria-label="Scroll table left">← Left</button>
-          <button type="button" className="btn btn-outline min-h-10 px-4 py-1 text-sm" onClick={() => move(360)} aria-label="Scroll table right">Right →</button>
+      <div className="admin-table-sticky-controls">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="admin-scroll-hint"><span aria-hidden="true">↔</span> Drag the blue scrollbar or use the buttons to see every column</p>
+          <div className="flex gap-2" aria-label="Table horizontal scroll controls">
+            <button type="button" className="btn btn-outline min-h-10 px-4 py-1 text-sm" onClick={() => move(-360)} aria-label="Scroll table left">← Left</button>
+            <button type="button" className="btn btn-outline min-h-10 px-4 py-1 text-sm" onClick={() => move(360)} aria-label="Scroll table right">Right →</button>
+          </div>
         </div>
-      </div>
-      <div
-        ref={topScroll}
-        className="admin-table-scroll admin-table-scroll-top"
-        onScroll={(event) => sync(event.currentTarget, tableScroll.current)}
-        tabIndex={0}
-        role="region"
-        aria-label={`${label} top horizontal scrollbar`}
-      >
-        <div ref={topSpacer} className="h-px min-w-full" />
+        <div
+          ref={topScroll}
+          className="admin-table-scroll admin-table-scroll-top"
+          onScroll={(event) => sync(event.currentTarget, tableScroll.current)}
+          tabIndex={0}
+          role="region"
+          aria-label={`${label} top horizontal scrollbar`}
+        >
+          <div ref={topSpacer} className="h-px min-w-full" />
+        </div>
       </div>
       <div
         ref={tableScroll}
