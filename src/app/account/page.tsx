@@ -120,7 +120,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <h2 className="text-lg font-bold">My business listing</h2>
             {biz ? (
               <>
-                <p className="mt-1">{biz.name} · {biz.published ? <Link href={`/directory/${biz.slug}`} className="text-mph underline">Live in directory</Link> : "Not published"}{biz.verification_status === "pending" && " · Verification pending"}</p>
+                <p className="mt-1">{biz.name} · {biz.published ? <Link href="https://pages.flameph.org/directory" className="text-mph underline">View Pages directory</Link> : "Not published"}{biz.verification_status === "pending" && " · Verification pending"}</p>
                 <div className="mt-3"><ListingStrength biz={listing} supportsExtras={hasExtras(listing)} max={2} compact /></div>
               </>
             ) : <p className="mt-1 text-muted">You haven&apos;t listed a business yet.</p>}

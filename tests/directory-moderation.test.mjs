@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("public directory and detail pages require an active listing owner", () => {
+test("legacy directory data remains protected while duplicate pages stay out of the sitemap", () => {
   const helper = read("src/lib/directory.ts");
   const directory = read("src/app/directory/page.tsx");
   const detail = read("src/app/directory/[slug]/page.tsx");
@@ -14,7 +14,8 @@ test("public directory and detail pages require an active listing owner", () => 
   assert.match(directory, /publicBusinesses<Biz>/);
   assert.match(detail, /publicBusinessBySlug<B>/);
   assert.match(detail, /publicBusinesses<B>/);
-  assert.match(sitemap, /publicBusinesses/);
+  assert.doesNotMatch(sitemap, /publicBusinesses/);
+  assert.doesNotMatch(sitemap, /paths\.add\(`\/directory\/\$\{/);
 });
 
 test("database policy blocks businesses owned by suspended members", () => {

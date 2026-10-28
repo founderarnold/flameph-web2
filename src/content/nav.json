@@ -9,7 +9,6 @@
     { "label": "Annual Awards for MSMEs", "href": "/awards" }
   ]},
   { "key": "membership", "label": "Membership", "fil": "Membership", "items": [
-    { "label": "Free RideSafe App", "href": "/ridesafe" },
     { "label": "Avail Free MSME Benefits", "href": "/membership/free-benefits" },
     { "label": "Get More MSME Benefits", "href": "/membership/more-benefits" },
     { "label": "Resources", "href": "/resources" },
@@ -17,10 +16,11 @@
     { "label": "Chapters Near You", "href": "/chapters" },
     { "label": "Volunteering", "href": "/volunteering" },
     { "label": "Free POS for MSMEs", "href": "/pos" },
-    { "label": "Free Business Directory", "href": "/directory" },
+    { "label": "Free Micro Website/Business Directory", "href": "https://pages.flameph.org/directory", "external": true },
     { "label": "Opportunities for MSMEs", "href": "/opportunities" },
     { "label": "Buy Together Deals", "href": "/deals" },
-    { "label": "Biz Consult with FLAME AI", "href": "/bizconsult-ai" }
+    { "label": "Biz Consult with FLAME AI", "href": "/bizconsult-ai" },
+    { "label": "Free RideSafe App", "href": "/ridesafe" }
   ]},
   { "key": "supportUs", "label": "Support Us", "fil": "Suportahan Kami", "items": [
     { "label": "FLAME PH Merchs", "href": "/merch" },

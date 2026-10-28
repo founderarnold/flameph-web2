@@ -16,7 +16,7 @@ const NEEDS = [
   { label: "Magsimula ng negosyo", sub: "Start a business", href: "https://negosyodepot.com", art: "start-business", external: true },
   { label: "Mag-register ng business", sub: "Permits & registration guides", href: "/resources?topic=permits", art: "register-business" },
   { label: "Magtanong kay Ka-FLAME AI", sub: "Free business Q&A", href: "/bizconsult-ai", art: "ask-kaflame" },
-  { label: "Ilista ang negosyo ko", sub: "Free business directory", href: "/directory", art: "list-business" },
+  { label: "Ilista ang negosyo ko", sub: "Free Micro Website/Business Directory", href: "https://pages.flameph.org/directory", art: "list-business", external: true },
   { label: "Magbenta online", sub: "MarketplacePH", href: "https://www.marketplaceph.com", art: "sell-online", external: true },
   { label: "Sumali sa workshop", sub: "Workshops & trainings", href: "/workshops", art: "join-workshop" },
   { label: "Humanap ng mentor", sub: "Volunteer mentors", href: "/about/mentors", art: "find-mentor" },
@@ -26,7 +26,7 @@ const NEEDS = [
 const BENEFITS: { title: string; text: string; status: Status; href: string; icon: React.ReactNode }[] = [
   { title: "Free membership & digital ID", text: "Sign up with Google or email and get a FLAME PH member ID with a QR verification page.", status: "live", href: "/join", icon: <I.IconId /> },
   { title: "Ka-FLAME AI business assistant", text: "Ask start, grow and scale questions in Taglish. It's an AI guide, not a lawyer or accountant.", status: "beta", href: "/bizconsult-ai", icon: <I.IconChat /> },
-  { title: "Free business directory listing", text: "Your own mini website with Messenger, Viber and call buttons.", status: "live", href: "/directory", icon: <I.IconStore /> },
+  { title: "Free Micro Website/Business Directory", text: "Create your micro website and appear in the FLAME PH Pages business directory.", status: "live", href: "https://pages.flameph.org/directory", icon: <I.IconStore /> },
   { title: "Resource library", text: "Guides, templates and checklists with links to official agencies.", status: "live", href: "/resources", icon: <I.IconBook /> },
   { title: "Workshops & trainings", text: "Join events as they are scheduled, or request one for your barangay or LGU.", status: "live", href: "/workshops", icon: <I.IconCalendar /> },
   { title: "Free POS for MSMEs", text: "A simple point-of-sale for small stores. Join the waitlist.", status: "soon", href: "/pos", icon: <I.IconPos /> },

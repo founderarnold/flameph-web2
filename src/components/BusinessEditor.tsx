@@ -162,7 +162,7 @@ export function BusinessEditor({ userId, initial, sectors, provinces, supportsEx
       {msg && <p role="status" className={`rounded-lg p-3 font-semibold ${msg.ok ? "bg-ok-soft text-ok" : "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200"}`}>{msg.text}</p>}
       <div className="flex flex-wrap gap-2">
         <button className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Save listing"}</button>
-        {biz.slug && biz.published && <Link href={`/directory/${biz.slug}`} className="btn btn-outline">View public page</Link>}
+        {biz.slug && biz.published && <Link href="https://pages.flameph.org/directory" className="btn btn-outline">View Pages directory</Link>}
       </div>
     </form>
   );

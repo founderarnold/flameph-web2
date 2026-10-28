@@ -8,7 +8,7 @@ export const metadata = meta("Avail Free MSME Benefits", "What free FLAME PH mem
 
 const B: { title: string; text: string; status: Status; href: string; icon: React.ReactNode }[] = [
   { title: "Member account & digital ID", text: "A FLAME PH member ID with a QR code that anyone can verify.", status: "live", href: "/join", icon: <I.IconId /> },
-  { title: "Free business directory listing", text: "A public profile page for your business with contact buttons.", status: "live", href: "/directory", icon: <I.IconStore /> },
+  { title: "Free Micro Website/Business Directory", text: "Create a public micro website and appear in the FLAME PH Pages business directory.", status: "live", href: "https://pages.flameph.org/directory", icon: <I.IconStore /> },
   // Opens the FlamePH Pages builder; people who aren't signed in there are asked to create an account first.
   { title: "FREE Business Pages for MSMEs", text: "Your own business web page with order, call and chat buttons. Sign up and build it in minutes.", status: "live", href: "https://pages.flameph.org/build?signup=1", icon: <I.IconSpark /> },
   { title: "Ka-FLAME AI", text: "Business Q&A and listing writer. Free members get a daily question allowance.", status: "beta", href: "/bizconsult-ai", icon: <I.IconChat /> },

@@ -243,7 +243,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
             <h2 className="text-xl font-bold">More {b.sector?.toLowerCase()} businesses</h2>
             <ul className="mt-3 grid gap-3 sm:grid-cols-3">
               {related.map((x) => (
-                <li key={x.id}><Link href={`/directory/${x.slug}`} className="card block p-4 hover:border-primary"><p className="font-bold">{x.name}</p><p className="text-sm text-muted">{[x.city, x.province].filter(Boolean).join(", ")}</p></Link></li>
+                <li key={x.id}><Link href="https://pages.flameph.org/directory" className="card block p-4 hover:border-primary"><p className="font-bold">{x.name}</p><p className="text-sm text-muted">{[x.city, x.province].filter(Boolean).join(", ")}</p></Link></li>
               ))}
             </ul>
           </section>

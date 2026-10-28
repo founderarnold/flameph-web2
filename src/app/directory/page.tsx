@@ -5,7 +5,7 @@ import { meta } from "@/lib/meta";
 import { FlameAdSlot } from "@/components/FlameAdSlot";
 import { publicBusinesses } from "@/lib/directory";
 
-export const metadata = meta("Free Business Directory", "Find Filipino MSMEs who are FLAME PH members. List your business for free.", "/directory");
+export const metadata = meta("Free Micro Website/Business Directory", "Create a free micro website and find Filipino MSMEs in the FLAME PH Pages directory.", "/directory");
 
 export type Biz = { id: string; owner_id: string; name: string; slug: string; sector: string | null; description: string | null; city: string | null; province: string | null; region: string | null; photos: string[]; verified: boolean };
 export const SECTORS = ["Food & beverage", "Retail / sari-sari", "Agriculture", "Manufacturing", "Services", "Beauty & wellness", "Crafts & fashion", "Technology", "Tourism", "Other"];
@@ -18,7 +18,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
   const rows = all.filter((b) => (!sp.sector || b.sector === sp.sector) && (!sp.region || b.province === sp.region) && (!q || `${b.name} ${b.description} ${b.city}`.toLowerCase().includes(q)));
   return (
     <>
-      <PageHero status="live" fil="Libreng direktoryo ng negosyo" title="Free Business Directory" path="/directory"
+      <PageHero status="live" fil="Libreng micro website at direktoryo" title="Free Micro Website/Business Directory" path="/directory"
         intro="Real businesses owned by FLAME PH members who chose to be listed. A Verified badge means we checked their DTI, SEC or BMBE documents.">
         <Link href="/account/business" className="btn btn-flame">List your business free</Link>
       </PageHero>
@@ -42,7 +42,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {rows.map((b) => (
                 <li key={b.id}>
-                  <Link href={`/directory/${b.slug}`} className="card block h-full overflow-hidden hover:border-primary">
+                  <Link href="https://pages.flameph.org/directory" className="card block h-full overflow-hidden hover:border-primary">
                     {b.photos?.[0] ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={mediaUrl(b.photos[0])!} alt="" loading="lazy" className="aspect-[16/9] w-full object-cover" />
