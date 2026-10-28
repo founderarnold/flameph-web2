@@ -41,10 +41,9 @@ export function SyncedTableScroll({ children, label }: { children: ReactNode; la
   const move = (amount: number) => {
     const table = tableScroll.current;
     if (!table) return;
-    table.scrollBy({ left: amount, behavior: "smooth" });
-    window.setTimeout(() => {
-      if (topScroll.current) topScroll.current.scrollLeft = table.scrollLeft;
-    }, 250);
+    const next = Math.max(0, Math.min(table.scrollLeft + amount, table.scrollWidth - table.clientWidth));
+    table.scrollLeft = next;
+    if (topScroll.current) topScroll.current.scrollLeft = next;
   };
 
   return (

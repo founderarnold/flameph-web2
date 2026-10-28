@@ -24,7 +24,8 @@ test("members use mobile cards and a fixed-width scrollable desktop table", () =
   assert.match(syncedScroll, /← Left/);
   assert.match(syncedScroll, /Right →/);
   assert.match(syncedScroll, /ResizeObserver/);
-  assert.match(syncedScroll, /scrollBy/);
+  assert.match(syncedScroll, /table\.scrollLeft = next/);
+  assert.match(syncedScroll, /topScroll\.current\.scrollLeft = next/);
 });
 
 test("mobile admin navigation starts collapsed while desktop navigation remains visible", () => {
