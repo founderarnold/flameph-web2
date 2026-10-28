@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { PageHero, Section, Grid, Notice } from "@/components/ui";
+import { EcosystemJourney } from "@/components/real-estate/EcosystemJourney";
 import { meta } from "@/lib/meta";
 import { MISSION, ORG, PILLARS, PURPOSE, TAGLINES, TRUST_LINE, VISION } from "@/lib/site";
 
-export const metadata = meta("What is FLAME PH", "FLAME PH, the Federation of Leaders Advancing MSME Ecosystem in the Philippines: history, purpose, vision, mission, pillars and SEC registration.", "/about");
+export const metadata = meta("FLAME PH Ecosystem", "How FLAME PH connects people, business, place, technology and market support for Filipino MSMEs.", "/about");
 
 export default function Page() {
   return (
     <>
-      <PageHero status="live" fil="Tungkol sa amin" title="What is FLAME PH" path="/about" intro={PURPOSE} />
+      <PageHero status="live" fil="Tungkol sa amin" title="FLAME PH Ecosystem" path="/about" intro={PURPOSE} />
       <Section>
         <p className="rounded-xl bg-primary-soft px-4 py-3 font-semibold text-primary">{TRUST_LINE}</p>
       </Section>
@@ -36,6 +37,7 @@ export default function Page() {
           ))}
         </Grid>
       </Section>
+      <EcosystemJourney />
       <Section title="SEC registration">
         <div className="card max-w-xl border-primary p-6">
           <dl className="space-y-2">
