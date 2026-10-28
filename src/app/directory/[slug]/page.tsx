@@ -3,14 +3,15 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Section } from "@/components/ui";
 import { ShareButtons } from "@/components/ShareButtons";
-import { list, mediaUrl } from "@/lib/content";
+import { mediaUrl } from "@/lib/content";
+import { publicBusinessBySlug, publicBusinesses } from "@/lib/directory";
 import { SOCIALS } from "@/lib/listing";
 import { getSession } from "@/lib/auth";
 import { createPublicClient } from "@/lib/supabase/server";
 import { peso } from "@/lib/growth";
 import { InquiryForm } from "@/components/listing/InquiryForm";
 import { ListingTracker } from "@/components/listing/ListingTracker";
-import { saveReview, deleteReview } from "./actions";
+import { saveReview, deleteReview, reportBusiness } from "./actions";
 
 type B = {
   id: string; owner_id: string; created_at: string; name: string; slug: string; sector: string | null; description: string | null; products: string | null; city: string | null; province: string | null;
@@ -24,14 +25,14 @@ type Review = { id: string; user_id: string; rating: number; body: string | null
 
 const safeLink = (u?: string | null) => (u && /^https?:\/\//i.test(u) ? u : null);
 
-const get = async (slug: string) => (await list<B>({ table: "businesses", filters: { slug, published: true }, limit: 1 }))[0];
+const get = async (slug: string) => publicBusinessBySlug<B>(slug);
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const b = await get((await params).slug);
   return b ? { title: b.name, description: b.description?.slice(0, 160) ?? `${b.name} on the FLAME PH business directory`, alternates: { canonical: `/directory/${b.slug}` } } : { title: "Business not found" };
 }
 
-export default async function Page({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ review?: string }> }) {
+export default async function Page({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ review?: string; report?: string }> }) {
   const b = await get((await params).slug);
   if (!b) notFound();
   const sp = await searchParams;
@@ -42,7 +43,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
     pub?.from("business_products").select("*").eq("business_id", b.id).order("sort").order("created_at"),
     pub?.from("business_reviews").select("id,user_id,rating,body,reviewer_name,reviewer_city,created_at").eq("business_id", b.id).eq("hidden", false).order("created_at", { ascending: false }).limit(50),
     user && supabase ? supabase.from("profiles").select("full_name, mobile").eq("id", user.id).single() : null,
-    list<B>({ table: "businesses", select: "id,name,slug,sector,city,province", filters: { published: true }, order: "created_at" }),
+    publicBusinesses<B>(),
   ]);
   const products = (productsRes?.data ?? []) as Product[];
   const reviews = (reviewsRes?.data ?? []) as Review[];
@@ -217,6 +218,24 @@ export default async function Page({ params, searchParams }: { params: Promise<{
               Listed by a FLAME PH member. {b.verified ? "FLAME PH checked this business's registration documents." : "This listing has not been document-verified yet."} FLAME PH does not guarantee products or transactions.
             </div>
             <ShareButtons path={`/directory/${b.slug}`} title={b.name} />
+            {!isOwner && (
+              <details id="report" className="card p-4 text-sm">
+                <summary className="cursor-pointer font-semibold text-flame-strong">Report this listing</summary>
+                {sp.report === "received" && <p role="status" className="mt-2 rounded-lg bg-ok-soft p-2 font-semibold text-ok">Report received. FLAME PH admins will review it.</p>}
+                {sp.report === "limit" && <p role="alert" className="mt-2 rounded-lg bg-warn-soft p-2 font-semibold text-warn">You have already sent several reports today. Please wait for an admin review.</p>}
+                {(sp.report === "invalid" || sp.report === "error") && <p role="alert" className="mt-2 rounded-lg bg-warn-soft p-2 font-semibold text-warn">The report was not saved. Please check the details and try again.</p>}
+                {user ? (
+                  <form action={reportBusiness} className="mt-3 space-y-3">
+                    <input type="hidden" name="business_id" value={b.id} />
+                    <input type="hidden" name="slug" value={b.slug} />
+                    <div><label className="label" htmlFor="report-reason">Reason</label><select id="report-reason" name="reason" className="input" required><option value="">Choose a reason</option><option value="spam">Spam or fake listing</option><option value="fraud">Possible fraud or scam</option><option value="abuse">Abusive or harmful content</option><option value="wrong_information">False or misleading information</option><option value="closed">Business appears closed</option><option value="other">Other concern</option></select></div>
+                    <div><label className="label" htmlFor="report-details">What happened?</label><textarea id="report-details" name="details" className="input" rows={3} minLength={10} maxLength={1000} required /></div>
+                    <p className="text-xs text-muted">Your identity is visible only to authorized FLAME PH admins. The business owner will not see who reported them.</p>
+                    <button className="btn btn-outline w-full">Send report</button>
+                  </form>
+                ) : <p className="mt-2"><Link className="font-semibold text-mph underline" href={`/login?next=${encodeURIComponent(`/directory/${b.slug}#report`)}`}>Log in</Link> to report this listing.</p>}
+              </details>
+            )}
           </aside>
         </div>
         {related.length > 0 && (

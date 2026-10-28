@@ -1,6 +1,6 @@
 import { adminContext } from "@/lib/admin/guard";
 import { SyncedTableScroll } from "@/components/admin/SyncedTableScroll";
-import { setRole, setMemberStatus } from "../actions";
+import { deleteMember, setRole, setMemberStatus } from "../actions";
 
 type RoleRow = { user_id: string; role: string };
 type Chapter = { id: string; name: string };
@@ -32,9 +32,13 @@ function StatusControl({ id, status }: { id: string; status: string }) {
   </form>;
 }
 
+function DeleteMemberControl({ id }: { id: string }) {
+  return <details className="mt-3"><summary className="cursor-pointer text-xs font-semibold text-flame-strong">Delete member permanently…</summary><form action={deleteMember} className="mt-2 space-y-2"><input type="hidden" name="id" value={id} /><label className="block text-xs">Type DELETE to confirm<input name="confirmation" className="input mt-1 min-h-10 py-1 text-sm" autoComplete="off" /></label><button className="btn btn-flame min-h-10 w-full px-3 py-1 text-sm">Delete member and owned listings</button></form></details>;
+}
+
 export default async function Members({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = "" } = await searchParams;
-  const { db, roles: myRoles } = await adminContext(["super_admin", "admin"]);
+  const { db, roles: myRoles, user: adminUser } = await adminContext(["super_admin", "admin"]);
   const isSuper = myRoles.includes("super_admin");
   let query = db.from("profiles").select("*").order("created_at", { ascending: false }).limit(200);
   if (q) query = query.or(`full_name.ilike.%${q.replace(/[%,()]/g, "")}%,member_code.ilike.%${q.replace(/[%,()]/g, "")}%,city.ilike.%${q.replace(/[%,()]/g, "")}%`);
@@ -63,7 +67,7 @@ export default async function Members({ searchParams }: { searchParams: Promise<
               <div><dt className="text-xs font-bold uppercase text-muted">Email</dt><dd className="break-all">{user?.email || "—"}</dd><dd className="text-xs text-muted">{user?.confirmed ? "verified email" : "unverified"}</dd></div>
               <div><dt className="text-xs font-bold uppercase text-muted">Location</dt><dd>{[profile.city, profile.province].filter(Boolean).join(", ") || "—"}</dd></div>
               <div><dt className="text-xs font-bold uppercase text-muted">Tier</dt><dd className="capitalize">{profile.tier}</dd></div>
-              <div><dt className="text-xs font-bold uppercase text-muted">Status</dt><dd className="mt-1"><StatusControl id={profile.id} status={profile.status} /></dd></div>
+              <div><dt className="text-xs font-bold uppercase text-muted">Status</dt><dd className="mt-1"><StatusControl id={profile.id} status={profile.status} />{isSuper && profile.id !== adminUser.id && <DeleteMemberControl id={profile.id} />}</dd></div>
               <div className="sm:col-span-2"><dt className="text-xs font-bold uppercase text-muted">Roles</dt><dd className="mt-1"><RoleControls memberId={profile.id} roles={memberRoles} chapters={(chapters ?? []) as Chapter[]} isSuper={isSuper} /></dd></div>
             </dl>
           </article>;
@@ -88,6 +92,7 @@ export default async function Members({ searchParams }: { searchParams: Promise<
                   </td>
                   <td className="px-3 py-2">
                     <StatusControl id={p.id} status={p.status} />
+                    {isSuper && p.id !== adminUser.id && <DeleteMemberControl id={p.id} />}
                   </td>
                 </tr>
               );

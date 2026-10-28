@@ -139,6 +139,38 @@ export async function verifyBusiness(fd: FormData) {
   revalidatePath("/admin/directory");
 }
 
+export async function moderateBusiness(fd: FormData) {
+  const ctx = await adminContext(["super_admin", "admin"]);
+  const id = String(fd.get("id") ?? "");
+  const action = String(fd.get("moderation_action") ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+  const { data: business } = await ctx.db.from("businesses").select("id,owner_id,slug,name,published").eq("id", id).maybeSingle();
+  if (!business) return;
+
+  if (action === "hide") {
+    await ctx.db.from("businesses").update({ published: false }).eq("id", id);
+  } else if (action === "restore") {
+    const { data: owner } = await ctx.db.from("profiles").select("status").eq("id", business.owner_id).maybeSingle();
+    if (owner?.status !== "active") redirect("/admin/directory?all=1&error=owner-suspended");
+    await ctx.db.from("businesses").update({ published: true }).eq("id", id);
+  } else if (action === "ban_owner") {
+    await Promise.all([
+      ctx.db.from("profiles").update({ status: "suspended" }).eq("id", business.owner_id),
+      ctx.db.from("businesses").update({ published: false }).eq("owner_id", business.owner_id),
+    ]);
+  } else if (action === "delete_business") {
+    if (!ctx.roles.includes("super_admin") || String(fd.get("confirmation") ?? "") !== "DELETE") return;
+    await ctx.db.from("businesses").delete().eq("id", id);
+  } else return;
+
+  await ctx.audit(`business_${action}`, "businesses", id, { owner_id: business.owner_id, name: business.name });
+  revalidateTag("content"); revalidateTag("stats"); revalidateTag("directory");
+  revalidatePath("/directory");
+  revalidatePath(`/directory/${business.slug}`);
+  revalidatePath("/admin/directory");
+  redirect("/admin/directory?all=1&moderated=1");
+}
+
 export async function setRole(fd: FormData) {
   const ctx = await adminContext(["super_admin"]);
   const userId = String(fd.get("user_id")); const role = String(fd.get("role")); const op = String(fd.get("op"));
@@ -154,8 +186,24 @@ export async function setMemberStatus(fd: FormData) {
   const id = String(fd.get("id"));
   const status = fd.get("status") === "suspended" ? "suspended" : "active";
   await ctx.db.from("profiles").update({ status }).eq("id", id);
+  if (status === "suspended") await ctx.db.from("businesses").update({ published: false }).eq("owner_id", id);
   await ctx.audit("member_status", "profiles", id, { status });
+  revalidateTag("content"); revalidateTag("stats"); revalidateTag("directory");
+  revalidatePath("/directory");
   revalidatePath("/admin/members");
+}
+
+export async function deleteMember(fd: FormData) {
+  const ctx = await adminContext(["super_admin"]);
+  const id = String(fd.get("id") ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(id) || String(fd.get("confirmation") ?? "") !== "DELETE" || id === ctx.user.id) return;
+  const { data: targetRoles } = await ctx.db.from("roles").select("role").eq("user_id", id);
+  if ((targetRoles ?? []).some((row) => row.role === "super_admin")) return;
+  const { error } = await ctx.db.auth.admin.deleteUser(id);
+  if (!error) await ctx.audit("member_delete", "profiles", id);
+  revalidateTag("content"); revalidateTag("stats"); revalidateTag("directory");
+  revalidatePath("/directory");
+  redirect(`/admin/members?${error ? "error=delete" : "deleted=1"}`);
 }
 
 export async function reviewFeedback(fd: FormData) {

@@ -24,6 +24,8 @@ export async function POST(req: Request) {
   if (!admin) return NextResponse.json({ error: "Inquiries are not available right now. Please use the contact buttons." }, { status: 503 });
   const { data: biz } = await admin.from("businesses").select("id, name, slug, owner_id, contact_email").eq("id", bizId).eq("published", true).maybeSingle();
   if (!biz) return NextResponse.json({ error: "This business is no longer listed." }, { status: 404 });
+  const { data: ownerProfile } = await admin.from("profiles").select("status").eq("id", biz.owner_id).maybeSingle();
+  if (ownerProfile?.status !== "active") return NextResponse.json({ error: "This business is no longer listed." }, { status: 404 });
 
   // Simple flood guard: at most 5 inquiries per sender per business per day.
   const since = new Date(Date.now() - 86400000).toISOString();
