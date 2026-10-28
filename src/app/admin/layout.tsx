@@ -17,6 +17,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <li><Link className="block rounded-lg px-2 py-2 font-bold hover:bg-bg-soft" href="/admin">Dashboard</Link></li>
             {isAdmin && <>
               <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/submissions">Form inbox</Link></li>
+              <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Real estate</li>
+              <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/real-estate">Real Estate overview</Link></li>
+              <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/real-estate/properties">Property inquiries</Link></li>
+              <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/real-estate/referrals">Referral partners</Link></li>
+              <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/real-estate/careers">Career applications</Link></li>
               <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/members">Members</Link></li>
               <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/directory">Directory verification</Link></li>
               <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/ai">Ka-FLAME AI review</Link></li>

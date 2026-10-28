@@ -3,6 +3,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { adminContext } from "@/lib/admin/guard";
 import { getAdminTable, PK, type AdminField } from "@/lib/admin/config";
+import { getRealEstateAdminSection } from "@/lib/real-estate-admin";
 
 const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 60);
 
@@ -107,6 +108,21 @@ export async function setSubmissionStatus(fd: FormData) {
   await ctx.db.from("submissions").update({ status, notes: String(fd.get("notes") ?? "") || null }).eq("id", id);
   await ctx.audit("submission_status", "submissions", id, { status });
   revalidatePath("/admin/submissions");
+}
+
+export async function setRealEstateStatus(fd: FormData) {
+  const ctx = await adminContext(["super_admin", "admin"]);
+  const id = String(fd.get("id") ?? "");
+  const section = String(fd.get("section") ?? "");
+  const status = String(fd.get("status") ?? "");
+  const config = getRealEstateAdminSection(section);
+  if (!id || !config || !config.statuses.includes(status as never)) return;
+  const result = await ctx.db.from(config.table).update({ status, updated_at: new Date().toISOString() }).eq("id", id);
+  if (!result.error) await ctx.audit("real_estate_status", config.table, id, { status });
+  revalidatePath("/admin");
+  revalidatePath("/admin/real-estate");
+  revalidatePath(`/admin/real-estate/${section}`);
+  redirect(`/admin/real-estate/${section}?saved=1`);
 }
 
 export async function verifyBusiness(fd: FormData) {
