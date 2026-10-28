@@ -1,4 +1,5 @@
 import { adminContext } from "@/lib/admin/guard";
+import { SyncedTableScroll } from "@/components/admin/SyncedTableScroll";
 import { setRole, setMemberStatus } from "../actions";
 
 type RoleRow = { user_id: string; role: string };
@@ -68,8 +69,7 @@ export default async function Members({ searchParams }: { searchParams: Promise<
           </article>;
         })}
       </div>
-      <p className="admin-scroll-hint hidden lg:flex" aria-hidden="true"><span>↔</span> Scroll sideways to see every column</p>
-      <div className="admin-table-scroll card hidden lg:block" tabIndex={0} aria-label="Members table. Scroll horizontally to see all columns.">
+      <SyncedTableScroll label="Members table">
         <table className="min-w-[1120px] table-fixed text-left text-[15px]">
           <colgroup><col className="w-[220px]" /><col className="w-[250px]" /><col className="w-[180px]" /><col className="w-[80px]" /><col className="w-[260px]" /><col className="w-[130px]" /></colgroup>
           <thead className="border-b border-line bg-bg-soft"><tr>{["Member", "Email", "Location", "Tier", "Roles", "Status"].map((h) => <th key={h} className="px-3 py-2">{h}</th>)}</tr></thead>
@@ -94,7 +94,7 @@ export default async function Members({ searchParams }: { searchParams: Promise<
             })}
           </tbody>
         </table>
-      </div>
+      </SyncedTableScroll>
     </div>
   );
 }

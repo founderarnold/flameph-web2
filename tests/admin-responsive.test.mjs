@@ -14,11 +14,17 @@ test("admin tables expose a visible horizontal scrollbar", () => {
 
 test("members use mobile cards and a fixed-width scrollable desktop table", () => {
   const members = read("src/app/admin/members/page.tsx");
+  const syncedScroll = read("src/components/admin/SyncedTableScroll.tsx");
   assert.match(members, /lg:hidden/);
-  assert.match(members, /admin-table-scroll card hidden lg:block/);
+  assert.match(members, /SyncedTableScroll label="Members table"/);
   assert.match(members, /min-w-\[1120px\]/);
-  assert.match(members, /Scroll sideways to see every column/);
   assert.match(members, /break-all/);
+  assert.match(syncedScroll, /admin-table-scroll-top/);
+  assert.match(syncedScroll, /Drag the blue scrollbar/);
+  assert.match(syncedScroll, /← Left/);
+  assert.match(syncedScroll, /Right →/);
+  assert.match(syncedScroll, /ResizeObserver/);
+  assert.match(syncedScroll, /scrollBy/);
 });
 
 test("mobile admin navigation starts collapsed while desktop navigation remains visible", () => {
