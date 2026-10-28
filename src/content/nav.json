@@ -28,7 +28,8 @@
     { "label": "Personalized by FLAMEPH", "href": "/personalized" },
     { "label": "Shop/Sell/Jobs @ MarketplacePH", "href": "https://www.marketplaceph.com", "external": true },
     { "label": "Start/Grow/ScaleUp @ NegosyoDepot", "href": "https://www.negosyodepot.com", "external": true },
-    { "label": "Fulfillment by MSMEs", "href": "/fulfillment" }
+    { "label": "Fulfillment by MSMEs", "href": "/fulfillment" },
+    { "label": "Real Estate for MSMEs", "href": "/real-estate-for-msmes" }
   ]},
   { "key": "getInvolved", "label": "Get Involved", "fil": "Makilahok", "items": [
     { "label": "Volunteer as Mentor", "href": "/get-involved/mentor" },
@@ -44,7 +45,7 @@
     { "label": "Volunteer Professional Services", "href": "/get-involved/professional-services" }
   ]},
   { "key": "about", "label": "About Us", "fil": "Tungkol sa Amin", "items": [
-    { "label": "What is FLAME PH", "href": "/about" },
+    { "label": "FLAME PH Ecosystem", "href": "/about" },
     { "label": "Meet the Founders", "href": "/about/founders" },
     { "label": "Meet the Teams", "href": "/about/team" },
     { "label": "Featured Chapters", "href": "/about/chapters" },

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PageHero, Section, Grid, FeatureCard } from "@/components/ui";
 import { meta } from "@/lib/meta";
 import { SISTER_PLATFORMS } from "@/lib/site";
+import { EcosystemJourney } from "@/components/real-estate/EcosystemJourney";
 
 export const metadata = meta("Programs & MSME Ecosystem", "How FLAME PH, MarketplacePH, NegosyoDepot and Ka-FLAME AI fit together to help Filipino MSMEs start, grow and scale.", "/programs-ecosystem");
 
@@ -27,6 +28,7 @@ export default function Page() {
           </div>
         </div>
       </Section>
+      <EcosystemJourney />
       <Section title="The 6-step growth cycle" intro="This is the model we are building toward. It describes the path we want members to take, not results already achieved.">
         <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {CYCLE.map((c, i) => (
