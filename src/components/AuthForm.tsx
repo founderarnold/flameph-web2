@@ -31,6 +31,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [topError, setTopError] = useState(""); // for the Google / Facebook buttons, shown next to the agree box
   // "?fb=1" shows the Facebook button before it is switched on for everyone (for the app's own test sign-in).
   const [fbPreview, setFbPreview] = useState(false);
   useEffect(() => { setFbPreview(new URLSearchParams(window.location.search).get("fb") === "1"); }, []);
@@ -54,8 +55,8 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
   }
 
   async function oauth(provider: "google" | "facebook") {
-    if (needConsent) return setError("Please agree to the Privacy Notice first.");
-    setBusy(true);
+    if (needConsent) return setTopError("Tick the box above first, then tap the button again.");
+    setBusy(true); setTopError("");
     const { error } = await supabase!.auth.signInWithOAuth({
       provider,
       options: {
@@ -63,7 +64,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
         ...(provider === "facebook" ? { scopes: "email" } : {}),
       },
     });
-    if (error) { setError(`${provider === "google" ? "Google" : "Facebook"} sign-in isn't available right now. Use your email instead.`); setBusy(false); }
+    if (error) { setTopError(`${provider === "google" ? "Google" : "Facebook"} sign-in isn't available right now. Use your email instead.`); setBusy(false); }
   }
   const google = () => oauth("google");
 
@@ -131,7 +132,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
   const consentBox = mode === "join" && (
         <div className="space-y-3 rounded-xl bg-bg-soft p-4">
           <label className="flex items-start gap-2">
-            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 h-5 w-5 shrink-0" required />
+            <input type="checkbox" checked={consent} onChange={(e) => { setConsent(e.target.checked); if (e.target.checked) setTopError(""); }} className="mt-1 h-6 w-6 shrink-0" required />
             <span>I agree to the <Link className="underline" href="/legal/privacy">Privacy Notice</Link>, <Link className="underline" href="/legal/terms">Terms of Use</Link> and <Link className="underline" href="/membership/terms">Membership Terms</Link>, and allow FLAME PH to process my data under the Data Privacy Act of 2012. <span className="text-flame-strong">*</span></span>
           </label>
           <label className="flex items-start gap-2">
@@ -147,6 +148,9 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
 
   return (
     <div className="space-y-5">
+      {/* Joining: the agree box comes first, above the Google and Facebook buttons, so it is never below the screen. */}
+      {consentBox}
+      {topError && <p role="alert" className="font-semibold text-red-700 dark:text-red-300">{topError}</p>}
       {(GOOGLE_ON || facebookOn) && (
         <>
           {facebookOn && (
@@ -180,7 +184,6 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
             </div>
             {mode === "join" && <p className="mt-1 text-sm text-muted">At least 8 characters.</p>}
           </div>
-          {consentBox}
           {error && <p role="alert" className="font-semibold text-red-700 dark:text-red-300">{error}</p>}
           <button className="btn btn-flame w-full text-lg" disabled={busy}>{busy ? "Please wait…" : mode === "join" ? "Join free" : "Log in"}</button>
           {mode === "login" && (
@@ -195,7 +198,6 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
             <div><label htmlFor="nm2" className="label">Full name</label><input id="nm2" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className="input" /></div>
           )}
           {emailField}
-          {consentBox}
           {resetting && <p className="text-sm text-muted">We&apos;ll email you a sign-in link. After you tap it, you can set a new password.</p>}
           {error && <p role="alert" className="font-semibold text-red-700 dark:text-red-300">{error}</p>}
           <button className="btn btn-flame w-full text-lg" disabled={busy}>{busy ? "Sending…" : "Email me a sign-in link"}</button>
