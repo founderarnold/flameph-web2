@@ -16,7 +16,7 @@ const B: { title: string; text: string; status: Status; href: string; icon: Reac
   { title: "Event registration", text: "Register for workshops, trainings and expos when scheduled.", status: "live", href: "/workshops", icon: <I.IconCalendar /> },
   { title: "MSME Bulletin newsletter", text: "Updates by email. Unsubscribe anytime.", status: "live", href: "#newsletter", icon: <I.IconFile /> },
   { title: "Local chapters", text: "Join or start a chapter in your city or municipality.", status: "live", href: "/chapters", icon: <I.IconMap /> },
-  { title: "Free POS for MSMEs", text: "Planned. Join the waitlist.", status: "soon", href: "/pos", icon: <I.IconPos /> },
+  { title: "Free POS for MSMEs", text: "Sell, track inventory and understand your business using FLAME POS.", status: "live", href: "/pos", icon: <I.IconPos /> },
   { title: "FLAME PH Academy courses", text: "Planned learning tracks by business stage.", status: "soon", href: "/academy", icon: <I.IconAward /> },
 ];
 

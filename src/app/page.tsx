@@ -29,7 +29,7 @@ const BENEFITS: { title: string; text: string; status: Status; href: string; ico
   { title: "Free Micro Website/Business Directory", text: "Create your micro website and appear in the FLAME PH Pages business directory.", status: "live", href: "https://pages.flameph.org/directory", icon: <I.IconStore /> },
   { title: "Resource library", text: "Guides, templates and checklists with links to official agencies.", status: "live", href: "/resources", icon: <I.IconBook /> },
   { title: "Workshops & trainings", text: "Join events as they are scheduled, or request one for your barangay or LGU.", status: "live", href: "/workshops", icon: <I.IconCalendar /> },
-  { title: "Free POS for MSMEs", text: "A simple point-of-sale for small stores. Join the waitlist.", status: "soon", href: "/pos", icon: <I.IconPos /> },
+  { title: "Free POS for MSMEs", text: "Sell, track inventory and understand your business using FLAME POS.", status: "live", href: "/pos", icon: <I.IconPos /> },
 ];
 
 const SCENARIOS = [
