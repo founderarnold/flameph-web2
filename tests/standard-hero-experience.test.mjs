@@ -8,11 +8,13 @@ test("shared hero pages use contextual artwork while the homepage remains outsid
   const map = read("src/lib/hero-pages.ts");
   const hero = read("src/components/ui.tsx");
   assert.match(map, /"\/membership\/free-benefits"/);
+  assert.match(map, /"\/get-involved\/mentor"/);
+  assert.match(map, /"\/get-involved\/professional-services"/);
   assert.match(map, /path\.startsWith\("\/news\/"\)/);
   assert.match(map, /path\.startsWith\("\/resources\/"\)/);
   assert.doesNotMatch(map, /EXACT_SCENES[^]*"\/"\s*:/);
   assert.match(hero, /<HeroArtwork path=\{path\}/);
-  for (let sheet = 1; sheet <= 9; sheet += 1) {
+  for (let sheet = 1; sheet <= 12; sheet += 1) {
     assert.equal(existsSync(new URL(`../public/hero-scenes/hero-scenes-${sheet}.webp`, import.meta.url)), true);
   }
 });

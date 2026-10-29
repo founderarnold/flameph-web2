@@ -39,6 +39,16 @@ const EXACT_SCENES: Record<string, HeroScene> = {
   "/real-estate-for-msmes/careers": { sheet: 8, quadrant: "bottom-right", alt: "A young professional beginning a real-estate career" },
   "/real-estate-for-msmes/referral-partner": { sheet: 9, quadrant: "top-left", alt: "A professional ethically referring a property client" },
   "/programs-ecosystem": { sheet: 9, quadrant: "top-right", alt: "A connected micro-business website and ecosystem" },
+  "/get-involved/mentor": { sheet: 10, quadrant: "top-left", alt: "An experienced entrepreneur mentoring a Filipino small-business owner" },
+  "/get-involved/partner": { sheet: 10, quadrant: "top-right", alt: "Organizations forming a trusted partnership for Filipino MSMEs" },
+  "/get-involved/sponsor-event": { sheet: 10, quadrant: "bottom-left", alt: "A supportive company sponsoring an entrepreneurship event" },
+  "/get-involved/sponsor-community": { sheet: 10, quadrant: "bottom-right", alt: "Volunteers supporting a barangay entrepreneurship community" },
+  "/get-involved/nominate": { sheet: 11, quadrant: "top-left", alt: "A community nominating an inspiring micro-entrepreneur" },
+  "/get-involved/poverty-alleviation": { sheet: 11, quadrant: "top-right", alt: "Volunteers helping a Filipino family build a small-business livelihood" },
+  "/get-involved/affiliate": { sheet: 11, quadrant: "bottom-left", alt: "An affiliate creator promoting Filipino member products" },
+  "/get-involved/chapter-leader": { sheet: 11, quadrant: "bottom-right", alt: "A local entrepreneur leading a welcoming chapter meeting" },
+  "/get-involved/resource-speaker": { sheet: 12, quadrant: "top-left", alt: "A Filipino expert speaking at an MSME workshop" },
+  "/get-involved/professional-services": { sheet: 12, quadrant: "top-right", alt: "Volunteer professionals helping a Filipino shop owner" },
 };
 
 export function heroSceneForPath(pathname: string): HeroScene | null {
