@@ -5,6 +5,7 @@ import "./globals.css";
 import "./ridesafe/ridesafe.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { HeroPageFooterShare } from "@/components/HeroPageFooterShare";
 import { BottomBar } from "@/components/BottomBar";
 import { RegisterSW } from "@/components/RegisterSW";
 import { EmailLinkSignIn } from "@/components/EmailLinkSignIn";
@@ -58,6 +59,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen font-sans antialiased">
         <Header />
         <main id="main">{children}</main>
+        <HeroPageFooterShare />
         <Footer />
         <BottomBar labels={{ home: t.home, kaflame: t.kaflame, directory: t.directory, account: t.account }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />

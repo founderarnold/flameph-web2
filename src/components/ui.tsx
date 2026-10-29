@@ -1,19 +1,21 @@
 import Link from "next/link";
 import { StatusBadge, type Status } from "./StatusBadge";
-import { ShareButtons } from "./ShareButtons";
+import { HeroArtwork } from "./HeroArtwork";
 
-export function PageHero({ title, fil, intro, status, children, share = true, path }: {
+export function PageHero({ title, fil, intro, status, children, path }: {
   title: string; fil?: string; intro?: React.ReactNode; status?: Status; children?: React.ReactNode; share?: boolean; path?: string;
 }) {
   return (
     <section className="border-b border-line bg-bg-warm">
-      <div className="container-x py-10 lg:py-14">
-        {status && <StatusBadge status={status} className="mb-3" />}
-        {fil && <p className="font-display text-base font-bold text-flame-strong">{fil}</p>}
-        <h1 className="mt-1 max-w-3xl text-3xl font-extrabold text-primary sm:text-4xl lg:text-5xl">{title}</h1>
-        {intro && <div className="mt-4 max-w-2xl text-lg text-muted">{intro}</div>}
-        {children && <div className="mt-6 flex flex-wrap gap-3">{children}</div>}
-        {share && path && <div className="mt-6"><ShareButtons path={path} title={title} /></div>}
+      <div className="container-x grid items-center gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(300px,430px)] lg:gap-12 lg:py-14">
+        <div>
+          {status && <StatusBadge status={status} className="mb-3" />}
+          {fil && <p className="font-display text-base font-bold text-flame-strong">{fil}</p>}
+          <h1 className="mt-1 max-w-3xl text-3xl font-extrabold text-primary sm:text-4xl lg:text-5xl">{title}</h1>
+          {intro && <div className="mt-4 max-w-2xl text-lg text-muted">{intro}</div>}
+          {children && <div className="mt-6 flex flex-wrap gap-3">{children}</div>}
+        </div>
+        {path && <HeroArtwork path={path} />}
       </div>
     </section>
   );

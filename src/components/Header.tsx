@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { Logo } from "./Logo";
 import { DesktopNav } from "./DesktopNav";
 import { MobileMenu } from "./MobileMenu";
-import { LangToggle } from "./LangToggle";
-import { AccountMenu } from "./AccountMenu";
+import { HeroHeaderActions } from "./HeroHeaderActions";
 import { NAV } from "@/lib/nav";
 import { getDict, getLang } from "@/lib/i18n";
 
@@ -19,13 +17,7 @@ export async function Header() {
         <Logo priority height={40} className="h-9 w-auto lg:h-11" />
         <DesktopNav groups={NAV} lang={lang} />
         <div className="ml-auto flex items-center gap-2">
-          <div className="hidden lg:block"><LangToggle lang={lang} /></div>
-          {signedIn ? (
-            <AccountMenu label={t.account} />
-          ) : (
-            <Link href="/login" className="btn btn-ghost hidden lg:inline-flex">{t.login}</Link>
-          )}
-          {!signedIn && <Link href="/join" className="btn btn-flame px-3 text-sm lg:px-4 lg:text-base">{t.joinFree}</Link>}
+          <HeroHeaderActions lang={lang} signedIn={signedIn} account={t.account} login={t.login} joinFree={t.joinFree} />
           <MobileMenu groups={NAV} lang={lang} signedIn={signedIn} labels={{ menu: t.menu, close: t.close, login: t.login, account: t.account, joinFree: t.joinFree }} />
         </div>
       </div>

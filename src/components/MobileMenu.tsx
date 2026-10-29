@@ -7,12 +7,14 @@ import type { NavGroup } from "@/lib/nav";
 import type { Lang } from "@/lib/i18n";
 import { LangToggle } from "./LangToggle";
 import { MEMBER_LINKS, isActive } from "@/lib/member-nav";
+import { isStandardHeroPath } from "@/lib/hero-pages";
 
 type Labels = { menu: string; close: string; login: string; account: string; joinFree: string };
 
 export function MobileMenu({ groups, lang, signedIn, labels }: { groups: NavGroup[]; lang: Lang; signedIn: boolean; labels: Labels }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const heroPage = isStandardHeroPath(pathname);
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -73,14 +75,14 @@ export function MobileMenu({ groups, lang, signedIn, labels }: { groups: NavGrou
             ))}
             <div className="mt-6 grid gap-3">
               {signedIn ? (
-                <Link href="/account" className="btn btn-outline w-full">{labels.account}</Link>
+                <><Link href="/account" className="btn btn-outline w-full">{labels.account}</Link>{heroPage && <Link href="/join" className="btn btn-flame w-full">{labels.joinFree}</Link>}</>
               ) : (
                 <>
                   <Link href="/join" className="btn btn-flame w-full">{labels.joinFree}</Link>
                   <Link href="/login" className="btn btn-outline w-full">{labels.login}</Link>
                 </>
               )}
-              <div className="flex justify-center pt-2"><LangToggle lang={lang} /></div>
+              {!heroPage && <div className="flex justify-center pt-2"><LangToggle lang={lang} /></div>}
             </div>
           </nav>
         </div>,
