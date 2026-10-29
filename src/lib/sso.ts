@@ -26,6 +26,11 @@ export const CLIENTS: Record<string, Client> = {
     origins: ["https://www.managerspizza.com", "https://managerspizza.com"],
     secretEnv: "SSO_SECRET_MANAGERSPIZZA",
   },
+  flamephpages: {
+    callback: "https://pages.flameph.org/auth/flame",
+    origins: ["https://pages.flameph.org"],
+    secretEnv: "SSO_SECRET_FLAMEPHPAGES",
+  },
 };
 
 export type SsoClaims = { iss: string; aud: string; email: string; name?: string; iat: number; exp: number };
