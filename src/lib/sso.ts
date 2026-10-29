@@ -14,6 +14,11 @@ export const HUB = "flameph";
 /** `secretEnv`: a site that has its own shared secret instead of SSO_SECRET (the same value is set in both projects). */
 type Client = { callback: string; origins: string[]; secretEnv?: string };
 export const CLIENTS: Record<string, Client> = {
+  flamepos: {
+    callback: "https://pos.flameph.org/auth/flame",
+    origins: ["https://pos.flameph.org"],
+    secretEnv: "SSO_SECRET_FLAMEPOS",
+  },
   marketplaceph: { callback: "https://www.marketplaceph.com/auth/flame", origins: ["https://www.marketplaceph.com", "https://marketplaceph.com"] },
   negosyodepot: { callback: "https://www.negosyodepot.com/auth/flame", origins: ["https://www.negosyodepot.com", "https://negosyodepot.com"] },
   managerspizza: {
