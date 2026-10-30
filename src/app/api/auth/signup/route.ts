@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { checkRateLimit, retryAfterHeaders } from "@/lib/rate-limit";
 
 /**
- * Join with email + password, signed in straight away (no confirmation email to wait for).
- * The email is not proven yet, so the account is marked `email_unverified` until the member signs in once with an
- * email code; until then other FLAME PH sites don't trust it (see /sso/authorize).
+ * Validates password-signup input before the browser asks Supabase Auth to
+ * create the user. Phase 9 adds the server-verified anti-bot token here.
+ * Account creation deliberately uses the anon browser client so this endpoint
+ * can never bypass Supabase email confirmation with the service role.
  */
 export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}));
@@ -15,17 +16,13 @@ export async function POST(req: Request) {
   if (password.length < 8 || password.length > 72) return NextResponse.json({ error: "Use a password with at least 8 characters." }, { status: 400 });
   if (b.consent !== true) return NextResponse.json({ error: "Please agree to the Privacy Notice first." }, { status: 400 });
 
-  const ref = typeof b.ref === "string" && /^FP-\d{1,10}$/i.test(b.ref) ? b.ref.toUpperCase() : undefined;
-  const admin = createAdminClient();
-  if (!admin) return NextResponse.json({ error: "Sign-up is not available right now. Please try again soon." }, { status: 503 });
-  const { error } = await admin.auth.admin.createUser({
-    email, password, email_confirm: true,
-    user_metadata: { full_name: name, consent_privacy: true, consent_marketing: b.marketing === true, ...(ref ? { ref } : {}) },
-    app_metadata: { email_unverified: true },
-  });
-  if (error) {
-    if (/already|registered|exists/i.test(error.message)) return NextResponse.json({ error: "May account na ang email na ito. Log in instead.", exists: true }, { status: 409 });
-    return NextResponse.json({ error: "Hindi ma-create ang account. Please try again." }, { status: 400 });
+  if (b.ref !== undefined && (typeof b.ref !== "string" || !/^FP-\d{1,10}$/i.test(b.ref))) {
+    return NextResponse.json({ error: "That referral code is not valid." }, { status: 400 });
+  }
+  const limit = await checkRateLimit(req, "signup");
+  if (!limit) return NextResponse.json({ error: "Sign-up is temporarily unavailable." }, { status: 503 });
+  if (!limit.allowed) {
+    return NextResponse.json({ error: "Too many sign-up attempts from this network. Please try again later." }, { status: 429, headers: retryAfterHeaders(limit.retryAfter) });
   }
   return NextResponse.json({ ok: true });
 }

@@ -4,7 +4,7 @@ import { meta } from "@/lib/meta";
 import { MemberNav } from "@/components/MemberNav";
 import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { SECTORS } from "@/app/directory/page";
+import { SECTORS } from "@/lib/listing";
 import { PROVINCES } from "@/content/ph-provinces";
 import { OPPORTUNITY_KINDS, STAGES, STAGE_KEYS, type Opportunity, dateLabel, matches, notExpired } from "@/lib/growth";
 

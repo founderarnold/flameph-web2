@@ -107,7 +107,9 @@ export default function RideSafeHome() {
     const supabase = createClient();
     if (!supabase) return;
     let active = true;
-    void supabase.from("businesses").select("id,name,products,city,province,contact_phone").eq("published", true).ilike("products", "%RideSafe provider service:%").limit(100)
+    void supabase.from("businesses").select("id,name,products,city,province,contact_phone")
+      .eq("published", true).eq("publication_status", "published").eq("lifecycle_status", "approved").eq("risk_level", "low")
+      .ilike("products", "%RideSafe provider service:%").limit(100)
       .then(({ data }) => { if (active) setProviders((data ?? []) as RideSafeProvider[]); });
     return () => { active = false; };
   }, []);

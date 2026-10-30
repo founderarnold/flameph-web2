@@ -5,7 +5,7 @@ import { FORMS } from "@/lib/forms";
 import { list } from "@/lib/content";
 import { meta } from "@/lib/meta";
 
-export const metadata = meta("Get More MSME Benefits", "FLAME PH membership tiers. Paid tiers are coming soon; join the waitlist.", "/membership/more-benefits");
+export const metadata = meta("Upgraded Benefits", "Optional upgraded FLAME PH benefits are being designed. No paid plan is available yet.", "/membership/more-benefits");
 
 type Tier = { slug: string; sort: number; name: string; price_php: number | null; price_period: string | null; benefits: { label: string; status: Status }[]; available: boolean };
 const FALLBACK = ["Free", "Starter", "Micro", "Neo", "Pro", "Champion"].map((name, i) => ({ slug: name.toLowerCase(), sort: i, name, price_php: null, price_period: null, benefits: [], available: i === 0 }));
@@ -15,7 +15,7 @@ export default async function Page() {
   const tiers: Tier[] = rows.length ? rows : FALLBACK;
   return (
     <>
-      <PageHero status="soon" fil="Dagdag na benepisyo" title="Get More MSME Benefits" path="/membership/more-benefits"
+      <PageHero status="soon" fil="Dagdag na benepisyo" title="Upgraded Benefits" path="/membership/more-benefits"
         intro="Free membership is open now. Paid tiers are being designed, and we will only list benefits we can actually deliver." />
       <Section>
         <Notice>Paid tiers are not available yet, and no payments are collected on this website. Prices will appear here once the founders set them.</Notice>

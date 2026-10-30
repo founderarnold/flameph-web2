@@ -19,7 +19,7 @@ export function AccountMenu({ label }: { label: string }) {
   }, []);
   return (
     <div ref={ref} className="relative hidden lg:block" onMouseLeave={() => setOpen(false)}>
-      <button type="button" aria-expanded={open} aria-controls="menu-account" onClick={() => setOpen(!open)} onMouseEnter={() => setOpen(true)} className="btn btn-ghost gap-1">
+      <button type="button" aria-expanded={open} aria-controls="menu-account" onClick={() => setOpen(!open)} onMouseEnter={() => setOpen(true)} className="btn btn-ghost gap-1 text-sm">
         {label}
         <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" className={`transition-transform ${open ? "rotate-180" : ""}`}><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" /></svg>
       </button>

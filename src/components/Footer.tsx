@@ -37,7 +37,7 @@ export async function Footer() {
             <h2 className="font-display text-base font-extrabold">{lang === "fil" ? g.fil : g.label}</h2>
             <ul className="mt-2 space-y-0.5">
               {g.items.map((it) => (
-                <li key={it.href}>
+                <li key={`${it.label}-${it.href}`}>
                   {it.external ? (
                     <a href={it.href} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-[15px] text-muted hover:text-fg hover:underline lg:min-h-9">{it.label} ↗</a>
                   ) : (

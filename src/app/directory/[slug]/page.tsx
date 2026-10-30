@@ -11,12 +11,13 @@ import { peso } from "@/lib/growth";
 import { InquiryForm } from "@/components/listing/InquiryForm";
 import { ListingTracker } from "@/components/listing/ListingTracker";
 import { saveReview, deleteReview } from "./actions";
+import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
 
 type B = {
   id: string; owner_id: string; created_at: string; name: string; slug: string; sector: string | null; description: string | null; products: string | null; city: string | null; province: string | null;
   contact_messenger: string | null; contact_viber: string | null; contact_phone: string | null; contact_email: string | null; marketplaceph_url: string | null; photos: string[]; verified: boolean;
   logo_url?: string | null; cover_url?: string | null; hours?: string | null; map_landmark?: string | null;
-  facebook_url?: string | null; tiktok_url?: string | null; instagram_url?: string | null; shopee_url?: string | null; lazada_url?: string | null; website_url?: string | null;
+  facebook_url?: string | null; google_business_url?: string | null; tiktok_url?: string | null; instagram_url?: string | null; shopee_url?: string | null; lazada_url?: string | null; website_url?: string | null;
 };
 
 type Product = { id: string; name: string; description: string | null; price: number | null; price_from: boolean; unit: string | null; min_order: string | null; photo_path: string | null; link_url: string | null };
@@ -24,7 +25,7 @@ type Review = { id: string; user_id: string; rating: number; body: string | null
 
 const safeLink = (u?: string | null) => (u && /^https?:\/\//i.test(u) ? u : null);
 
-const get = async (slug: string) => (await list<B>({ table: "businesses", filters: { slug, published: true }, limit: 1 }))[0];
+const get = async (slug: string) => (await list<B>({ table: "businesses", filters: { slug, ...PUBLIC_BUSINESS_FILTERS }, limit: 1 }))[0];
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const b = await get((await params).slug);
@@ -42,7 +43,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
     pub?.from("business_products").select("*").eq("business_id", b.id).order("sort").order("created_at"),
     pub?.from("business_reviews").select("id,user_id,rating,body,reviewer_name,reviewer_city,created_at").eq("business_id", b.id).eq("hidden", false).order("created_at", { ascending: false }).limit(50),
     user && supabase ? supabase.from("profiles").select("full_name, mobile").eq("id", user.id).single() : null,
-    list<B>({ table: "businesses", select: "id,name,slug,sector,city,province", filters: { published: true }, order: "created_at" }),
+    list<B>({ table: "businesses", select: "id,name,slug,sector,city,province", filters: PUBLIC_BUSINESS_FILTERS, order: "created_at" }),
   ]);
   const products = (productsRes?.data ?? []) as Product[];
   const reviews = (reviewsRes?.data ?? []) as Review[];

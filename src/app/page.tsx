@@ -1,35 +1,22 @@
-import Image from "next/image";
-import premiumId from "@/assets/premium-id.webp";
 import Link from "next/link";
-import { StatsStrip, HeroStats } from "@/components/StatsStrip";
+import { StatsStrip } from "@/components/StatsStrip";
 import { PrincipleDiagram } from "@/components/PrincipleDiagram";
 import { HowWeHelp } from "@/components/HowWeHelp";
 import { FeatureCard, Grid, Initials, Section } from "@/components/ui";
+import { EcosystemFrontDoor } from "@/components/EcosystemFrontDoor";
 import * as I from "@/components/icons";
-import { FOUNDERS, TAGLINES, TRUST_LINE } from "@/lib/site";
-import { getDict } from "@/lib/i18n";
+import { FOUNDERS, TAGLINES } from "@/lib/site";
 import { list, type EventRow } from "@/lib/content";
 import type { Status } from "@/components/StatusBadge";
 import { FlameAdSlot } from "@/components/FlameAdSlot";
 
-const NEEDS = [
-  { label: "Magsimula ng negosyo", sub: "Start a business", href: "https://negosyodepot.com", art: "start-business", external: true },
-  { label: "Mag-register ng business", sub: "Permits & registration guides", href: "/resources?topic=permits", art: "register-business" },
-  { label: "Magtanong kay Ka-FLAME AI", sub: "Free business Q&A", href: "/bizconsult-ai", art: "ask-kaflame" },
-  { label: "Ilista ang negosyo ko", sub: "Free business directory", href: "/directory", art: "list-business" },
-  { label: "Magbenta online", sub: "MarketplacePH", href: "https://www.marketplaceph.com", art: "sell-online", external: true },
-  { label: "Sumali sa workshop", sub: "Workshops & trainings", href: "/workshops", art: "join-workshop" },
-  { label: "Humanap ng mentor", sub: "Volunteer mentors", href: "/about/mentors", art: "find-mentor" },
-  { label: "Sumali sa chapter", sub: "Chapters near you", href: "/chapters", art: "join-chapter" },
-];
-
 const BENEFITS: { title: string; text: string; status: Status; href: string; icon: React.ReactNode }[] = [
   { title: "Free membership & digital ID", text: "Sign up with Google or email and get a FLAME PH member ID with a QR verification page.", status: "live", href: "/join", icon: <I.IconId /> },
   { title: "Ka-FLAME AI business assistant", text: "Ask start, grow and scale questions in Taglish. It's an AI guide, not a lawyer or accountant.", status: "beta", href: "/bizconsult-ai", icon: <I.IconChat /> },
-  { title: "Free business directory listing", text: "Your own mini website with Messenger, Viber and call buttons.", status: "live", href: "/directory", icon: <I.IconStore /> },
+  { title: "Free Mini-Website/Landing Page", text: "Your own mini website with Messenger, Viber and call buttons.", status: "live", href: "/directory", icon: <I.IconStore /> },
   { title: "Resource library", text: "Guides, templates and checklists with links to official agencies.", status: "live", href: "/resources", icon: <I.IconBook /> },
   { title: "Workshops & trainings", text: "Join events as they are scheduled, or request one for your barangay or LGU.", status: "live", href: "/workshops", icon: <I.IconCalendar /> },
-  { title: "Free POS for MSMEs", text: "A simple point-of-sale for small stores. Join the waitlist.", status: "soon", href: "/pos", icon: <I.IconPos /> },
+  { title: "Free Basic POS for MSMEs", text: "Sell, track inventory and understand your business using FLAME POS.", status: "live", href: "/pos", icon: <I.IconPos /> },
 ];
 
 const SCENARIOS = [
@@ -40,7 +27,6 @@ const SCENARIOS = [
 ];
 
 export default async function Home() {
-  const t = await getDict();
   const [events, posts] = await Promise.all([
     list<EventRow>({ table: "events", filters: { status: "scheduled" }, order: "starts_at", ascending: true, limit: 3 }),
     list<{ id: string; title: string; slug: string; excerpt: string | null; published_at: string | null }>({ table: "posts", order: "published_at", limit: 3 }),
@@ -49,64 +35,15 @@ export default async function Home() {
 
   return (
     <>
-      <section className="bg-bg-warm">
-        <div className="container-x grid items-center gap-8 py-10 lg:grid-cols-[1.3fr_1fr] lg:py-16">
-          <div>
-            <p className="font-display text-lg font-bold text-flame-strong">BUILD Ecosystem. FUEL Leaders. EMPOWER Entrepreneurs.</p>
-            <h1 className="mt-2 text-[2rem] font-extrabold leading-tight text-primary sm:text-5xl">
-              {TAGLINES.notAlone}
-            </h1>
-            <p className="mt-4 max-w-xl text-lg text-muted">
-              Join thousands of Filipino entrepreneurs building businesses together to break the chains of poverty among Filipino households and towards a first-world Philippines for the next Filipino generation.
-            </p>
-            <p className="mt-3 max-w-xl font-semibold">Learn. Connect. Find suppliers. Promote your business. Use business tools. Find opportunities.</p>
-            <p className="mt-3 inline-block rounded-full bg-flame-soft px-3 py-1 font-display text-sm font-extrabold tracking-wide text-flame-strong">₱0 TO JOIN</p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/join" className="btn btn-flame text-lg">{t.joinFree}</Link>
-              <Link href="/bizconsult-ai" className="btn btn-outline text-lg">{t.tryKaflame}</Link>
-            </div>
-            <p className="mt-6 text-sm font-semibold text-muted">{TRUST_LINE}</p>
-          </div>
-          <div className="mx-auto grid w-full max-w-sm gap-5 sm:max-w-md">
-            <Link href="/join" aria-label={`${t.joinFree}: FLAME PH Premium Community Member ID`} className="group block rounded-2xl">
-              <Image src={premiumId} alt="FLAME PH Premium Community Member ID card" priority placeholder="blur" sizes="(min-width:640px) 448px, calc(100vw - 32px)" className="h-auto w-full rounded-2xl shadow-xl transition-transform duration-200 group-hover:-translate-y-1 group-hover:scale-[1.02]" />
-            </Link>
-            <HeroStats />
-          </div>
-        </div>
-      </section>
+      <EcosystemFrontDoor />
 
       <div className="container-x py-5 sm:py-7">
         <FlameAdSlot slot="HOME_AFTER_HERO" />
       </div>
 
-      <Section title={t.needPicker} intro="Piliin ang kailangan mo, at dadalhin ka namin sa tamang lugar.">
-        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {NEEDS.map((n) => {
-            const inner = (
-              <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/illustrations/${n.art}.svg`} alt="" width={64} height={64} loading="lazy" className="h-16 w-16 transition-transform group-hover:-translate-y-0.5" />
-                <span className="mt-2 block font-bold leading-snug">{n.label}</span>
-                <span className="block text-sm text-muted">{n.sub}{n.external ? " ↗" : ""}</span>
-              </>
-            );
-            return (
-              <li key={n.href}>
-                {n.external ? (
-                  <a href={n.href} target="_blank" rel="noopener" className="group card block h-full p-4 hover:border-primary">{inner}</a>
-                ) : (
-                  <Link href={n.href} className="group card block h-full p-4 hover:border-primary">{inner}</Link>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </Section>
-
       <Section className="!pt-0" title="Libreng benepisyo" intro="What free members can use today. Each one is labeled honestly: Live, Beta or Coming soon.">
         <Grid>{BENEFITS.map((b) => <FeatureCard key={b.title} {...b} />)}</Grid>
-        <Link href="/membership/free-benefits" className="mt-6 inline-flex min-h-11 items-center font-semibold text-mph underline">See all free benefits →</Link>
+        <Link href="/benefits" className="mt-6 inline-flex min-h-11 items-center font-semibold text-mph underline">See all free benefits →</Link>
       </Section>
 
       <section className="bg-bg-soft">
@@ -183,7 +120,7 @@ export default async function Home() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/join" className="btn rounded-full bg-[#c00a0a] px-7 text-lg text-white shadow-lg hover:bg-[#a30808]">Join FLAME PH Free →</Link>
-            <Link href="/membership/more-benefits" className="btn rounded-full bg-white/15 px-7 text-lg text-white hover:bg-white/25">Get More MSME Benefits</Link>
+            <Link href="/membership/more-benefits" className="btn rounded-full bg-white/15 px-7 text-lg text-white hover:bg-white/25">Explore Upgraded Benefits</Link>
           </div>
           <p className="mt-6 text-sm font-semibold text-white/75">No credit card required • 100% Filipino-Owned Ecosystem • Instant Digital Member Pass</p>
         </div>

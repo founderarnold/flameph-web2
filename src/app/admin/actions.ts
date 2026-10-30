@@ -115,12 +115,59 @@ export async function verifyBusiness(fd: FormData) {
   const note = String(fd.get("note") ?? "") || null;
   const patch = decision === "approve" ? { verified: true, verification_status: "approved", verification_note: note }
     : decision === "reject" ? { verified: false, verification_status: "rejected", verification_note: note }
-    : decision === "unpublish" ? { published: false } : null;
+    : decision === "unpublish" ? { publication_status: "unpublished" } : null;
   if (!patch) return;
   await ctx.db.from("businesses").update(patch).eq("id", id);
   await ctx.audit(`business_${decision}`, "businesses", id, { note });
   revalidateTag("content"); revalidateTag("stats");
   revalidatePath("/admin/directory");
+}
+
+export async function reviewLegacyBusiness(fd: FormData) {
+  const ctx = await adminContext(["super_admin", "admin"]);
+  const id = String(fd.get("id"));
+  const decision = String(fd.get("decision"));
+  const note = String(fd.get("note") ?? "").trim() || null;
+  if (!["confirm_quarantine", "restore_public", "clear_review"].includes(decision)) return;
+
+  const { error } = await ctx.db.rpc("review_business_legacy_assessment", {
+    p_business_id: id,
+    p_decision: decision,
+    p_actor_id: ctx.user.id,
+    p_note: note,
+  });
+  if (error) throw new Error(`Legacy review failed: ${error.message}`);
+
+  revalidateTag("content"); revalidateTag("stats");
+  revalidatePath("/admin/directory");
+  revalidatePath("/directory");
+}
+
+export async function reviewBusinessModeration(fd: FormData) {
+  const ctx = await adminContext(["super_admin", "admin"]);
+  const id = String(fd.get("id"));
+  const ownerId = String(fd.get("owner_id"));
+  const decision = String(fd.get("decision"));
+  const note = String(fd.get("note") ?? "").trim() || null;
+  const patches: Record<string, Record<string, unknown>> = {
+    approve_legitimate: { risk_level: "low", moderation_reason_categories: [], moderation_fields: [], lifecycle_status: "submitted", publication_status: "unpublished", published: false },
+    request_correction: { risk_level: "needs_review", lifecycle_status: "needs_correction", publication_status: "unpublished", published: false },
+    keep_quarantined: { risk_level: "high", lifecycle_status: "needs_correction", publication_status: "unpublished", published: false },
+    reject: { risk_level: "high", lifecycle_status: "rejected", publication_status: "unpublished", published: false },
+    suspend: { risk_level: "high", lifecycle_status: "suspended", publication_status: "unpublished", published: false },
+  };
+  const patch = patches[decision];
+  if (!patch) return;
+  const { error } = await ctx.db.from("businesses").update(patch).eq("id", id).eq("owner_id", ownerId);
+  if (error) throw new Error(`Moderation review failed: ${error.message}`);
+  if (decision === "suspend") {
+    const { error: profileError } = await ctx.db.from("profiles").update({ status: "suspended" }).eq("id", ownerId);
+    if (profileError) throw new Error(`Member suspension failed: ${profileError.message}`);
+  }
+  await ctx.audit(`business_moderation_${decision}`, "businesses", id, { owner_id: ownerId, note });
+  revalidateTag("content"); revalidateTag("stats");
+  revalidatePath("/admin/directory");
+  revalidatePath("/directory");
 }
 
 export async function setRole(fd: FormData) {

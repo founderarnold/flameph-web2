@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { sendPush } from "@/lib/push";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { checkRateLimit, retryAfterHeaders } from "@/lib/rate-limit";
 
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
@@ -10,6 +12,8 @@ const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice
 export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}));
   if (str(b.website, 100)) return NextResponse.json({ ok: true }); // honeypot
+  const botCheck = await verifyTurnstile(req, b.turnstileToken, "inquiry");
+  if (!botCheck.ok) return NextResponse.json({ error: botCheck.error }, { status: botCheck.status });
   const bizId = str(b.bizId, 40);
   const name = str(b.name, 120);
   const email = str(b.email, 200).toLowerCase();
@@ -22,15 +26,14 @@ export async function POST(req: Request) {
 
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: "Inquiries are not available right now. Please use the contact buttons." }, { status: 503 });
-  const { data: biz } = await admin.from("businesses").select("id, name, slug, owner_id, contact_email").eq("id", bizId).eq("published", true).maybeSingle();
+  const { data: biz } = await admin.from("businesses").select("id, name, slug, owner_id, contact_email")
+    .eq("id", bizId).eq("published", true).eq("publication_status", "published").eq("lifecycle_status", "approved").eq("risk_level", "low").maybeSingle();
   if (!biz) return NextResponse.json({ error: "This business is no longer listed." }, { status: 404 });
 
-  // Simple flood guard: at most 5 inquiries per sender per business per day.
-  const since = new Date(Date.now() - 86400000).toISOString();
   const who = email || mobile;
-  const { count } = await admin.from("business_inquiries").select("id", { count: "exact", head: true })
-    .eq("business_id", biz.id).gte("created_at", since).eq(email ? "email" : "mobile", who);
-  if ((count ?? 0) >= 5) return NextResponse.json({ error: `You've already sent several messages to ${biz.name} today. Please wait for their reply.` }, { status: 429 });
+  const limit = await checkRateLimit(req, "inquiry", { identifier: `${biz.id}:${who}` });
+  if (!limit) return NextResponse.json({ error: "Inquiries are temporarily unavailable." }, { status: 503 });
+  if (!limit.allowed) return NextResponse.json({ error: `You've already sent several messages to ${biz.name} today. Please wait for their reply.` }, { status: 429, headers: retryAfterHeaders(limit.retryAfter) });
 
   const { user } = await getSession();
   const { error } = await admin.from("business_inquiries").insert({

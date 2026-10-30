@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { NavGroup } from "@/lib/nav";
 import type { Lang } from "@/lib/i18n";
-import { LangToggle } from "./LangToggle";
 import { MEMBER_LINKS, isActive } from "@/lib/member-nav";
 
 type Labels = { menu: string; close: string; login: string; account: string; joinFree: string };
@@ -60,7 +59,7 @@ export function MobileMenu({ groups, lang, signedIn, labels }: { groups: NavGrou
                 </summary>
                 <ul className="pb-3">
                   {g.items.map((it) => (
-                    <li key={it.href}>
+                    <li key={`${it.label}-${it.href}`}>
                       {it.external ? (
                         <a href={it.href} target="_blank" rel="noopener" className="flex min-h-11 items-center rounded-lg px-3 text-base text-muted hover:bg-bg-soft">{it.label} ↗</a>
                       ) : (
@@ -80,7 +79,6 @@ export function MobileMenu({ groups, lang, signedIn, labels }: { groups: NavGrou
                   <Link href="/login" className="btn btn-outline w-full">{labels.login}</Link>
                 </>
               )}
-              <div className="flex justify-center pt-2"><LangToggle lang={lang} /></div>
             </div>
           </nav>
         </div>,

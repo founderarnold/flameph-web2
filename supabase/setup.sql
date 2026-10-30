@@ -972,6 +972,1250 @@ update public.settings set value = (
 ) where key = 'menu' and jsonb_typeof(value) = 'array';
 
 
+-- ===== 0004_business_lifecycle.sql =====
+-- Safe business lifecycle and publication controls.
+--
+-- This migration is intentionally additive. It preserves every business ID,
+-- owner, slug, URL and relationship. Existing published rows stay published;
+-- suspicious legacy data is classified in a later, separately reviewed phase.
+
+alter table public.businesses
+  add column if not exists lifecycle_status text,
+  add column if not exists publication_status text,
+  add column if not exists submitted_at timestamptz,
+  add column if not exists approved_at timestamptz,
+  add column if not exists published_at timestamptz,
+  add column if not exists status_updated_at timestamptz;
+
+-- Preserve current visibility while introducing the new state model.
+update public.businesses
+set
+  lifecycle_status = case
+    when published then 'approved'
+    when verification_status = 'pending' then 'pending_review'
+    else 'draft'
+  end,
+  publication_status = case when published then 'published' else 'unpublished' end,
+  approved_at = case when published then coalesce(approved_at, updated_at, created_at) else approved_at end,
+  published_at = case when published then coalesce(published_at, updated_at, created_at) else published_at end,
+  status_updated_at = coalesce(status_updated_at, updated_at, created_at)
+where lifecycle_status is null or publication_status is null or status_updated_at is null;
+
+alter table public.businesses
+  alter column lifecycle_status set default 'draft',
+  alter column lifecycle_status set not null,
+  alter column publication_status set default 'unpublished',
+  alter column publication_status set not null,
+  alter column status_updated_at set default now(),
+  alter column status_updated_at set not null;
+
+alter table public.businesses
+  add constraint businesses_lifecycle_status_check
+    check (lifecycle_status in ('draft','submitted','pending_review','needs_correction','approved','rejected','suspended')),
+  add constraint businesses_publication_status_check
+    check (publication_status in ('unpublished','published')),
+  add constraint businesses_publication_compatibility_check
+    check (published = (publication_status = 'published')),
+  add constraint businesses_publication_requires_approval_check
+    check (publication_status <> 'published' or lifecycle_status = 'approved');
+
+create index if not exists businesses_lifecycle_status_idx
+  on public.businesses (lifecycle_status, updated_at desc);
+
+create index if not exists businesses_publication_status_idx
+  on public.businesses (publication_status, updated_at desc);
+
+-- Members may edit their business information, but lifecycle and publication
+-- decisions are server/admin controlled. This also blocks direct REST calls,
+-- modified browser JavaScript and hidden-field manipulation.
+create or replace function public.protect_business_fields() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if not public.is_trusted() then
+    if tg_op = 'INSERT' then
+      new.verified = false;
+      if new.verification_status not in ('none', 'pending') then
+        new.verification_status = 'none';
+      end if;
+      new.verification_note = null;
+      new.lifecycle_status = 'draft';
+      new.publication_status = 'unpublished';
+      new.published = false;
+      new.submitted_at = null;
+      new.approved_at = null;
+      new.published_at = null;
+      new.status_updated_at = now();
+    else
+      new.verified = old.verified;
+      if new.verification_status not in ('none', 'pending') then
+        new.verification_status = old.verification_status;
+      end if;
+      new.verification_note = old.verification_note;
+      new.lifecycle_status = old.lifecycle_status;
+      new.publication_status = old.publication_status;
+      new.published = old.published;
+      new.submitted_at = old.submitted_at;
+      new.approved_at = old.approved_at;
+      new.published_at = old.published_at;
+      new.status_updated_at = old.status_updated_at;
+    end if;
+  else
+    if tg_op = 'INSERT' then
+      new.status_updated_at = coalesce(new.status_updated_at, now());
+      if new.lifecycle_status = 'submitted' then
+        new.submitted_at = coalesce(new.submitted_at, now());
+      end if;
+      if new.lifecycle_status = 'approved' then
+        new.approved_at = coalesce(new.approved_at, now());
+      end if;
+    elsif new.lifecycle_status is distinct from old.lifecycle_status then
+      new.status_updated_at = now();
+      if new.lifecycle_status = 'submitted' then
+        new.submitted_at = coalesce(new.submitted_at, now());
+      end if;
+      if new.lifecycle_status = 'approved' then
+        new.approved_at = coalesce(new.approved_at, now());
+      end if;
+    end if;
+
+    if new.publication_status = 'published' then
+      if new.lifecycle_status <> 'approved' then
+        raise exception 'A business must be approved before publication.';
+      end if;
+      new.published = true;
+      new.published_at = coalesce(new.published_at, now());
+    else
+      new.published = false;
+    end if;
+  end if;
+
+  return new;
+end; $$;
+
+-- Rollback guidance (run only as a reviewed migration):
+-- 1. Restore protect_business_fields() from 0001_init.sql.
+-- 2. Drop the four businesses_* lifecycle/publication constraints and two
+--    lifecycle/publication indexes.
+-- 3. Keep the added columns by default so moderation history is not destroyed.
+--    Drop them only after confirming no newer application code or data uses them.
+
+
+
+-- ===== 0005_protect_existing_businesses.sql =====
+-- Protect legitimate legacy businesses while quarantining only records that
+-- match a deliberately narrow, multi-signal random-content pattern.
+--
+-- This migration never deletes or merges a business. It records the original
+-- publication state, keeps presumed-legitimate records public, queues weak or
+-- ambiguous signals for review without changing visibility, and unpublishes
+-- only records that match all three independent random-token signals.
+
+create table if not exists public.business_legacy_assessments (
+  business_id uuid primary key references public.businesses(id) on delete cascade,
+  classification text not null check (classification in ('clearly_legitimate','incomplete','obviously_suspicious','uncertain')),
+  reason_codes text[] not null default '{}',
+  possible_duplicate boolean not null default false,
+  was_published boolean not null,
+  action_taken text not null check (action_taken in ('kept_public','queued_for_review','quarantined','restored_public','confirmed_quarantine')),
+  review_state text not null default 'pending' check (review_state in ('pending','cleared','confirmed')),
+  assessment_version text not null default 'legacy-v1',
+  assessed_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  reviewed_by uuid references auth.users(id) on delete set null,
+  review_note text
+);
+
+alter table public.business_legacy_assessments enable row level security;
+
+create policy business_legacy_assessments_admin_select
+  on public.business_legacy_assessments for select
+  using (public.is_admin());
+
+create policy business_legacy_assessments_admin_update
+  on public.business_legacy_assessments for update
+  using (public.is_admin()) with check (public.is_admin());
+
+grant select, update on public.business_legacy_assessments to authenticated;
+
+create index if not exists business_legacy_assessments_review_idx
+  on public.business_legacy_assessments (review_state, classification, assessed_at desc);
+
+with signals as (
+  select
+    b.id,
+    b.published,
+    length(trim(coalesce(b.description, ''))) = 0
+      or coalesce(trim(b.city), '') = ''
+      or coalesce(trim(b.province), '') = ''
+      or coalesce(trim(b.sector), '') = '' as missing_core,
+    length(trim(b.name)) >= 14
+      and b.name ~ '^[A-Za-z]+$'
+      and b.name ~ '[a-z]'
+      and b.name ~ '[A-Z]' as random_name,
+    length(trim(coalesce(b.description, ''))) >= 12
+      and trim(coalesce(b.description, '')) ~ '^[A-Za-z]+$'
+      and b.description ~ '[a-z]'
+      and b.description ~ '[A-Z]' as random_description,
+    length(trim(coalesce(b.products, ''))) >= 12
+      and trim(coalesce(b.products, '')) ~ '^[A-Za-z]+$'
+      and b.products ~ '[a-z]'
+      and b.products ~ '[A-Z]' as random_products,
+    (coalesce(trim(b.contact_messenger), '') <> ''
+      or coalesce(trim(b.contact_viber), '') <> ''
+      or coalesce(trim(b.contact_phone), '') <> ''
+      or coalesce(trim(b.contact_email), '') <> ''
+      or coalesce(trim(b.marketplaceph_url), '') <> '') as has_contact,
+    cardinality(coalesce(b.photos, '{}')) > 0 as has_media,
+    count(*) over (
+      partition by lower(regexp_replace(b.name, '[^a-zA-Z0-9]', '', 'g'))
+    ) > 1 as possible_duplicate
+  from public.businesses b
+), classified as (
+  select
+    s.*,
+    case
+      when random_name and random_description and random_products then 'obviously_suspicious'
+      when missing_core then 'incomplete'
+      when possible_duplicate then 'uncertain'
+      when not random_name and (has_contact or has_media) then 'clearly_legitimate'
+      else 'uncertain'
+    end as classification
+  from signals s
+)
+insert into public.business_legacy_assessments (
+  business_id,
+  classification,
+  reason_codes,
+  possible_duplicate,
+  was_published,
+  action_taken
+)
+select
+  id,
+  classification,
+  array_remove(array[
+    case when random_name then 'random_name_token' end,
+    case when random_description then 'random_description_token' end,
+    case when random_products then 'random_products_token' end,
+    case when missing_core then 'missing_core_fields' end,
+    case when possible_duplicate then 'possible_duplicate_name' end,
+    case when not has_contact then 'no_contact_channel' end,
+    case when not has_media then 'no_media' end
+  ], null),
+  possible_duplicate,
+  published,
+  case
+    when classification = 'obviously_suspicious' then 'quarantined'
+    when classification in ('incomplete', 'uncertain') then 'queued_for_review'
+    else 'kept_public'
+  end
+from classified
+on conflict (business_id) do nothing;
+
+-- Only the high-confidence, three-signal class is automatically quarantined.
+-- Incomplete, duplicate and uncertain records remain in their existing state
+-- until an administrator makes a record-by-record decision.
+update public.businesses b
+set
+  lifecycle_status = 'needs_correction',
+  publication_status = 'unpublished'
+where exists (
+  select 1
+  from public.business_legacy_assessments a
+  where a.business_id = b.id
+    and a.classification = 'obviously_suspicious'
+    and a.action_taken = 'quarantined'
+);
+
+insert into public.audit_log (action, table_name, row_id, detail)
+select
+  'business_legacy_quarantine',
+  'businesses',
+  a.business_id::text,
+  jsonb_build_object(
+    'assessment_version', a.assessment_version,
+    'classification', a.classification,
+    'reason_codes', a.reason_codes,
+    'was_published', a.was_published
+  )
+from public.business_legacy_assessments a
+where a.classification = 'obviously_suspicious'
+  and a.action_taken = 'quarantined'
+  and not exists (
+    select 1 from public.audit_log l
+    where l.action = 'business_legacy_quarantine'
+      and l.table_name = 'businesses'
+      and l.row_id = a.business_id::text
+  );
+
+create or replace function public.review_business_legacy_assessment(
+  p_business_id uuid,
+  p_decision text,
+  p_actor_id uuid,
+  p_note text default null
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_actor_id uuid;
+begin
+  if coalesce(auth.role(), '') <> 'service_role' and not public.is_admin() then
+    raise exception 'Administrator access required.';
+  end if;
+
+  -- Service-role calls come only from the already-authorized server action.
+  -- Direct authenticated admin calls always use the JWT subject as actor.
+  v_actor_id := case
+    when coalesce(auth.role(), '') = 'service_role' then p_actor_id
+    else auth.uid()
+  end;
+
+  if v_actor_id is null then
+    raise exception 'Review actor is required.';
+  end if;
+
+  if p_decision not in ('confirm_quarantine', 'restore_public', 'clear_review') then
+    raise exception 'Unknown legacy review decision.';
+  end if;
+
+  if not exists (
+    select 1 from public.business_legacy_assessments
+    where business_id = p_business_id
+  ) then
+    raise exception 'Legacy assessment not found.';
+  end if;
+
+  if p_decision = 'confirm_quarantine' then
+    update public.businesses
+    set lifecycle_status = 'needs_correction', publication_status = 'unpublished'
+    where id = p_business_id;
+
+    update public.business_legacy_assessments
+    set review_state = 'confirmed', action_taken = 'confirmed_quarantine',
+        reviewed_at = now(), reviewed_by = v_actor_id, review_note = nullif(trim(p_note), '')
+    where business_id = p_business_id;
+  elsif p_decision = 'restore_public' then
+    update public.businesses
+    set lifecycle_status = 'approved', publication_status = 'published'
+    where id = p_business_id;
+
+    update public.business_legacy_assessments
+    set review_state = 'cleared', action_taken = 'restored_public',
+        reviewed_at = now(), reviewed_by = v_actor_id, review_note = nullif(trim(p_note), '')
+    where business_id = p_business_id;
+  else
+    update public.business_legacy_assessments
+    set review_state = 'cleared', action_taken = 'kept_public',
+        reviewed_at = now(), reviewed_by = v_actor_id, review_note = nullif(trim(p_note), '')
+    where business_id = p_business_id;
+  end if;
+
+  insert into public.audit_log (actor_id, action, table_name, row_id, detail)
+  values (
+    v_actor_id,
+    'business_legacy_' || p_decision,
+    'businesses',
+    p_business_id::text,
+    jsonb_build_object('note', nullif(trim(p_note), ''))
+  );
+end;
+$$;
+
+revoke all on function public.review_business_legacy_assessment(uuid, text, uuid, text) from public, anon;
+grant execute on function public.review_business_legacy_assessment(uuid, text, uuid, text) to authenticated, service_role;
+
+-- Rollback guidance (review before running):
+-- 1. Restore only rows whose assessment action is still 'quarantined' and
+--    was_published=true to approved/published.
+-- 2. Drop review_business_legacy_assessment(uuid,text,uuid,text).
+-- 3. Drop business_legacy_assessments only after exporting its audit history.
+-- No rollback step should delete or recreate a business row.
+
+
+-- ===== 0006_enforce_public_business_visibility.sql =====
+-- Enforce business publication eligibility at the database boundary.
+-- Application filters remain useful defense-in-depth, but RLS is authoritative:
+-- modified browser requests cannot read a draft, quarantined or unpublished row.
+
+drop policy if exists businesses_public on public.businesses;
+create policy businesses_public
+  on public.businesses for select
+  using (
+    published
+    and publication_status = 'published'
+    and lifecycle_status = 'approved'
+  );
+
+drop policy if exists products_public on public.business_products;
+create policy products_public
+  on public.business_products for select
+  using (
+    exists (
+      select 1
+      from public.businesses b
+      where b.id = business_products.business_id
+        and b.published
+        and b.publication_status = 'published'
+        and b.lifecycle_status = 'approved'
+    )
+  );
+
+-- Public reviews must not reveal the existence or identity of an unpublished
+-- business. Review authors retain access to their own row and admins retain
+-- moderation access.
+drop policy if exists reviews_public on public.business_reviews;
+create policy reviews_public
+  on public.business_reviews for select
+  using (
+    user_id = auth.uid()
+    or public.is_admin()
+    or (
+      not hidden
+      and exists (
+        select 1
+        from public.businesses b
+        where b.id = business_reviews.business_id
+          and b.published
+          and b.publication_status = 'published'
+          and b.lifecycle_status = 'approved'
+      )
+    )
+  );
+
+-- A forged client request cannot add a review to a non-public business.
+drop policy if exists reviews_self_insert on public.business_reviews;
+create policy reviews_self_insert
+  on public.business_reviews for insert
+  with check (
+    user_id = auth.uid()
+    and exists (
+      select 1
+      from public.businesses b
+      where b.id = business_reviews.business_id
+        and b.published
+        and b.publication_status = 'published'
+        and b.lifecycle_status = 'approved'
+    )
+  );
+
+create index if not exists businesses_public_directory_idx
+  on public.businesses (created_at desc)
+  where published
+    and publication_status = 'published'
+    and lifecycle_status = 'approved';
+
+create or replace function public.track_business(biz uuid, kind text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (
+    select 1 from public.businesses
+    where id = biz
+      and published
+      and publication_status = 'published'
+      and lifecycle_status = 'approved'
+  ) then return; end if;
+
+  insert into public.business_stats (business_id, day, views, clicks)
+  values (
+    biz,
+    (now() at time zone 'Asia/Manila')::date,
+    case when kind = 'view' then 1 else 0 end,
+    case when kind = 'click' then 1 else 0 end
+  )
+  on conflict (business_id, day) do update
+    set views = business_stats.views + excluded.views,
+        clicks = business_stats.clicks + excluded.clicks;
+end;
+$$;
+
+create or replace function public.public_stats() returns jsonb
+language sql stable security definer set search_path = public as $$
+  with m as (
+    select p.* from public.profiles p
+    join auth.users u on u.id = p.id
+    where u.email_confirmed_at is not null
+  ), rated as (
+    select count(*) as n, count(*) filter (where helpful) as up
+    from public.ai_feedback
+  ), public_businesses as (
+    select * from public.businesses
+    where published
+      and publication_status = 'published'
+      and lifecycle_status = 'approved'
+  )
+  select jsonb_build_object(
+    'members', (select count(*) from m),
+    'members_this_month', (select count(*) from m where created_at >= date_trunc('month', now() at time zone 'Asia/Manila') at time zone 'Asia/Manila'),
+    'provinces', (select count(distinct lower(trim(province))) from m where coalesce(trim(province),'') <> ''),
+    'cities', (select count(distinct lower(trim(city)) || '|' || lower(trim(coalesce(province,'')))) from m where coalesce(trim(city),'') <> ''),
+    'businesses', (select count(*) from public_businesses),
+    'verified_businesses', (select count(*) from public_businesses where verified),
+    'active_chapters', (select count(*) from public.chapters where status = 'active'),
+    'events_held', (select count(*) from public.events where status = 'completed'),
+    'event_attendees', (select coalesce(sum(attendance_actual),0) from public.events where status = 'completed'),
+    'ai_answers', (select count(*) from public.ai_messages where answer is not null),
+    'ai_ratings', (select n from rated),
+    'ai_helpful_rate', (select case when n > 0 then round(up::numeric / n, 3) end from rated),
+    'resource_downloads', (select count(*) from public.resource_downloads),
+    'generated_at', now()
+  );
+$$;
+
+-- Rollback guidance: restore the policy and function definitions from 0001 and
+-- 0003 only if application code has also been rolled back. Leave lifecycle data
+-- intact; this migration never modifies or deletes a business record.
+
+
+-- ===== 0007_new_business_draft_default.sql =====
+-- Every newly inserted business starts as a private draft, regardless of
+-- whether it was created by the browser, an admin tool or a service process.
+-- Trusted callers may review and publish only in a later UPDATE.
+
+create or replace function public.protect_business_fields() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    new.verified = false;
+    if new.verification_status not in ('none', 'pending') then
+      new.verification_status = 'none';
+    end if;
+    new.verification_note = null;
+    new.lifecycle_status = 'draft';
+    new.publication_status = 'unpublished';
+    new.published = false;
+    new.submitted_at = null;
+    new.approved_at = null;
+    new.published_at = null;
+    new.status_updated_at = now();
+    return new;
+  end if;
+
+  if not public.is_trusted() then
+    new.verified = old.verified;
+    if new.verification_status not in ('none', 'pending') then
+      new.verification_status = old.verification_status;
+    end if;
+    new.verification_note = old.verification_note;
+    new.lifecycle_status = old.lifecycle_status;
+    new.publication_status = old.publication_status;
+    new.published = old.published;
+    new.submitted_at = old.submitted_at;
+    new.approved_at = old.approved_at;
+    new.published_at = old.published_at;
+    new.status_updated_at = old.status_updated_at;
+    return new;
+  end if;
+
+  if new.lifecycle_status is distinct from old.lifecycle_status then
+    new.status_updated_at = now();
+    if new.lifecycle_status = 'submitted' then
+      new.submitted_at = coalesce(new.submitted_at, now());
+    end if;
+    if new.lifecycle_status = 'approved' then
+      new.approved_at = coalesce(new.approved_at, now());
+    end if;
+  end if;
+
+  if new.publication_status = 'published' then
+    if new.lifecycle_status <> 'approved' then
+      raise exception 'A business must be approved before publication.';
+    end if;
+    new.published = true;
+    new.published_at = coalesce(new.published_at, now());
+  else
+    new.published = false;
+  end if;
+
+  return new;
+end;
+$$;
+
+-- Rollback guidance: restore protect_business_fields() from 0004 only if the
+-- deployment is also rolled back. No rows are modified by this migration.
+
+
+-- ===== 0008_account_verification.sql =====
+-- Account verification gates for business submission.
+-- Supabase Auth remains the only identity system. Legacy password-created
+-- accounts marked email_unverified must prove possession through OTP/OAuth.
+
+alter table public.profiles
+  add column if not exists email_verified_at timestamptz,
+  add column if not exists email_verification_required boolean not null default true,
+  add column if not exists mobile_verified_at timestamptz,
+  add column if not exists mobile_verification_method text;
+
+do $$ begin
+  alter table public.profiles
+    add constraint profiles_mobile_verification_consistency_check
+    check (
+      (mobile_verified_at is null and mobile_verification_method is null)
+      or (mobile_verified_at is not null and mobile_verification_method is not null)
+    );
+exception when duplicate_object then null;
+end $$;
+
+-- Existing accounts are trusted only when Supabase has a confirmation time and
+-- neither the old app marker nor the new signup marker says proof is pending.
+update public.profiles p
+set
+  email_verified_at = case
+    when p.email_verified_at is not null then p.email_verified_at
+    when u.email_confirmed_at is not null
+      and not coalesce((u.raw_app_meta_data->>'email_unverified')::boolean, false)
+      and not coalesce((u.raw_user_meta_data->>'email_verification_required')::boolean, false)
+    then u.email_confirmed_at
+    else null
+  end,
+  email_verification_required = case
+    when p.email_verified_at is not null then false
+    else
+      u.email_confirmed_at is null
+      or coalesce((u.raw_app_meta_data->>'email_unverified')::boolean, false)
+      or coalesce((u.raw_user_meta_data->>'email_verification_required')::boolean, false)
+  end
+from auth.users u
+where u.id = p.id;
+
+-- Verification state is server-owned. Members may still edit their ordinary
+-- profile fields, but cannot grant themselves an email/mobile proof timestamp.
+create or replace function public.protect_profile_fields() returns trigger language plpgsql as $$
+begin
+  if not public.is_trusted() then
+    new.tier = old.tier;
+    new.status = old.status;
+    new.member_code = old.member_code;
+    new.referred_by = old.referred_by;
+    new.email_verified_at = old.email_verified_at;
+    new.email_verification_required = old.email_verification_required;
+    new.mobile_verified_at = old.mobile_verified_at;
+    new.mobile_verification_method = old.mobile_verification_method;
+  end if;
+  return new;
+end; $$;
+
+insert into public.settings (key, value, is_public)
+values (
+  'business_verification',
+  jsonb_build_object(
+    'require_mobile_for_submission', false,
+    'sms_provider_configured', false
+  ),
+  true
+)
+on conflict (key) do nothing;
+
+create or replace function public.sync_my_account_verification() returns boolean
+language plpgsql security definer set search_path = public, auth as $$
+declare
+  uid uuid := auth.uid();
+  account auth.users%rowtype;
+  proved_in_session boolean := false;
+begin
+  if uid is null then return false; end if;
+
+  select * into account from auth.users where id = uid;
+  select exists (
+    select 1
+    from jsonb_array_elements(coalesce(auth.jwt()->'amr', '[]'::jsonb)) item
+    where coalesce(item->>'method', 'password') <> 'password'
+  ) into proved_in_session;
+
+  if account.email_confirmed_at is not null and (
+    proved_in_session
+    or exists (
+      select 1 from public.profiles
+      where id = uid and not email_verification_required
+    )
+  ) then
+    update public.profiles
+    set
+      email_verified_at = coalesce(email_verified_at, account.email_confirmed_at, now()),
+      email_verification_required = false
+    where id = uid;
+  end if;
+
+  return exists (
+    select 1 from public.profiles
+    where id = uid and email_verified_at is not null
+  );
+end;
+$$;
+
+revoke all on function public.sync_my_account_verification() from public, anon;
+grant execute on function public.sync_my_account_verification() to authenticated;
+
+create or replace function public.account_verification_status() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  profile public.profiles%rowtype;
+  config jsonb := '{}'::jsonb;
+begin
+  if uid is null then raise exception 'Authentication required.'; end if;
+  perform public.sync_my_account_verification();
+
+  select * into profile from public.profiles where id = uid;
+  select value into config from public.settings where key = 'business_verification';
+
+  return jsonb_build_object(
+    'email_verified', profile.email_verified_at is not null,
+    'email_verified_at', profile.email_verified_at,
+    'mobile_present', coalesce(trim(profile.mobile), '') <> '',
+    'mobile_verified', profile.mobile_verified_at is not null,
+    'mobile_verified_at', profile.mobile_verified_at,
+    'mobile_required', coalesce(config->'require_mobile_for_submission' = 'true'::jsonb, false),
+    'sms_provider_configured', coalesce(config->'sms_provider_configured' = 'true'::jsonb, false)
+  );
+end;
+$$;
+
+revoke all on function public.account_verification_status() from public, anon;
+grant execute on function public.account_verification_status() to authenticated;
+
+create or replace function public.submit_business_for_review(p_business_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  business public.businesses%rowtype;
+  email_verified boolean;
+  mobile_verified boolean;
+  mobile_required boolean := false;
+begin
+  if uid is null then raise exception 'AUTHENTICATION_REQUIRED'; end if;
+  perform public.sync_my_account_verification();
+
+  select * into business from public.businesses where id = p_business_id;
+  if business.id is null or business.owner_id <> uid then
+    raise exception 'BUSINESS_NOT_FOUND';
+  end if;
+  if business.lifecycle_status not in ('draft', 'needs_correction', 'rejected') then
+    raise exception 'BUSINESS_NOT_SUBMITTABLE';
+  end if;
+
+  select email_verified_at is not null, mobile_verified_at is not null
+  into email_verified, mobile_verified
+  from public.profiles where id = uid;
+
+  select coalesce(value->'require_mobile_for_submission' = 'true'::jsonb, false)
+  into mobile_required
+  from public.settings where key = 'business_verification';
+
+  if not coalesce(email_verified, false) then
+    raise exception 'EMAIL_NOT_VERIFIED';
+  end if;
+  if coalesce(mobile_required, false) and not coalesce(mobile_verified, false) then
+    raise exception 'MOBILE_NOT_VERIFIED';
+  end if;
+
+  update public.businesses
+  set lifecycle_status = 'submitted', publication_status = 'unpublished'
+  where id = p_business_id;
+
+  insert into public.audit_log (actor_id, action, table_name, row_id, detail)
+  values (
+    uid,
+    'business_submitted',
+    'businesses',
+    p_business_id::text,
+    jsonb_build_object('email_verified', true, 'mobile_required', mobile_required, 'mobile_verified', mobile_verified)
+  );
+end;
+$$;
+
+revoke all on function public.submit_business_for_review(uuid) from public, anon;
+grant execute on function public.submit_business_for_review(uuid) to authenticated;
+
+-- Rollback guidance: drop the three functions and the consistency constraint.
+-- Keep verification timestamps by default so proof history is not destroyed.
+
+
+-- ===== 0009_turnstile_business_submission.sql =====
+-- Turnstile is validated by the Next.js server before this privileged RPC.
+-- Remove the authenticated-callable Phase 8 RPC so it cannot be invoked
+-- directly with a browser Supabase client to bypass the bot check.
+drop function if exists public.submit_business_for_review(uuid);
+
+create or replace function public.submit_business_for_review(p_business_id uuid, p_owner_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  business public.businesses%rowtype;
+  email_verified boolean;
+  mobile_verified boolean;
+  mobile_required boolean := false;
+begin
+  if current_user not in ('service_role', 'postgres', 'supabase_admin') then
+    raise exception 'TRUSTED_SERVER_REQUIRED';
+  end if;
+
+  select * into business from public.businesses where id = p_business_id;
+  if business.id is null or business.owner_id <> p_owner_id then
+    raise exception 'BUSINESS_NOT_FOUND';
+  end if;
+  if business.lifecycle_status not in ('draft', 'needs_correction', 'rejected') then
+    raise exception 'BUSINESS_NOT_SUBMITTABLE';
+  end if;
+
+  select email_verified_at is not null, mobile_verified_at is not null
+  into email_verified, mobile_verified
+  from public.profiles where id = p_owner_id;
+
+  select coalesce(value->'require_mobile_for_submission' = 'true'::jsonb, false)
+  into mobile_required
+  from public.settings where key = 'business_verification';
+
+  if not coalesce(email_verified, false) then raise exception 'EMAIL_NOT_VERIFIED'; end if;
+  if coalesce(mobile_required, false) and not coalesce(mobile_verified, false) then
+    raise exception 'MOBILE_NOT_VERIFIED';
+  end if;
+
+  update public.businesses
+  set lifecycle_status = 'submitted', publication_status = 'unpublished'
+  where id = p_business_id;
+
+  insert into public.audit_log (actor_id, action, table_name, row_id, detail)
+  values (
+    p_owner_id,
+    'business_submitted',
+    'businesses',
+    p_business_id::text,
+    jsonb_build_object('email_verified', true, 'mobile_required', mobile_required, 'mobile_verified', mobile_verified, 'turnstile_verified', true)
+  );
+end;
+$$;
+
+revoke all on function public.submit_business_for_review(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.submit_business_for_review(uuid, uuid) to service_role;
+
+
+-- ===== 0010_rate_limiting.sql =====
+-- Atomic, server-only rate-limit buckets. Keys are one-way hashes generated by
+-- the application; raw IP addresses, emails and phone numbers are never stored.
+create table if not exists public.rate_limit_buckets (
+  action text not null,
+  key_hash text not null,
+  window_started_at timestamptz not null default now(),
+  attempt_count integer not null default 0 check (attempt_count >= 0),
+  blocked_until timestamptz,
+  updated_at timestamptz not null default now(),
+  primary key (action, key_hash)
+);
+
+alter table public.rate_limit_buckets enable row level security;
+
+create or replace function public.consume_rate_limit(
+  p_action text,
+  p_key_hash text,
+  p_limit integer,
+  p_window_seconds integer,
+  p_block_seconds integer default 0,
+  p_increment boolean default true
+) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  bucket public.rate_limit_buckets%rowtype;
+  now_at timestamptz := clock_timestamp();
+  retry_at timestamptz;
+  next_count integer;
+begin
+  if current_user not in ('service_role', 'postgres', 'supabase_admin') then
+    raise exception 'TRUSTED_SERVER_REQUIRED';
+  end if;
+  if p_action !~ '^[a-z_]{2,40}$' or p_key_hash !~ '^[0-9a-f]{64}$'
+    or p_limit < 1 or p_window_seconds < 1 or p_block_seconds < 0 then
+    raise exception 'INVALID_RATE_LIMIT_CONFIG';
+  end if;
+
+  -- Serialize each action/key pair so concurrent serverless requests cannot
+  -- all pass before their increments become visible.
+  perform pg_advisory_xact_lock(hashtextextended(p_action || ':' || p_key_hash, 0));
+  select * into bucket from public.rate_limit_buckets
+  where action = p_action and key_hash = p_key_hash;
+
+  if bucket.blocked_until is not null and bucket.blocked_until > now_at then
+    return jsonb_build_object(
+      'allowed', false,
+      'remaining', 0,
+      'retry_after', greatest(1, ceil(extract(epoch from bucket.blocked_until - now_at))::integer)
+    );
+  end if;
+
+  if bucket.action is null or bucket.window_started_at + make_interval(secs => p_window_seconds) <= now_at then
+    insert into public.rate_limit_buckets (action, key_hash, window_started_at, attempt_count, blocked_until, updated_at)
+    values (p_action, p_key_hash, now_at, case when p_increment then 1 else 0 end, null, now_at)
+    on conflict (action, key_hash) do update set
+      window_started_at = excluded.window_started_at,
+      attempt_count = excluded.attempt_count,
+      blocked_until = null,
+      updated_at = excluded.updated_at;
+    return jsonb_build_object('allowed', true, 'remaining', p_limit - case when p_increment then 1 else 0 end, 'retry_after', 0);
+  end if;
+
+  if bucket.attempt_count >= p_limit then
+    retry_at := bucket.window_started_at + make_interval(secs => p_window_seconds);
+    if p_block_seconds > 0 then
+      retry_at := greatest(retry_at, now_at + make_interval(secs => p_block_seconds));
+      update public.rate_limit_buckets set blocked_until = retry_at, updated_at = now_at
+      where action = p_action and key_hash = p_key_hash;
+    end if;
+    return jsonb_build_object(
+      'allowed', false,
+      'remaining', 0,
+      'retry_after', greatest(1, ceil(extract(epoch from retry_at - now_at))::integer)
+    );
+  end if;
+
+  next_count := bucket.attempt_count + case when p_increment then 1 else 0 end;
+  if p_increment then
+    update public.rate_limit_buckets set attempt_count = next_count, updated_at = now_at
+    where action = p_action and key_hash = p_key_hash;
+  end if;
+  return jsonb_build_object('allowed', true, 'remaining', greatest(0, p_limit - next_count), 'retry_after', 0);
+end;
+$$;
+
+create or replace function public.clear_rate_limit(p_action text, p_key_hash text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if current_user not in ('service_role', 'postgres', 'supabase_admin') then
+    raise exception 'TRUSTED_SERVER_REQUIRED';
+  end if;
+  delete from public.rate_limit_buckets where action = p_action and key_hash = p_key_hash;
+end;
+$$;
+
+revoke all on table public.rate_limit_buckets from public, anon, authenticated;
+revoke all on function public.consume_rate_limit(text, text, integer, integer, integer, boolean) from public, anon, authenticated;
+revoke all on function public.clear_rate_limit(text, text) from public, anon, authenticated;
+grant execute on function public.consume_rate_limit(text, text, integer, integer, integer, boolean) to service_role;
+grant execute on function public.clear_rate_limit(text, text) to service_role;
+
+
+-- ===== 0011_business_completion.sql =====
+-- Required listing completeness before review. Formal registration evidence is
+-- deliberately not required: informal and newly established MSMEs remain eligible.
+alter table public.businesses add column if not exists google_business_url text;
+
+create or replace function public.business_submission_missing_requirements(p_business_id uuid, p_owner_id uuid)
+returns text[]
+language plpgsql security definer set search_path = public as $$
+declare
+  business public.businesses%rowtype;
+  profile public.profiles%rowtype;
+  missing text[] := array[]::text[];
+  has_reply_channel boolean := false;
+begin
+  if current_user not in ('service_role', 'postgres', 'supabase_admin') then
+    raise exception 'TRUSTED_SERVER_REQUIRED';
+  end if;
+  select * into business from public.businesses where id = p_business_id and owner_id = p_owner_id;
+  if business.id is null then return array['business_not_found']; end if;
+  select * into profile from public.profiles where id = p_owner_id;
+
+  has_reply_channel := coalesce(trim(business.contact_email), '') <> ''
+    or coalesce(trim(business.contact_phone), '') <> ''
+    or coalesce(trim(business.contact_messenger), '') <> ''
+    or coalesce(trim(business.contact_viber), '') <> '';
+
+  if char_length(coalesce(trim(business.name), '')) < 2 then missing := array_append(missing, 'business_name'); end if;
+  if coalesce(trim(business.sector), '') = '' then missing := array_append(missing, 'category'); end if;
+  if char_length(coalesce(trim(business.description), '')) < 80 then missing := array_append(missing, 'description'); end if;
+  if char_length(coalesce(trim(profile.full_name), '')) < 2 then missing := array_append(missing, 'representative'); end if;
+  if coalesce(trim(business.city), '') = '' then missing := array_append(missing, 'city'); end if;
+  if coalesce(trim(business.province), '') = '' then missing := array_append(missing, 'province'); end if;
+  if profile.email_verified_at is null or not has_reply_channel then missing := array_append(missing, 'verified_contact'); end if;
+  if coalesce(trim(business.logo_url), '') = '' and coalesce(cardinality(business.photos), 0) = 0 then
+    missing := array_append(missing, 'photo');
+  end if;
+  return missing;
+end;
+$$;
+
+create or replace function public.submit_business_for_review(p_business_id uuid, p_owner_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  business public.businesses%rowtype;
+  email_verified boolean;
+  mobile_verified boolean;
+  mobile_required boolean := false;
+  missing text[];
+begin
+  if current_user not in ('service_role', 'postgres', 'supabase_admin') then raise exception 'TRUSTED_SERVER_REQUIRED'; end if;
+  select * into business from public.businesses where id = p_business_id;
+  if business.id is null or business.owner_id <> p_owner_id then raise exception 'BUSINESS_NOT_FOUND'; end if;
+  if business.lifecycle_status not in ('draft', 'needs_correction', 'rejected') then raise exception 'BUSINESS_NOT_SUBMITTABLE'; end if;
+
+  missing := public.business_submission_missing_requirements(p_business_id, p_owner_id);
+  if coalesce(cardinality(missing), 0) > 0 then
+    raise exception 'BUSINESS_INCOMPLETE:%', array_to_string(missing, ',');
+  end if;
+
+  select email_verified_at is not null, mobile_verified_at is not null
+  into email_verified, mobile_verified from public.profiles where id = p_owner_id;
+  select coalesce(value->'require_mobile_for_submission' = 'true'::jsonb, false)
+  into mobile_required from public.settings where key = 'business_verification';
+  if not coalesce(email_verified, false) then raise exception 'EMAIL_NOT_VERIFIED'; end if;
+  if coalesce(mobile_required, false) and not coalesce(mobile_verified, false) then raise exception 'MOBILE_NOT_VERIFIED'; end if;
+
+  update public.businesses set lifecycle_status = 'submitted', publication_status = 'unpublished' where id = p_business_id;
+  insert into public.audit_log (actor_id, action, table_name, row_id, detail)
+  values (p_owner_id, 'business_submitted', 'businesses', p_business_id::text,
+    jsonb_build_object('requirements_complete', true, 'email_verified', true, 'mobile_required', mobile_required, 'mobile_verified', mobile_verified, 'turnstile_verified', true));
+end;
+$$;
+
+revoke all on function public.business_submission_missing_requirements(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.business_submission_missing_requirements(uuid, uuid) to service_role;
+revoke all on function public.submit_business_for_review(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.submit_business_for_review(uuid, uuid) to service_role;
+
+
+-- ===== 0012_automatic_content_validation.sql =====
+-- Three-tier moderation for new submissions. High-suspicion rows are preserved
+-- for correction/admin review but are impossible to publish or discover.
+alter table public.businesses
+  add column if not exists risk_level text not null default 'low',
+  add column if not exists moderation_reason_categories text[] not null default '{}',
+  add column if not exists moderation_fields text[] not null default '{}',
+  add column if not exists moderation_version text,
+  add column if not exists moderated_at timestamptz,
+  add column if not exists correction_count integer not null default 0,
+  add column if not exists last_submitted_at timestamptz;
+
+-- Reuse the narrow legacy assessment. It already quarantined only records with
+-- all three independent random-token signals; no weak legacy signal is newly hidden.
+update public.businesses b
+set risk_level = 'high', moderation_reason_categories = a.reason_codes,
+    moderation_fields = array['business_name','description','profile'],
+    moderation_version = 'legacy-v1', moderated_at = a.assessed_at
+from public.business_legacy_assessments a
+where a.business_id = b.id and a.classification = 'obviously_suspicious';
+
+alter table public.businesses alter column risk_level set default 'needs_review';
+
+do $$ begin
+  alter table public.businesses add constraint businesses_risk_level_check
+    check (risk_level in ('low','needs_review','high'));
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  alter table public.businesses add constraint businesses_high_risk_never_public_check
+    check (risk_level = 'low' or (not published and publication_status <> 'published'));
+exception when duplicate_object then null; end $$;
+
+create table if not exists public.business_moderation_events (
+  id bigserial primary key,
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  risk_level text not null check (risk_level in ('low','needs_review','high')),
+  reason_categories text[] not null default '{}',
+  suspicious_fields text[] not null default '{}',
+  assessment_version text not null,
+  snapshot jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+alter table public.business_moderation_events enable row level security;
+create index if not exists business_moderation_events_business_idx
+  on public.business_moderation_events (business_id, created_at desc);
+create index if not exists business_moderation_events_owner_idx
+  on public.business_moderation_events (owner_id, created_at desc);
+
+drop policy if exists business_moderation_events_admin_select on public.business_moderation_events;
+create policy business_moderation_events_admin_select on public.business_moderation_events
+  for select using (public.is_admin());
+grant select on public.business_moderation_events to authenticated;
+grant select on public.business_moderation_events to service_role;
+
+create or replace function public.record_business_moderation(
+  p_business_id uuid,
+  p_owner_id uuid,
+  p_risk_level text,
+  p_reason_categories text[],
+  p_suspicious_fields text[],
+  p_assessment_version text,
+  p_snapshot jsonb
+) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if current_user not in ('service_role', 'postgres', 'supabase_admin') then raise exception 'TRUSTED_SERVER_REQUIRED'; end if;
+  if p_risk_level not in ('low','needs_review','high') then raise exception 'INVALID_RISK_LEVEL'; end if;
+  if not exists (select 1 from public.businesses where id = p_business_id and owner_id = p_owner_id) then
+    raise exception 'BUSINESS_NOT_FOUND';
+  end if;
+
+  update public.businesses set
+    risk_level = p_risk_level,
+    moderation_reason_categories = coalesce(p_reason_categories, '{}'),
+    moderation_fields = coalesce(p_suspicious_fields, '{}'),
+    moderation_version = p_assessment_version,
+    moderated_at = now(),
+    last_submitted_at = now(),
+    correction_count = correction_count + case when p_risk_level = 'high' then 1 else 0 end,
+    lifecycle_status = case
+      when p_risk_level = 'high' and lifecycle_status not in ('rejected','suspended') then 'needs_correction'
+      else lifecycle_status end,
+    publication_status = case when p_risk_level = 'high' then 'unpublished' else publication_status end,
+    published = case when p_risk_level = 'high' then false else published end
+  where id = p_business_id;
+
+  insert into public.business_moderation_events
+    (business_id, owner_id, risk_level, reason_categories, suspicious_fields, assessment_version, snapshot)
+  values
+    (p_business_id, p_owner_id, p_risk_level, coalesce(p_reason_categories, '{}'),
+     coalesce(p_suspicious_fields, '{}'), p_assessment_version, coalesce(p_snapshot, '{}'::jsonb));
+
+  insert into public.audit_log (actor_id, action, table_name, row_id, detail)
+  values (p_owner_id, 'business_automatic_moderation', 'businesses', p_business_id::text,
+    jsonb_build_object('risk_level', p_risk_level, 'reason_categories', p_reason_categories,
+      'suspicious_fields', p_suspicious_fields, 'assessment_version', p_assessment_version));
+end;
+$$;
+
+revoke all on table public.business_moderation_events from public, anon;
+revoke all on function public.record_business_moderation(uuid, uuid, text, text[], text[], text, jsonb) from public, anon, authenticated;
+grant execute on function public.record_business_moderation(uuid, uuid, text, text[], text[], text, jsonb) to service_role;
+
+-- Members can edit ordinary listing content but cannot alter moderation state.
+-- Independently of caller role, a non-low-risk row can never be published.
+create or replace function public.protect_business_fields() returns trigger language plpgsql as $$
+begin
+  if tg_op = 'INSERT' then
+    if not public.is_trusted() then
+      new.verified = false; new.verification_status = 'none'; new.verification_note = null;
+      new.lifecycle_status = 'draft'; new.publication_status = 'unpublished'; new.published = false;
+      new.risk_level = 'needs_review'; new.moderation_reason_categories = '{}'; new.moderation_fields = '{}';
+      new.moderation_version = null; new.moderated_at = null; new.correction_count = 0; new.last_submitted_at = null;
+    end if;
+  elsif not public.is_trusted() then
+    new.verified = old.verified; new.verification_status = old.verification_status; new.verification_note = old.verification_note;
+    new.lifecycle_status = old.lifecycle_status; new.publication_status = old.publication_status; new.published = old.published;
+    new.risk_level = old.risk_level; new.moderation_reason_categories = old.moderation_reason_categories;
+    new.moderation_fields = old.moderation_fields; new.moderation_version = old.moderation_version;
+    new.moderated_at = old.moderated_at; new.correction_count = old.correction_count; new.last_submitted_at = old.last_submitted_at;
+  end if;
+
+  if new.risk_level <> 'low' then
+    new.publication_status = 'unpublished'; new.published = false;
+    if new.risk_level = 'high' and new.lifecycle_status not in ('rejected','suspended') then new.lifecycle_status = 'needs_correction'; end if;
+  elsif new.publication_status = 'published' then
+    new.lifecycle_status = 'approved'; new.published = true;
+  elsif new.lifecycle_status is distinct from old.lifecycle_status then
+    if new.lifecycle_status = 'approved' then new.publication_status = 'published'; new.published = true;
+    else new.publication_status = 'unpublished'; new.published = false; end if;
+  elsif new.publication_status is distinct from old.publication_status then
+    new.published = new.publication_status = 'published';
+    if new.publication_status = 'published' then new.lifecycle_status = 'approved'; end if;
+  end if;
+  new.status_updated_at = case
+    when tg_op = 'INSERT' or new.lifecycle_status is distinct from old.lifecycle_status
+      or new.publication_status is distinct from old.publication_status then now()
+    else old.status_updated_at end;
+  return new;
+end;
+$$;
+
+-- Risk level is an additional authoritative public-eligibility boundary.
+drop policy if exists businesses_public on public.businesses;
+create policy businesses_public on public.businesses for select using (
+  published and publication_status = 'published' and lifecycle_status = 'approved' and risk_level = 'low'
+);
+drop policy if exists products_public on public.business_products;
+create policy products_public on public.business_products for select using (exists (
+  select 1 from public.businesses b where b.id = business_products.business_id
+    and b.published and b.publication_status = 'published' and b.lifecycle_status = 'approved' and b.risk_level = 'low'
+));
+drop policy if exists reviews_public on public.business_reviews;
+create policy reviews_public on public.business_reviews for select using (
+  user_id = auth.uid() or public.is_admin() or (not hidden and exists (
+    select 1 from public.businesses b where b.id = business_reviews.business_id
+      and b.published and b.publication_status = 'published' and b.lifecycle_status = 'approved' and b.risk_level = 'low'
+  ))
+);
+drop policy if exists reviews_self_insert on public.business_reviews;
+create policy reviews_self_insert on public.business_reviews for insert with check (
+  user_id = auth.uid() and exists (
+    select 1 from public.businesses b where b.id = business_reviews.business_id
+      and b.published and b.publication_status = 'published' and b.lifecycle_status = 'approved' and b.risk_level = 'low'
+  )
+);
+
+create index if not exists businesses_safe_public_directory_idx on public.businesses (created_at desc)
+where published and publication_status = 'published' and lifecycle_status = 'approved' and risk_level = 'low';
+
+create or replace function public.track_business(biz uuid, kind text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.businesses where id = biz and published
+    and publication_status = 'published' and lifecycle_status = 'approved' and risk_level = 'low') then return; end if;
+  insert into public.business_stats (business_id, day, views, clicks)
+  values (biz, (now() at time zone 'Asia/Manila')::date,
+    case when kind = 'view' then 1 else 0 end, case when kind = 'click' then 1 else 0 end)
+  on conflict (business_id, day) do update set
+    views = business_stats.views + excluded.views, clicks = business_stats.clicks + excluded.clicks;
+end;
+$$;
+
+create or replace function public.public_stats() returns jsonb
+language sql stable security definer set search_path = public as $$
+  with m as (
+    select p.* from public.profiles p join auth.users u on u.id = p.id where u.email_confirmed_at is not null
+  ), rated as (
+    select count(*) as n, count(*) filter (where helpful) as up from public.ai_feedback
+  ), public_businesses as (
+    select * from public.businesses where published and publication_status = 'published'
+      and lifecycle_status = 'approved' and risk_level = 'low'
+  )
+  select jsonb_build_object(
+    'members', (select count(*) from m),
+    'members_this_month', (select count(*) from m where created_at >= date_trunc('month', now() at time zone 'Asia/Manila') at time zone 'Asia/Manila'),
+    'provinces', (select count(distinct lower(trim(province))) from m where coalesce(trim(province),'') <> ''),
+    'cities', (select count(distinct lower(trim(city)) || '|' || lower(trim(coalesce(province,'')))) from m where coalesce(trim(city),'') <> ''),
+    'businesses', (select count(*) from public_businesses),
+    'verified_businesses', (select count(*) from public_businesses where verified),
+    'active_chapters', (select count(*) from public.chapters where status = 'active'),
+    'events_held', (select count(*) from public.events where status = 'completed'),
+    'event_attendees', (select coalesce(sum(attendance_actual),0) from public.events where status = 'completed'),
+    'ai_answers', (select count(*) from public.ai_messages where answer is not null),
+    'ai_ratings', (select n from rated),
+    'ai_helpful_rate', (select case when n > 0 then round(up::numeric / n, 3) end from rated),
+    'resource_downloads', (select count(*) from public.resource_downloads),
+    'generated_at', now()
+  );
+$$;
+
+-- The service-only submit RPC must also refuse a high-risk assessment even if
+-- an application route is bypassed or regresses later.
+create or replace function public.submit_business_for_review(p_business_id uuid, p_owner_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare business public.businesses%rowtype; email_verified boolean; mobile_verified boolean;
+  mobile_required boolean := false; missing text[];
+begin
+  if current_user not in ('service_role','postgres','supabase_admin') then raise exception 'TRUSTED_SERVER_REQUIRED'; end if;
+  select * into business from public.businesses where id = p_business_id;
+  if business.id is null or business.owner_id <> p_owner_id then raise exception 'BUSINESS_NOT_FOUND'; end if;
+  if business.risk_level = 'high' then raise exception 'BUSINESS_HIGH_SUSPICION'; end if;
+  if business.lifecycle_status not in ('draft','needs_correction','rejected') then raise exception 'BUSINESS_NOT_SUBMITTABLE'; end if;
+  missing := public.business_submission_missing_requirements(p_business_id, p_owner_id);
+  if coalesce(cardinality(missing),0) > 0 then raise exception 'BUSINESS_INCOMPLETE:%', array_to_string(missing, ','); end if;
+  select email_verified_at is not null, mobile_verified_at is not null into email_verified, mobile_verified
+    from public.profiles where id = p_owner_id;
+  select coalesce(value->'require_mobile_for_submission' = 'true'::jsonb,false) into mobile_required
+    from public.settings where key = 'business_verification';
+  if not coalesce(email_verified,false) then raise exception 'EMAIL_NOT_VERIFIED'; end if;
+  if coalesce(mobile_required,false) and not coalesce(mobile_verified,false) then raise exception 'MOBILE_NOT_VERIFIED'; end if;
+  update public.businesses set lifecycle_status = 'submitted', publication_status = 'unpublished', published = false where id = p_business_id;
+  insert into public.audit_log (actor_id, action, table_name, row_id, detail)
+  values (p_owner_id,'business_submitted','businesses',p_business_id::text,
+    jsonb_build_object('risk_level',business.risk_level,'requirements_complete',true,'email_verified',true,
+      'mobile_required',mobile_required,'mobile_verified',mobile_verified,'turnstile_verified',true));
+end;
+$$;
+revoke all on function public.submit_business_for_review(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.submit_business_for_review(uuid, uuid) to service_role;
+
+
 -- ===== seed.sql =====
 -- FLAME PH seed: verified facts (section 3) and menu structure ONLY.
 -- All other content tables intentionally start empty. Generated by scripts/build-seed.mjs.

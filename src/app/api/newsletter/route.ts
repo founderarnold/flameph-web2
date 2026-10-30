@@ -2,13 +2,20 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
 import { ORG } from "@/lib/site";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { checkRateLimit, retryAfterHeaders } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   if (body.website) return NextResponse.json({ ok: true, message: "Check your email to confirm." });
+  const botCheck = await verifyTurnstile(req, body.turnstileToken, "newsletter");
+  if (!botCheck.ok) return NextResponse.json({ error: botCheck.error }, { status: botCheck.status });
   const email = String(body.email || "").trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Please enter a valid email." }, { status: 400 });
   if (body.consent !== "yes") return NextResponse.json({ error: "Please agree to the Privacy Notice." }, { status: 400 });
+  const limit = await checkRateLimit(req, "newsletter", { identifier: email });
+  if (!limit) return NextResponse.json({ error: "Newsletter sign-up is temporarily unavailable." }, { status: 503 });
+  if (!limit.allowed) return NextResponse.json({ error: "Too many requests for this email. Please try again later." }, { status: 429, headers: retryAfterHeaders(limit.retryAfter) });
 
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: "Newsletter sign-up isn't connected yet. Please try again soon." }, { status: 503 });

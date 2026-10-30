@@ -2,9 +2,12 @@
 
 export type Listing = Record<string, unknown> & { photos?: string[] | null };
 
-export const EXTRA_FIELDS = ["logo_url", "cover_url", "hours", "map_landmark", "facebook_url", "tiktok_url", "instagram_url", "shopee_url", "lazada_url", "website_url"] as const;
+export const SECTORS = ["Food & beverage", "Retail / sari-sari", "Agriculture", "Manufacturing", "Services", "Beauty & wellness", "Crafts & fashion", "Technology", "Tourism", "Other"];
+
+export const EXTRA_FIELDS = ["logo_url", "cover_url", "hours", "map_landmark", "facebook_url", "google_business_url", "tiktok_url", "instagram_url", "shopee_url", "lazada_url", "website_url"] as const;
 export const SOCIALS: { key: (typeof EXTRA_FIELDS)[number]; label: string }[] = [
   { key: "facebook_url", label: "Facebook" },
+  { key: "google_business_url", label: "Google Business Profile" },
   { key: "tiktok_url", label: "TikTok" },
   { key: "instagram_url", label: "Instagram" },
   { key: "shopee_url", label: "Shopee" },
@@ -25,7 +28,6 @@ const CHECKS: Check[] = [
   { key: "shop", label: "MarketplacePH shop", tip: "Link your free MarketplacePH store so people can order.", done: (b) => has(b.marketplaceph_url) },
   { key: "hours", label: "Opening hours", tip: "Tell buyers when you're open.", done: (b) => has(b.hours), needs: "hours" },
   { key: "socials", label: "Social or shop links", tip: "Add your Facebook, TikTok, Shopee or other links.", done: (b) => SOCIALS.some((s) => has(b[s.key])), needs: "facebook_url" },
-  { key: "published", label: "Shown in the directory", tip: "Turn on \"Show my business publicly\" so people can find you.", done: (b) => Boolean(b.published) },
 ];
 
 /**

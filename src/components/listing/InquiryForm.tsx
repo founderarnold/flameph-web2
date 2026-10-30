@@ -1,11 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Turnstile } from "@/components/Turnstile";
 
 /** Sends an inquiry to the business owner's FLAME PH inbox (and email when set up). */
 export function InquiryForm({ bizId, bizName, products, defaults }: { bizId: string; bizName: string; products: string[]; defaults: { name?: string; email?: string; mobile?: string } }) {
   const [product, setProduct] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileReset, setTurnstileReset] = useState(0);
 
   // "Inquire" buttons on product cards link to #inquire?product=…; pick that product up.
   useEffect(() => {
@@ -26,9 +29,10 @@ export function InquiryForm({ bizId, bizName, products, defaults }: { bizId: str
     setState("sending"); setError(null);
     const res = await fetch("/api/inquiry", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ bizId, product, name: fd.get("name"), email: fd.get("email"), mobile: fd.get("mobile"), message: fd.get("message"), website: fd.get("website") }),
+      body: JSON.stringify({ bizId, product, name: fd.get("name"), email: fd.get("email"), mobile: fd.get("mobile"), message: fd.get("message"), website: fd.get("website"), turnstileToken }),
     }).catch(() => null);
     const data = await res?.json().catch(() => ({}));
+    setTurnstileReset((n) => n + 1);
     if (!res?.ok) { setState("idle"); setError(data?.error ?? "Hindi na-send. Please try again."); return; }
     setState("sent");
   }
@@ -57,8 +61,9 @@ export function InquiryForm({ bizId, bizName, products, defaults }: { bizId: str
       <div><label className="label" htmlFor="iq-msg">Message *</label><textarea id="iq-msg" name="message" required rows={4} maxLength={1500} className="input" placeholder="Hi! I'd like to ask about price, minimum order and delivery to my area." /></div>
       <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
       <p className="text-sm text-muted">Give an email or mobile number so they can reply. Only {bizName} sees your details.</p>
+      <Turnstile action="inquiry" onToken={setTurnstileToken} resetKey={turnstileReset} />
       {error && <p role="alert" className="rounded-lg bg-warn-soft p-3 font-semibold text-warn">{error}</p>}
-      <button className="btn btn-primary w-full sm:w-auto" disabled={state === "sending"}>{state === "sending" ? "Sending…" : "Send inquiry"}</button>
+      <button className="btn btn-primary w-full sm:w-auto" disabled={state === "sending" || !turnstileToken}>{state === "sending" ? "Sending…" : "Send inquiry"}</button>
     </form>
   );
 }

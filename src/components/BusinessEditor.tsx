@@ -2,12 +2,30 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/browser";
+import { createClient, createEmailLinkClient } from "@/lib/supabase/browser";
 import { SUPABASE_URL } from "@/lib/env";
 import { EXTRA_FIELDS, SOCIALS } from "@/lib/listing";
+import { businessStatusCopy, publicationStatusOf, type BusinessLifecycleStatus, type BusinessPublicationStatus } from "@/lib/business-lifecycle";
 import { ListingStrength } from "./ListingStrength";
+import type { AccountVerificationStatus } from "@/lib/account-verification";
+import { Turnstile } from "@/components/Turnstile";
+import { businessCompletion } from "@/lib/business-completion";
+import { MODERATION_FIELD_MESSAGES, safeModerationFields } from "@/lib/business-moderation-feedback";
 
-type Biz = Record<string, unknown> & { id?: string; slug?: string; photos?: string[]; verification_docs?: string[]; verification_status?: string; verified?: boolean; published?: boolean };
+type Biz = Record<string, unknown> & {
+  id?: string;
+  slug?: string;
+  photos?: string[];
+  verification_docs?: string[];
+  verification_status?: string;
+  verified?: boolean;
+  published?: boolean;
+  lifecycle_status?: BusinessLifecycleStatus;
+  publication_status?: BusinessPublicationStatus;
+  risk_level?: "low" | "needs_review" | "high";
+  moderation_fields?: string[];
+  correction_count?: number;
+};
 
 const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 50);
 const FIELDS: { name: string; label: string; type?: string; textarea?: boolean; required?: boolean; help?: string }[] = [
@@ -25,15 +43,21 @@ const FIELDS: { name: string; label: string; type?: string; textarea?: boolean; 
 const pub = (p: string) => p.startsWith("http") ? p : `${SUPABASE_URL}/storage/v1/object/public/media/${p}`;
 const missingColumn = (m: string) => /column|schema cache/i.test(m) && EXTRA_FIELDS.some((f) => m.includes(f));
 
-export function BusinessEditor({ userId, initial, sectors, provinces, supportsExtras = true }: { userId: string; initial: Biz | null; sectors: string[]; provinces: string[]; supportsExtras?: boolean }) {
+export function BusinessEditor({ userId, email, ownerName, verification, initial, sectors, provinces, supportsExtras = true }: { userId: string; email: string; ownerName: string; verification: AccountVerificationStatus; initial: Biz | null; sectors: string[]; provinces: string[]; supportsExtras?: boolean }) {
   const supabase = createClient();
   const router = useRouter();
-  const [biz, setBiz] = useState<Biz>(initial ?? { photos: [], verification_docs: [], published: false });
+  const [biz, setBiz] = useState<Biz>(initial ?? { photos: [], verification_docs: [], published: false, lifecycle_status: "draft", publication_status: "unpublished" });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [emailBotToken, setEmailBotToken] = useState("");
+  const [emailBotReset, setEmailBotReset] = useState(0);
+  const [submitBotToken, setSubmitBotToken] = useState("");
+  const [submitBotReset, setSubmitBotReset] = useState(0);
+  const [dirty, setDirty] = useState(false);
+  const completion = businessCompletion(biz, ownerName, verification.email_verified);
   if (!supabase) return <p className="mt-4 text-warn">Listings open once the database is connected.</p>;
 
-  const set = (k: string, v: unknown) => setBiz((b) => ({ ...b, [k]: v }));
+  const set = (k: string, v: unknown) => { setBiz((b) => ({ ...b, [k]: v })); setDirty(true); };
 
   async function upload(file: File, bucket: "media" | "private-docs") {
     if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5 MB).");
@@ -66,6 +90,7 @@ export function BusinessEditor({ userId, initial, sectors, provinces, supportsEx
     try {
       const paths = await Promise.all(files.map((f) => upload(f, "private-docs")));
       setBiz((b) => ({ ...b, verification_docs: [...(b.verification_docs ?? []), ...paths], verification_status: "pending" }));
+      setDirty(true);
       setMsg({ ok: true, text: "Documents uploaded. Save your listing to submit them for review." });
     } catch (err) { setMsg({ ok: false, text: (err as Error).message }); }
     setBusy(false);
@@ -80,7 +105,7 @@ export function BusinessEditor({ userId, initial, sectors, provinces, supportsEx
       city: biz.city, province: biz.province || null,
       contact_messenger: biz.contact_messenger || null, contact_viber: biz.contact_viber || null, contact_phone: biz.contact_phone || null,
       contact_email: biz.contact_email || null, marketplaceph_url: biz.marketplaceph_url || null,
-      photos: biz.photos ?? [], verification_docs: biz.verification_docs ?? [], published: Boolean(biz.published),
+      photos: biz.photos ?? [], verification_docs: biz.verification_docs ?? [],
       verification_status: biz.verification_status === "pending" ? "pending" : (biz.verification_status ?? "none"),
     };
     const extras = Object.fromEntries(EXTRA_FIELDS.map((f) => {
@@ -100,12 +125,79 @@ export function BusinessEditor({ userId, initial, sectors, provinces, supportsEx
     if (error && missingColumn(error.message)) { error = await write(payload); partial = !error; }
     setBusy(false);
     if (error) setMsg({ ok: false, text: error.message });
-    else { setMsg({ ok: true, text: partial ? "Saved! Logo, hours and links will be saved once FLAME PH finishes a database update." : "Saved!" }); router.refresh(); }
+    else { setDirty(false); setMsg({ ok: true, text: partial ? "Saved! Logo, hours and links will be saved once FLAME PH finishes a database update." : "Saved!" }); router.refresh(); }
+  }
+
+  async function sendVerificationEmail() {
+    if (!email || busy) return;
+    setBusy(true); setMsg(null);
+    const preflight = await fetch("/api/auth/otp/request", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, createUser: false }),
+    }).catch(() => null);
+    const preflightBody = await preflight?.json().catch(() => ({}));
+    if (!preflight?.ok) {
+      setBusy(false);
+      setMsg({ ok: false, text: preflightBody?.error ?? "Verification emails are temporarily unavailable." });
+      return;
+    }
+    const { error } = await (createEmailLinkClient() ?? supabase!).auth.signInWithOtp({
+      email,
+      options: {
+        captchaToken: emailBotToken,
+        emailRedirectTo: `${window.location.origin}/auth/link?next=${encodeURIComponent("/account/business")}`,
+        shouldCreateUser: false,
+      },
+    });
+    setEmailBotReset((n) => n + 1);
+    setBusy(false);
+    setMsg(error
+      ? { ok: false, text: /rate|seconds/i.test(error.message) ? "Please wait before requesting another verification email." : "Could not send the verification email. Please try again." }
+      : { ok: true, text: "Verification email sent. Open the newest link, then return here to submit your business." });
+  }
+
+  async function submitForReview() {
+    if (!biz.id || busy) return;
+    setBusy(true); setMsg(null);
+    const response = await fetch("/api/business/submit", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ businessId: biz.id, turnstileToken: submitBotToken }),
+    }).catch(() => null);
+    const result = await response?.json().catch(() => ({}));
+    setSubmitBotReset((n) => n + 1);
+    setBusy(false);
+    if (!response?.ok) {
+      if (result?.code === "BUSINESS_INFORMATION_NEEDS_CORRECTION") {
+        const fields = safeModerationFields(result.fields);
+        setBiz((current) => ({ ...current, risk_level: "high", moderation_fields: fields, lifecycle_status: "needs_correction", publication_status: "unpublished", published: false }));
+      }
+      return setMsg({ ok: false, text: result?.error ?? "Could not submit your business. Please try again." });
+    }
+    setBiz((current) => ({ ...current, risk_level: result?.riskLevel === "needs_review" ? "needs_review" : "low", moderation_fields: [], lifecycle_status: "submitted", publication_status: "unpublished", published: false }));
+    setMsg({ ok: true, text: "Submitted for FLAME PH review. Your business remains private until it is approved and published." });
+    router.refresh();
   }
 
   return (
-    <form onSubmit={save} className="card mt-6 space-y-4 p-5">
+    <form id="business-details" onSubmit={save} className="card mt-6 space-y-4 p-5">
+      <BusinessStatus business={biz} />
+      {biz.risk_level === "high" && <ModerationCorrection business={biz} />}
       <ListingStrength biz={biz} supportsExtras={supportsExtras} />
+      <fieldset className="rounded-xl border border-line p-4">
+        <legend className="px-1 font-bold">Required before review</legend>
+        <ul className="space-y-2 text-sm">
+          {completion.checks.map((check) => (
+            <li key={check.key} className="flex gap-2">
+              <span aria-hidden className={check.done ? "text-ok" : "text-muted"}>{check.done ? "✓" : "○"}</span>
+              <span><strong>{check.label}</strong>{!check.done && <> — <span className="text-muted">{check.help}</span></>}</span>
+            </li>
+          ))}
+        </ul>
+        {!ownerName.trim() && <p className="mt-3 text-sm"><Link href="/account/profile" className="font-bold underline">Complete your member profile</Link> to identify the owner or authorized representative.</p>}
+        <p className="mt-3 text-sm text-muted">Formal registration documents are optional. Aspiring entrepreneurs, home-based sellers, informal microbusinesses and startups may submit once the essentials above are complete.</p>
+      </fieldset>
       {FIELDS.slice(0, 1).map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
       <div>
         <label className="label" htmlFor="sector">Sector</label>
@@ -154,17 +246,64 @@ export function BusinessEditor({ userId, initial, sectors, provinces, supportsEx
       </div>
       <fieldset className="rounded-xl border border-line p-4">
         <legend className="px-1 font-bold">Get a Verified badge (optional)</legend>
-        <p className="text-sm text-muted">Upload your DTI business name certificate, SEC registration or BMBE certificate. Only FLAME PH admins can see these files.</p>
+        <p className="text-sm text-muted">Optional evidence may include DTI, SEC, CDA, BMBE, Mayor&apos;s/Business Permit, BIR documents or other legitimate proof. These files are not required for review, and only FLAME PH admins can see them.</p>
         <p className="mt-2 text-sm font-semibold">Status: {biz.verified ? "✓ Verified" : biz.verification_status === "pending" ? "Pending review" : biz.verification_status === "rejected" ? "Not approved. Please upload clearer documents." : "Not submitted"}</p>
         {!biz.verified && <input type="file" accept="image/*,application/pdf" multiple onChange={onDocs} className="mt-2 block min-h-11" aria-label="Upload verification documents" />}
       </fieldset>
-      <label className="flex items-start gap-2"><input type="checkbox" checked={Boolean(biz.published)} onChange={(e) => set("published", e.target.checked)} className="mt-1 h-5 w-5" /><span>Show my business publicly in the FLAME PH directory</span></label>
+      <fieldset className="rounded-xl border border-line p-4">
+        <legend className="px-1 font-bold">Account verification for publication</legend>
+        <div className="space-y-2 text-sm">
+          <p><strong>Email:</strong> {verification.email_verified ? "✓ Verified" : "Verification required"}</p>
+          {!verification.email_verified && <>
+            <Turnstile action="auth" onToken={setEmailBotToken} resetKey={emailBotReset} />
+            <button type="button" onClick={sendVerificationEmail} disabled={busy || !emailBotToken} className="btn btn-outline">Send verification email</button>
+          </>}
+          <p><strong>Mobile:</strong> {verification.mobile_verified ? "✓ Verified" : verification.mobile_required ? "Required before submission" : "Optional and not currently required"}</p>
+          {verification.mobile_required && !verification.sms_provider_configured && <p className="text-warn">SMS verification is not configured yet. FLAME PH must configure a provider before making mobile verification mandatory.</p>}
+        </div>
+      </fieldset>
+      <p className="rounded-xl bg-bg-soft p-4 text-sm text-muted">Saving updates your draft. Publication is controlled by FLAME PH&apos;s review process and cannot be enabled from the browser.</p>
+      {dirty && <p className="rounded-lg bg-warn-soft p-3 text-sm font-semibold text-warn">Save your latest changes before submitting for review.</p>}
+      {biz.id && completion.complete && !dirty && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
+        <Turnstile action="business_submit" onToken={setSubmitBotToken} resetKey={submitBotReset} />
+      )}
       {msg && <p role="status" className={`rounded-lg p-3 font-semibold ${msg.ok ? "bg-ok-soft text-ok" : "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200"}`}>{msg.text}</p>}
       <div className="flex flex-wrap gap-2">
         <button className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Save listing"}</button>
+        {biz.id && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
+          <button type="button" onClick={submitForReview} disabled={busy || dirty || !completion.complete || !submitBotToken || (verification.mobile_required && !verification.mobile_verified)} className="btn btn-flame">Submit for review</button>
+        )}
+        {biz.id && <Link href="/account/business/preview" className="btn btn-outline">Preview private listing</Link>}
         {biz.slug && biz.published && <Link href={`/directory/${biz.slug}`} className="btn btn-outline">View public page</Link>}
       </div>
     </form>
+  );
+}
+
+function ModerationCorrection({ business }: { business: Biz }) {
+  const fields = safeModerationFields(business.moderation_fields);
+  return (
+    <section className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100" aria-labelledby="moderation-correction-title">
+      <h2 id="moderation-correction-title" className="font-bold">Business Information Needs Correction</h2>
+      <p className="mt-1 text-sm">This listing is not currently shown in the FLAME PH directory. Some information needs correction before it can be submitted for review.</p>
+      <ul className="mt-3 list-disc space-y-1 pl-5 text-sm">
+        {(fields.length ? fields : ["profile" as const]).map((field) => <li key={field}>{MODERATION_FIELD_MESSAGES[field]}</li>)}
+      </ul>
+      <p className="mt-3 text-sm">Edit the fields below, save the same listing, then submit it again. Your existing photos and information will stay with this record.</p>
+      <Link href="/membership/terms" className="mt-2 inline-block text-sm font-bold underline">Learn about business verification</Link>
+    </section>
+  );
+}
+
+function BusinessStatus({ business }: { business: Biz }) {
+  const status = businessStatusCopy(business);
+  const tone = status.tone === "ok" ? "border-ok/30 bg-ok-soft text-ok" : status.tone === "warn" ? "border-gold/40 bg-warn-soft text-warn" : "border-line bg-bg-soft text-muted";
+  return (
+    <section className={`rounded-xl border p-4 ${tone}`} aria-label="Business directory status">
+      <p className="font-bold">{status.label}</p>
+      <p className="mt-1 text-sm">{status.detail}</p>
+      {publicationStatusOf(business) !== "published" && <p className="mt-1 text-sm">Your business will not appear publicly until it meets FLAME PH&apos;s directory requirements.</p>}
+    </section>
   );
 }
 

@@ -3,10 +3,10 @@ import { FORMS } from "@/lib/forms";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { sendEmail, NOTIFY_TO, PARTNER_CC, REAL_ESTATE_NOTIFY_TO } from "@/lib/email";
 import { clientIpHash } from "@/lib/request";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { checkRateLimit, retryAfterHeaders } from "@/lib/rate-limit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_PER_HOUR = 10;
-
 export async function POST(req: Request) {
   let body: { type?: string; data?: Record<string, unknown>; context?: Record<string, unknown> };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request" }, { status: 400 }); }
@@ -17,6 +17,8 @@ export async function POST(req: Request) {
 
   // Honeypot: pretend success so bots learn nothing.
   if (typeof raw.website === "string" && raw.website.trim()) return NextResponse.json({ ok: true });
+  const botCheck = await verifyTurnstile(req, body.context?.turnstileToken, "public_form");
+  if (!botCheck.ok) return NextResponse.json({ error: botCheck.error }, { status: botCheck.status });
   if (raw.consent !== "yes") return NextResponse.json({ error: "Please agree to the Privacy Notice to continue." }, { status: 400 });
 
   const clean: Record<string, string> = {};
@@ -34,9 +36,9 @@ export async function POST(req: Request) {
   if (!admin) return NextResponse.json({ error: "Forms are not connected yet. Please email flameph.org@gmail.com." }, { status: 503 });
 
   const ipHash = await clientIpHash();
-  const since = new Date(Date.now() - 3600_000).toISOString();
-  const { count } = await admin.from("submissions").select("id", { count: "exact", head: true }).eq("ip_hash", ipHash).gte("created_at", since);
-  if ((count ?? 0) >= MAX_PER_HOUR) return NextResponse.json({ error: "Too many submissions. Please try again later." }, { status: 429 });
+  const limit = await checkRateLimit(req, "public_form");
+  if (!limit) return NextResponse.json({ error: "Forms are temporarily unavailable." }, { status: 503 });
+  if (!limit.allowed) return NextResponse.json({ error: "Too many submissions. Please try again later." }, { status: 429, headers: retryAfterHeaders(limit.retryAfter) });
 
   const supabase = await createClient();
   const userId = supabase ? (await supabase.auth.getUser()).data.user?.id ?? null : null;

@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import "./ridesafe/ridesafe.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { PageShareBar } from "@/components/PageShareBar";
 import { BottomBar } from "@/components/BottomBar";
 import { RegisterSW } from "@/components/RegisterSW";
 import { EmailLinkSignIn } from "@/components/EmailLinkSignIn";
@@ -12,8 +12,6 @@ import { KaFlameFab } from "@/components/KaFlameFab";
 import { cookies } from "next/headers";
 import { getDict, getLang } from "@/lib/i18n";
 import { FOUNDERS, ORG, PURPOSE, TAGLINES } from "@/lib/site";
-
-const font = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "600", "700", "800"], variable: "--font-body", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(ORG.url),
@@ -54,10 +52,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [lang, t, c] = await Promise.all([getLang(), getDict(), cookies()]);
   const signedIn = c.getAll().some((x) => x.name.startsWith("sb-") && x.name.includes("auth-token"));
   return (
-    <html lang={lang === "fil" ? "fil" : "en-PH"} className={font.variable} style={{ ["--font-heading" as string]: "var(--font-body)" }}>
+    <html
+      lang={lang === "fil" ? "fil" : "en-PH"}
+      style={{
+        ["--font-body" as string]: '"Trebuchet MS", "Segoe UI", Arial, sans-serif',
+        ["--font-heading" as string]: '"Trebuchet MS", "Segoe UI", Arial, sans-serif',
+      }}
+    >
       <body className="min-h-screen font-sans antialiased">
         <Header />
         <main id="main">{children}</main>
+        <PageShareBar />
         <Footer />
         <BottomBar labels={{ home: t.home, kaflame: t.kaflame, directory: t.directory, account: t.account }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />

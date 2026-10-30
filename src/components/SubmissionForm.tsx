@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { FormDef } from "@/lib/forms";
+import { Turnstile } from "@/components/Turnstile";
 
 /** Renders any form from lib/forms. Drafts are saved locally so a dropped connection doesn't lose typing. */
 export function SubmissionForm({ def, context, title, compact = false }: { def: FormDef; context?: Record<string, string>; title?: string; compact?: boolean }) {
@@ -9,6 +10,8 @@ export function SubmissionForm({ def, context, title, compact = false }: { def: 
   const formRef = useRef<HTMLFormElement>(null);
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [error, setError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileReset, setTurnstileReset] = useState(0);
 
   useEffect(() => {
     try {
@@ -39,13 +42,15 @@ export function SubmissionForm({ def, context, title, compact = false }: { def: 
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ type: def.type, data, context }),
+        body: JSON.stringify({ type: def.type, data, context: { ...context, turnstileToken } }),
       });
       const json = await res.json().catch(() => ({}));
+      setTurnstileReset((n) => n + 1);
       if (!res.ok) throw new Error(json.error || "Hindi naipadala. Please try again.");
       try { localStorage.removeItem(key); } catch {}
       setState("done");
     } catch (err) {
+      setTurnstileReset((n) => n + 1);
       setState("error");
       setError(navigator.onLine === false ? "Mukhang offline ka. Your answers are saved on this phone — try again when you're back online." : (err as Error).message);
     }
@@ -100,8 +105,9 @@ export function SubmissionForm({ def, context, title, compact = false }: { def: 
         <input type="checkbox" name="consent" value="yes" required className="mt-1 h-5 w-5 shrink-0" />
         <span>I agree to the <Link href="/legal/privacy" className="underline">Privacy Notice</Link> and allow FLAME PH to process my information under the Data Privacy Act of 2012 (RA 10173).<span className="text-flame-strong"> *</span></span>
       </label>
+      <Turnstile action="public_form" onToken={setTurnstileToken} resetKey={turnstileReset} />
       {state === "error" && <p role="alert" className="rounded-lg bg-red-50 p-3 font-semibold text-red-800 dark:bg-red-950 dark:text-red-200">{error}</p>}
-      <button className="btn btn-primary w-full sm:w-auto" disabled={state === "sending"}>{state === "sending" ? "Ipinapadala…" : def.submitLabel ?? "Submit"}</button>
+      <button className="btn btn-primary w-full sm:w-auto" disabled={state === "sending" || !turnstileToken}>{state === "sending" ? "Ipinapadala…" : def.submitLabel ?? "Submit"}</button>
     </form>
   );
 }
