@@ -6,9 +6,10 @@ import type { Status } from "@/components/StatusBadge";
 
 export const metadata = meta("Free Benefits", "Explore the free FLAME PH tools, learning, community and business support available to members.", "/benefits");
 
-const FREE_BENEFITS: { title: string; text: string; status: Status; href: string; icon: React.ReactNode }[] = [
+const FREE_BENEFITS: { title: string; text: string; status: Status; href: string; icon: React.ReactNode; external?: boolean }[] = [
   { title: "Member account & digital ID", text: "A FLAME PH member ID with a QR code that anyone can verify.", status: "live", href: "/join", icon: <I.IconId /> },
-  { title: "Free Mini-Website/Landing Page", text: "A public profile page for your business with contact buttons.", status: "live", href: "/directory", icon: <I.IconStore /> },
+  { title: "Free Business Directory", text: "Discover Filipino MSMEs and their public business pages. Hanapin ang mga negosyong malapit sa iyo.", status: "live", href: "https://pages.flameph.org/directory", external: true, icon: <I.IconStore /> },
+  { title: "Free Mini-Website/Landing Pages", text: "Create your own public profile page with Messenger, Viber and call buttons. Gumawa ng sariling online page para madaling mahanap ng customers.", status: "live", href: "/login?next=%2Faccount%2Fbusiness", icon: <I.IconStore /> },
   { title: "Ka-FLAME AI", text: "Business Q&A and listing support with a daily free-member allowance.", status: "beta", href: "/bizconsult-ai", icon: <I.IconChat /> },
   { title: "Resource library", text: "Guides, templates and checklists as they are published.", status: "live", href: "/resources", icon: <I.IconBook /> },
   { title: "Workshops & events", text: "Register for workshops, trainings and expos when scheduled.", status: "live", href: "/workshops", icon: <I.IconCalendar /> },

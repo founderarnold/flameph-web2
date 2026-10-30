@@ -23,7 +23,7 @@ test("hero value cards have meaningful icons", () => {
 test("ecosystem and free-benefit labels are consistent across key surfaces", () => {
   for (const source of [frontDoor, nav]) assert.match(source, /Easy Startup for Aspiring Managers/);
   for (const source of [home, benefits, nav]) {
-    assert.match(source, /Free Mini-Website\/Landing Page/);
+    assert.match(source, /Free Mini-Website\/Landing Pages/);
     assert.match(source, /Free Basic POS for MSMEs/);
   }
 });

@@ -10,10 +10,11 @@ import { list, type EventRow } from "@/lib/content";
 import type { Status } from "@/components/StatusBadge";
 import { FlameAdSlot } from "@/components/FlameAdSlot";
 
-const BENEFITS: { title: string; text: string; status: Status; href: string; icon: React.ReactNode }[] = [
+const BENEFITS: { title: string; text: string; status: Status; href: string; icon: React.ReactNode; external?: boolean }[] = [
   { title: "Free membership & digital ID", text: "Sign up with Google or email and get a FLAME PH member ID with a QR verification page.", status: "live", href: "/join", icon: <I.IconId /> },
   { title: "Ka-FLAME AI business assistant", text: "Ask start, grow and scale questions in Taglish. It's an AI guide, not a lawyer or accountant.", status: "beta", href: "/bizconsult-ai", icon: <I.IconChat /> },
-  { title: "Free Mini-Website/Landing Page", text: "Your own mini website with Messenger, Viber and call buttons.", status: "live", href: "/directory", icon: <I.IconStore /> },
+  { title: "Free Business Directory", text: "Discover Filipino MSMEs and their public business pages. Hanapin ang mga negosyong malapit sa iyo.", status: "live", href: "https://pages.flameph.org/directory", external: true, icon: <I.IconStore /> },
+  { title: "Free Mini-Website/Landing Pages", text: "Create your own mini website with Messenger, Viber and call buttons. Gumawa ng sariling online page para madaling mahanap ng customers.", status: "live", href: "/login?next=%2Faccount%2Fbusiness", icon: <I.IconStore /> },
   { title: "Resource library", text: "Guides, templates and checklists with links to official agencies.", status: "live", href: "/resources", icon: <I.IconBook /> },
   { title: "Workshops & trainings", text: "Join events as they are scheduled, or request one for your barangay or LGU.", status: "live", href: "/workshops", icon: <I.IconCalendar /> },
   { title: "Free Basic POS for MSMEs", text: "Sell, track inventory and understand your business using FLAME POS.", status: "live", href: "/pos", icon: <I.IconPos /> },

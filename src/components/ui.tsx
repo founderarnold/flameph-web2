@@ -43,7 +43,7 @@ export function EmptyState({ title, text, cta }: { title: string; text?: string;
   );
 }
 
-export function FeatureCard({ title, text, status, href, icon }: { title: string; text: string; status?: Status; href?: string; icon?: React.ReactNode }) {
+export function FeatureCard({ title, text, status, href, icon, external }: { title: string; text: string; status?: Status; href?: string; icon?: React.ReactNode; external?: boolean }) {
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -54,7 +54,9 @@ export function FeatureCard({ title, text, status, href, icon }: { title: string
       <p className="mt-1 text-[15px] text-muted">{text}</p>
     </>
   );
-  return href ? (
+  return href ? external ? (
+    <a href={href} target="_blank" rel="noopener" className="card block p-5 transition-colors hover:border-primary">{body}</a>
+  ) : (
     <Link href={href} className="card block p-5 transition-colors hover:border-primary">{body}</Link>
   ) : (
     <div className="card p-5">{body}</div>

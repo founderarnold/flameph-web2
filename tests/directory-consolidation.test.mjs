@@ -2,15 +2,21 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("Benefits sends visitors through the canonical directory redirect and keeps RideSafe last", async () => {
+test("Benefits exposes the Pages directory and keeps RideSafe last", async () => {
   const nav = JSON.parse(await readFile(new URL("../src/content/nav.json", import.meta.url), "utf8"));
   const benefits = nav.find((group) => group.key === "benefits");
   assert.ok(benefits, "Benefits menu must exist");
 
-  const directory = benefits.items.find((item) => item.label === "Free Mini-Website/Landing Page");
+  const directory = benefits.items.find((item) => item.label === "Free Business Directory");
   assert.deepEqual(directory, {
-    label: "Free Mini-Website/Landing Page",
-    href: "/directory",
+    label: "Free Business Directory",
+    href: "https://pages.flameph.org/directory",
+    external: true,
+  });
+  const builder = benefits.items.find((item) => item.label === "Free Mini-Website/Landing Pages");
+  assert.deepEqual(builder, {
+    label: "Free Mini-Website/Landing Pages",
+    href: "/login?next=%2Faccount%2Fbusiness",
   });
   assert.equal(benefits.items.at(-1)?.label, "RideSafe");
 });
