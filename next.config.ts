@@ -16,6 +16,17 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: { bodySizeLimit: "10mb" }, // admin uploads of photos and proof documents
   },
+  // Business pages live in the separate FlamePH Pages app; visitors keep seeing www.flameph.org/business/{name}.
+  async rewrites() {
+    return {
+      beforeFiles: [
+        { source: "/business", destination: "https://flameph-pages.vercel.app/business" },
+        { source: "/business/:path*", destination: "https://flameph-pages.vercel.app/business/:path*" },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
   async redirects() {
     return [
       { source: "/learn", destination: "/resources", permanent: true },
