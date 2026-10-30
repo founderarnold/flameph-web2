@@ -30,12 +30,12 @@ test("ecosystem and free-benefit labels are consistent across key surfaces", () 
 
 test("every goal card uses a generated image and a Tagalog example", () => {
   const actionBlock = frontDoor.slice(frontDoor.indexOf("const ACTIONS"), frontDoor.indexOf("const ECOSYSTEM"));
-  assert.equal((actionBlock.match(/image: "\/goal-cards\//g) ?? []).length, 26);
-  assert.equal((actionBlock.match(/Halimbawa:/g) ?? []).length, 26);
+  assert.equal((actionBlock.match(/image: "\/goal-cards\//g) ?? []).length, 28);
+  assert.equal((actionBlock.match(/Halimbawa:/g) ?? []).length, 28);
   assert.match(actionBlock, /title: "Build Portfolio"/);
   assert.match(actionBlock, /href: "\/get-involved\/professional-services"/);
   assert.doesNotMatch(actionBlock, /Join My Local Chapter/);
-  for (const title of ["Find Cargo Movers", "Find Import Assistance", "Find Tax Compliance Assistance", "Find Legal Assistance", "Work From Home Jobs", "Find Financing Assistance", "Buy a Business", "Sell a Business", "Pasalo a Business", "Franchise a Business", "Find Partners or Joint Venture", "Find Vehicle Dealers"]) {
+  for (const title of ["Find Cargo Movers", "Find Import Assistance", "Find Tax Compliance Assistance", "Find Legal Assistance", "Work From Home Jobs", "Find Financing Assistance", "Buy a Business", "Sell a Business", "Pasalo a Business", "Franchise a Business", "Find Partners or Joint Venture", "Find Vehicle Dealers", "Find Investment Opportunities", "Find Digital Marketing Experts"]) {
     assert.match(actionBlock, new RegExp(`title: "${title}"`));
   }
 });
