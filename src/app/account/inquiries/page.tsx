@@ -47,7 +47,7 @@ export default async function Inquiries({ searchParams }: { searchParams: Promis
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-muted">{biz.published ? <>Buyers can message you from <Link className="font-semibold text-mph underline" href={`/directory/${biz.slug}#inquire`}>your listing</Link>.</> : <>Your listing is hidden. <Link className="font-semibold text-mph underline" href="/account/business">Publish it</Link> so buyers can reach you.</>}</p>
+            <p className="text-sm text-muted">{biz.published ? <>Buyers can find businesses in the <Link className="font-semibold text-mph underline" href="https://pages.flameph.org/directory">Pages directory</Link>.</> : <>Your listing is hidden. <Link className="font-semibold text-mph underline" href="/account/business">Publish it</Link> so buyers can reach you.</>}</p>
             <Link href={showArchived ? "/account/inquiries" : "/account/inquiries?show=archived"} className="text-sm font-semibold text-mph underline">{showArchived ? "Back to inbox" : "See archived"}</Link>
           </div>
           {rows.length === 0 ? (

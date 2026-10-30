@@ -29,6 +29,8 @@ export async function POST(req: Request) {
   const { data: biz } = await admin.from("businesses").select("id, name, slug, owner_id, contact_email")
     .eq("id", bizId).eq("published", true).eq("publication_status", "published").eq("lifecycle_status", "approved").eq("risk_level", "low").maybeSingle();
   if (!biz) return NextResponse.json({ error: "This business is no longer listed." }, { status: 404 });
+  const { data: ownerProfile } = await admin.from("profiles").select("status").eq("id", biz.owner_id).maybeSingle();
+  if (ownerProfile?.status !== "active") return NextResponse.json({ error: "This business is no longer listed." }, { status: 404 });
 
   const who = email || mobile;
   const limit = await checkRateLimit(req, "inquiry", { identifier: `${biz.id}:${who}` });

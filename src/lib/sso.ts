@@ -19,17 +19,17 @@ export const CLIENTS: Record<string, Client> = {
     origins: ["https://pos.flameph.org"],
     secretEnv: "SSO_SECRET_FLAMEPOS",
   },
-  flamephpages: {
-    callback: "https://pages.flameph.org/auth/flame",
-    origins: ["https://pages.flameph.org"],
-    secretEnv: "SSO_SECRET_FLAMEPHPAGES",
-  },
   marketplaceph: { callback: "https://www.marketplaceph.com/auth/flame", origins: ["https://www.marketplaceph.com", "https://marketplaceph.com"] },
   negosyodepot: { callback: "https://www.negosyodepot.com/auth/flame", origins: ["https://www.negosyodepot.com", "https://negosyodepot.com"] },
   managerspizza: {
     callback: "https://www.managerspizza.com/auth/flame",
     origins: ["https://www.managerspizza.com", "https://managerspizza.com"],
     secretEnv: "SSO_SECRET_MANAGERSPIZZA",
+  },
+  flamephpages: {
+    callback: "https://pages.flameph.org/auth/flame",
+    origins: ["https://pages.flameph.org"],
+    secretEnv: "SSO_SECRET_FLAMEPHPAGES",
   },
 };
 

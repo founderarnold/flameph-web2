@@ -3,6 +3,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { adminContext } from "@/lib/admin/guard";
 import { getAdminTable, PK, type AdminField } from "@/lib/admin/config";
+import { getRealEstateAdminSection } from "@/lib/real-estate-admin";
 
 const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 60);
 
@@ -109,13 +110,28 @@ export async function setSubmissionStatus(fd: FormData) {
   revalidatePath("/admin/submissions");
 }
 
+export async function setRealEstateStatus(fd: FormData) {
+  const ctx = await adminContext(["super_admin", "admin"]);
+  const id = String(fd.get("id") ?? "");
+  const section = String(fd.get("section") ?? "");
+  const status = String(fd.get("status") ?? "");
+  const config = getRealEstateAdminSection(section);
+  if (!id || !config || !config.statuses.includes(status as never)) return;
+  const result = await ctx.db.from(config.table).update({ status, updated_at: new Date().toISOString() }).eq("id", id);
+  if (!result.error) await ctx.audit("real_estate_status", config.table, id, { status });
+  revalidatePath("/admin");
+  revalidatePath("/admin/real-estate");
+  revalidatePath(`/admin/real-estate/${section}`);
+  redirect(`/admin/real-estate/${section}?saved=1`);
+}
+
 export async function verifyBusiness(fd: FormData) {
   const ctx = await adminContext(["super_admin", "admin"]);
   const id = String(fd.get("id")); const decision = String(fd.get("decision"));
   const note = String(fd.get("note") ?? "") || null;
   const patch = decision === "approve" ? { verified: true, verification_status: "approved", verification_note: note }
     : decision === "reject" ? { verified: false, verification_status: "rejected", verification_note: note }
-    : decision === "unpublish" ? { publication_status: "unpublished" } : null;
+    : decision === "unpublish" ? { published: false } : null;
   if (!patch) return;
   await ctx.db.from("businesses").update(patch).eq("id", id);
   await ctx.audit(`business_${decision}`, "businesses", id, { note });
@@ -123,51 +139,36 @@ export async function verifyBusiness(fd: FormData) {
   revalidatePath("/admin/directory");
 }
 
-export async function reviewLegacyBusiness(fd: FormData) {
+export async function moderateBusiness(fd: FormData) {
   const ctx = await adminContext(["super_admin", "admin"]);
-  const id = String(fd.get("id"));
-  const decision = String(fd.get("decision"));
-  const note = String(fd.get("note") ?? "").trim() || null;
-  if (!["confirm_quarantine", "restore_public", "clear_review"].includes(decision)) return;
+  const id = String(fd.get("id") ?? "");
+  const action = String(fd.get("moderation_action") ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+  const { data: business } = await ctx.db.from("businesses").select("id,owner_id,slug,name,published").eq("id", id).maybeSingle();
+  if (!business) return;
 
-  const { error } = await ctx.db.rpc("review_business_legacy_assessment", {
-    p_business_id: id,
-    p_decision: decision,
-    p_actor_id: ctx.user.id,
-    p_note: note,
-  });
-  if (error) throw new Error(`Legacy review failed: ${error.message}`);
+  if (action === "hide") {
+    await ctx.db.from("businesses").update({ published: false }).eq("id", id);
+  } else if (action === "restore") {
+    const { data: owner } = await ctx.db.from("profiles").select("status").eq("id", business.owner_id).maybeSingle();
+    if (owner?.status !== "active") redirect("/admin/directory?all=1&error=owner-suspended");
+    await ctx.db.from("businesses").update({ published: true }).eq("id", id);
+  } else if (action === "ban_owner") {
+    await Promise.all([
+      ctx.db.from("profiles").update({ status: "suspended" }).eq("id", business.owner_id),
+      ctx.db.from("businesses").update({ published: false }).eq("owner_id", business.owner_id),
+    ]);
+  } else if (action === "delete_business") {
+    if (!ctx.roles.includes("super_admin") || String(fd.get("confirmation") ?? "") !== "DELETE") return;
+    await ctx.db.from("businesses").delete().eq("id", id);
+  } else return;
 
-  revalidateTag("content"); revalidateTag("stats");
-  revalidatePath("/admin/directory");
+  await ctx.audit(`business_${action}`, "businesses", id, { owner_id: business.owner_id, name: business.name });
+  revalidateTag("content"); revalidateTag("stats"); revalidateTag("directory");
   revalidatePath("/directory");
-}
-
-export async function reviewBusinessModeration(fd: FormData) {
-  const ctx = await adminContext(["super_admin", "admin"]);
-  const id = String(fd.get("id"));
-  const ownerId = String(fd.get("owner_id"));
-  const decision = String(fd.get("decision"));
-  const note = String(fd.get("note") ?? "").trim() || null;
-  const patches: Record<string, Record<string, unknown>> = {
-    approve_legitimate: { risk_level: "low", moderation_reason_categories: [], moderation_fields: [], lifecycle_status: "submitted", publication_status: "unpublished", published: false },
-    request_correction: { risk_level: "needs_review", lifecycle_status: "needs_correction", publication_status: "unpublished", published: false },
-    keep_quarantined: { risk_level: "high", lifecycle_status: "needs_correction", publication_status: "unpublished", published: false },
-    reject: { risk_level: "high", lifecycle_status: "rejected", publication_status: "unpublished", published: false },
-    suspend: { risk_level: "high", lifecycle_status: "suspended", publication_status: "unpublished", published: false },
-  };
-  const patch = patches[decision];
-  if (!patch) return;
-  const { error } = await ctx.db.from("businesses").update(patch).eq("id", id).eq("owner_id", ownerId);
-  if (error) throw new Error(`Moderation review failed: ${error.message}`);
-  if (decision === "suspend") {
-    const { error: profileError } = await ctx.db.from("profiles").update({ status: "suspended" }).eq("id", ownerId);
-    if (profileError) throw new Error(`Member suspension failed: ${profileError.message}`);
-  }
-  await ctx.audit(`business_moderation_${decision}`, "businesses", id, { owner_id: ownerId, note });
-  revalidateTag("content"); revalidateTag("stats");
+  revalidatePath(`/directory/${business.slug}`);
   revalidatePath("/admin/directory");
-  revalidatePath("/directory");
+  redirect("/admin/directory?all=1&moderated=1");
 }
 
 export async function setRole(fd: FormData) {
@@ -185,8 +186,24 @@ export async function setMemberStatus(fd: FormData) {
   const id = String(fd.get("id"));
   const status = fd.get("status") === "suspended" ? "suspended" : "active";
   await ctx.db.from("profiles").update({ status }).eq("id", id);
+  if (status === "suspended") await ctx.db.from("businesses").update({ published: false }).eq("owner_id", id);
   await ctx.audit("member_status", "profiles", id, { status });
+  revalidateTag("content"); revalidateTag("stats"); revalidateTag("directory");
+  revalidatePath("/directory");
   revalidatePath("/admin/members");
+}
+
+export async function deleteMember(fd: FormData) {
+  const ctx = await adminContext(["super_admin"]);
+  const id = String(fd.get("id") ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(id) || String(fd.get("confirmation") ?? "") !== "DELETE" || id === ctx.user.id) return;
+  const { data: targetRoles } = await ctx.db.from("roles").select("role").eq("user_id", id);
+  if ((targetRoles ?? []).some((row) => row.role === "super_admin")) return;
+  const { error } = await ctx.db.auth.admin.deleteUser(id);
+  if (!error) await ctx.audit("member_delete", "profiles", id);
+  revalidateTag("content"); revalidateTag("stats"); revalidateTag("directory");
+  revalidatePath("/directory");
+  redirect(`/admin/members?${error ? "error=delete" : "deleted=1"}`);
 }
 
 export async function reviewFeedback(fd: FormData) {

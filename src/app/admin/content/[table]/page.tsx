@@ -31,8 +31,10 @@ export default async function ContentList({ params, searchParams }: { params: Pr
       {sp.saved && <Notice tone="ok">Saved.</Notice>}
       {sp.deleted && <Notice tone="ok">Deleted.</Notice>}
       {(rows ?? []).length === 0 ? <p className="text-muted">Nothing here yet.</p> : (
-        <div className="card overflow-x-auto">
-          <table className="w-full text-left text-[15px]">
+        <>
+        <p className="admin-scroll-hint" aria-hidden="true"><span>↔</span> Scroll sideways to see every column</p>
+        <div className="admin-table-scroll card" tabIndex={0} aria-label={`${cfg.label} table. Scroll horizontally to see all columns.`}>
+          <table className="min-w-[760px] w-full text-left text-[15px]">
             <thead className="border-b border-line bg-bg-soft"><tr>{cfg.columns.map((c) => <th key={c} className="px-3 py-2 font-semibold">{c.replace(/_/g, " ")}</th>)}<th className="px-3 py-2"><span className="sr-only">Edit</span></th></tr></thead>
             <tbody>
               {(rows ?? []).map((r: Record<string, unknown>) => (
@@ -44,6 +46,7 @@ export default async function ContentList({ params, searchParams }: { params: Pr
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );

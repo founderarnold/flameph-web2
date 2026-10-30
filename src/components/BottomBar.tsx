@@ -16,7 +16,7 @@ export function BottomBar({ labels }: { labels: { home: string; kaflame: string;
     { href: "/", label: labels.home, icon: "home", active: p === "/" },
     { href: "/opportunities", label: "Opportunities", icon: "opp", active: p.startsWith("/opportunities") || p.startsWith("/deals") },
     { href: "/bizconsult-ai", label: labels.kaflame, icon: "ai", active: p.startsWith("/bizconsult-ai") },
-    { href: "/directory", label: labels.directory, icon: "dir", active: p.startsWith("/directory") },
+    { href: "https://pages.flameph.org/directory", label: labels.directory, icon: "dir", active: false },
     { href: "/account", label: labels.account, icon: "acct", active: p.startsWith("/account") || p === "/login" || p === "/join" },
   ];
   return (

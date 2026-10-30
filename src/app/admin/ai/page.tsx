@@ -27,7 +27,7 @@ export default async function AiAdmin() {
         <div className="card p-4"><p className="text-sm text-muted">Tokens in / out (30 days)</p><p className="text-lg font-extrabold">{inTok.toLocaleString()} / {outTok.toLocaleString()}</p></div>
         <div className="card p-4"><p className="text-sm text-muted">Estimated cost (30 days)</p><p className="text-2xl font-extrabold">${cost.toFixed(2)}</p></div>
       </div>
-      <div className="card overflow-x-auto p-4">
+      <div className="admin-table-scroll card p-4" tabIndex={0} aria-label="AI questions table. Scroll horizontally when needed.">
         <h2 className="font-bold">Questions per day</h2>
         {days.length === 0 ? <p className="text-muted">No questions yet.</p> : (
           <table className="mt-2 text-[15px]"><thead><tr><th className="pr-6 text-left">Day</th><th className="pr-6 text-left">Questions</th><th className="text-left">Est. cost</th></tr></thead>

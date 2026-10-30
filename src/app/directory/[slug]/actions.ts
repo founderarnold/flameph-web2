@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function saveReview(fd: FormData) {
   const slug = String(fd.get("slug") ?? "").slice(0, 80);
@@ -26,4 +27,32 @@ export async function deleteReview(fd: FormData) {
   await supabase.from("business_reviews").delete().eq("business_id", String(fd.get("business_id") ?? "")).eq("user_id", user.id);
   revalidatePath(`/directory/${slug}`);
   redirect(`/directory/${slug}#reviews`);
+}
+
+export async function reportBusiness(fd: FormData) {
+  const slug = String(fd.get("slug") ?? "").replace(/[^a-z0-9-]/gi, "").slice(0, 80);
+  const businessId = String(fd.get("business_id") ?? "");
+  const reason = String(fd.get("reason") ?? "");
+  const details = String(fd.get("details") ?? "").trim().slice(0, 1000);
+  const allowedReasons = ["spam", "fraud", "abuse", "wrong_information", "closed", "other"];
+  const { user } = await requireUser(`/directory/${slug}#report`);
+  if (!/^[0-9a-f-]{36}$/i.test(businessId) || !allowedReasons.includes(reason) || details.length < 10) redirect(`/directory/${slug}?report=invalid#report`);
+
+  const admin = createAdminClient();
+  if (!admin) redirect(`/directory/${slug}?report=error#report`);
+  const { data: business } = await admin.from("businesses").select("id,name,slug,owner_id,published").eq("id", businessId).eq("slug", slug).maybeSingle();
+  if (!business?.published || business.owner_id === user.id) redirect(`/directory/${slug}?report=invalid#report`);
+
+  const since = new Date(Date.now() - 86400000).toISOString();
+  const { count } = await admin.from("submissions").select("id", { count: "exact", head: true }).eq("type", "business-report").eq("user_id", user.id).gte("created_at", since);
+  if ((count ?? 0) >= 5) redirect(`/directory/${slug}?report=limit#report`);
+
+  const { error } = await admin.from("submissions").insert({
+    type: "business-report",
+    user_id: user.id,
+    email: user.email ?? null,
+    data: { business_id: business.id, business_name: business.name, business_slug: business.slug, reason, details },
+  });
+  revalidatePath("/admin/directory");
+  redirect(`/directory/${slug}?report=${error ? "error" : "received"}#report`);
 }

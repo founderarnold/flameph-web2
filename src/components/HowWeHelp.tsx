@@ -23,7 +23,7 @@ const CARDS: Card[] = [
     body: "Meet Filipino entrepreneurs, suppliers, professionals, mentors, chapters, and potential business partners.",
     quote: "Hindi ko alam kung sino ang mapagkakatiwalaan—one right connection can change everything.",
     cta: "Browse the directory",
-    href: "/directory",
+    href: "https://pages.flameph.org/directory",
     img: connect,
     alt: "Connect with the right people: Buy, refer, supply, support, grow. A supplier hands a box to a store owner while others talk business.",
   },

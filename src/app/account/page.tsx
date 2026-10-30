@@ -8,14 +8,10 @@ import { PushToggle } from "@/components/PushToggle";
 import { hasExtras, type Listing } from "@/lib/listing";
 import { list } from "@/lib/content";
 import { OPPORTUNITY_KINDS, STAGES, type Opportunity, type Stage, dateLabel, matches, notExpired } from "@/lib/growth";
-import { businessStatusCopy, publicationStatusOf } from "@/lib/business-lifecycle";
-import { accountVerificationStatus } from "@/lib/account-verification";
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
   const { supabase, user } = await requireUser();
   const sp = await searchParams;
-  const { data: verificationData } = await supabase.rpc("account_verification_status");
-  const verification = accountVerificationStatus(verificationData, user);
   const [{ data: p }, { data: biz }, { data: regs }, { count: aiCount }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase.from("businesses").select("*").eq("owner_id", user.id).limit(1).maybeSingle(),
@@ -44,10 +40,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const stage = p?.business_stage as Stage | null;
   const incomplete = !p?.full_name || !p?.province || !p?.city || !p?.consent_privacy;
   const listing = biz ? ({ ...biz, product_count: productCount } as Listing) : null;
-  const businessStatus = biz ? businessStatusCopy(biz) : null;
   const photos = listing?.photos?.length ?? 0;
   const steps = [
-    { label: "Confirm your email", done: verification.email_verified, href: verification.email_verified ? null : "/account/business" },
+    { label: "Confirm your email", done: Boolean(user.email_confirmed_at), href: null },
     { label: "Complete your profile", done: !incomplete, href: "/account/profile" },
     { label: "List your business (free)", done: Boolean(biz), href: "/account/business" },
     { label: hasExtras(listing) ? "Add your logo and 3 photos" : "Add 3 photos", done: photos >= 3 && (!hasExtras(listing) || Boolean(listing?.logo_url)), href: "/account/business" },
@@ -61,8 +56,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       {sp.denied && <Notice>That page is for FLAME PH admins only.</Notice>}
       <h1 className="text-3xl font-extrabold text-primary">Kumusta{p?.full_name ? `, ${p.full_name.split(" ")[0]}` : ""}!</h1>
       {incomplete && <Notice>Your profile isn&apos;t complete yet. <Link href="/account/profile" className="font-bold underline">Finish it</Link> so you count toward your province on our Impact page.</Notice>}
-      {!verification.email_verified && <Notice>Please prove access to your email before submitting a business for publication. <Link href="/account/business" className="font-bold underline">Send a verification link</Link>.</Notice>}
-      {biz?.risk_level === "high" && <Notice><strong>Business Information Needs Correction.</strong> Your listing is saved but is not currently shown in the directory. <Link href="/account/business" className="font-bold underline">Correct and resubmit the same listing</Link>.</Notice>}
+      {!user.email_confirmed_at && <Notice>Please confirm your email address to activate your member ID.</Notice>}
       {doneCount < steps.length && (
         <section className="card p-5" aria-labelledby="first-steps">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -126,8 +120,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <h2 className="text-lg font-bold">My business listing</h2>
             {biz ? (
               <>
-                <p className="mt-1">{biz.name} · {publicationStatusOf(biz) === "published" ? <Link href={`/directory/${biz.slug}`} className="text-mph underline">Live in directory</Link> : businessStatus?.label}{biz.verification_status === "pending" && " · Document verification pending"}</p>
-                {businessStatus && <p className="mt-1 text-sm text-muted">{businessStatus.detail}</p>}
+                <p className="mt-1">{biz.name} · {biz.published ? <Link href="https://pages.flameph.org/directory" className="text-mph underline">View Pages directory</Link> : "Not published"}{biz.verification_status === "pending" && " · Verification pending"}</p>
                 <div className="mt-3"><ListingStrength biz={listing} supportsExtras={hasExtras(listing)} max={2} compact /></div>
               </>
             ) : <p className="mt-1 text-muted">You haven&apos;t listed a business yet.</p>}

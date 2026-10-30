@@ -1,19 +1,13 @@
 import Link from "next/link";
 import { StatusBadge, type Status } from "./StatusBadge";
-import { getHeroVisual } from "@/lib/hero-visuals";
+import { HeroArtwork } from "./HeroArtwork";
 
-export function PageHero({ title, fil, intro, status, children, share = true, path }: {
+export function PageHero({ title, fil, intro, status, children, path }: {
   title: string; fil?: string; intro?: React.ReactNode; status?: Status; children?: React.ReactNode; share?: boolean; path?: string;
 }) {
-  const visual = getHeroVisual(path);
   return (
-    <section
-      className="overflow-hidden border-b border-line bg-bg-warm"
-      data-page-share={share && path ? "true" : undefined}
-      data-share-path={share && path ? path : undefined}
-      data-share-title={share && path ? title : undefined}
-    >
-      <div className={`container-x py-10 lg:py-14 ${visual ? "grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(300px,430px)] lg:gap-12" : ""}`}>
+    <section className="border-b border-line bg-bg-warm">
+      <div className="container-x grid items-center gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(300px,430px)] lg:gap-12 lg:py-14">
         <div>
           {status && <StatusBadge status={status} className="mb-3" />}
           {fil && <p className="font-display text-base font-bold text-flame-strong">{fil}</p>}
@@ -21,20 +15,7 @@ export function PageHero({ title, fil, intro, status, children, share = true, pa
           {intro && <div className="mt-4 max-w-2xl text-lg text-muted">{intro}</div>}
           {children && <div className="mt-6 flex flex-wrap gap-3">{children}</div>}
         </div>
-        {visual && (
-          <div className="mx-auto w-full max-w-[430px] lg:mx-0 lg:justify-self-end">
-            <div
-              role="img"
-              aria-label={visual.alt}
-              className="aspect-square w-full rounded-[2rem] border border-white/70 bg-cover bg-no-repeat shadow-[0_24px_70px_-28px_rgba(0,53,130,0.38)]"
-              style={{
-                backgroundImage: `url(${visual.src})`,
-                backgroundPosition: visual.backgroundPosition,
-                backgroundSize: "200% 200%",
-              }}
-            />
-          </div>
-        )}
+        {path && <HeroArtwork path={path} />}
       </div>
     </section>
   );

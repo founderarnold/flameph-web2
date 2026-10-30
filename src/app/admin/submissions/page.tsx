@@ -18,7 +18,7 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
         <a href={`/admin/export/submissions${qs ? `?${qs}` : ""}`} className="btn btn-outline">Export CSV</a>
       </div>
       <form className="flex flex-wrap gap-2">
-        <select name="type" defaultValue={sp.type ?? ""} className="input w-auto" aria-label="Form type"><option value="">All forms</option>{Object.values(FORMS).map((f) => <option key={f.type} value={f.type}>{f.title}</option>)}</select>
+        <select name="type" defaultValue={sp.type ?? ""} className="input w-auto" aria-label="Form type"><option value="">All forms</option><option value="business-report">Business listing reports</option>{Object.values(FORMS).map((f) => <option key={f.type} value={f.type}>{f.title}</option>)}</select>
         <select name="status" defaultValue={sp.status ?? ""} className="input w-auto" aria-label="Status"><option value="">Any status</option><option>new</option><option>contacted</option><option>done</option></select>
         <button className="btn btn-primary">Filter</button>
         <Link href="/admin/submissions" className="btn btn-ghost">Clear</Link>

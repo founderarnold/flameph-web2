@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { adminContext } from "@/lib/admin/guard";
+import { REAL_ESTATE_ADMIN_SECTIONS } from "@/lib/real-estate-admin";
 
 const csv = (rows: Record<string, unknown>[]) => {
   if (!rows.length) return "";
   const cols = [...new Set(rows.flatMap((r) => Object.keys(r)))];
-  const esc = (v: unknown) => { const s = v == null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const esc = (v: unknown) => {
+    let s = v == null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
+    if (/^[=+\-@]/.test(s)) s = `'${s}`; // Prevent spreadsheet formula injection in downloaded CSV files.
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
   return [cols.join(","), ...rows.map((r) => cols.map((c) => esc(r[c])).join(","))].join("\n");
 };
 
@@ -26,7 +31,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ kind: st
   } else if (kind === "newsletter") {
     const { data } = await db.from("newsletter_subscribers").select("email,confirmed_at,unsubscribed_at,created_at").not("confirmed_at", "is", null);
     rows = data ?? [];
-  } else return NextResponse.json({ error: "Unknown export" }, { status: 404 });
+  } else {
+    const realEstate = Object.values(REAL_ESTATE_ADMIN_SECTIONS).find((section) => section.exportKind === kind);
+    if (!realEstate) return NextResponse.json({ error: "Unknown export" }, { status: 404 });
+    let q = db.from(realEstate.table).select("*").order("created_at", { ascending: false });
+    const status = url.searchParams.get("status");
+    if (status && realEstate.statuses.includes(status as never)) q = q.eq("status", status);
+    const { data } = await q;
+    rows = (data ?? []).map((row) => {
+      const nested = row[realEstate.dataColumn] as Record<string, unknown> | null;
+      const rest = { ...row } as Record<string, unknown>;
+      delete rest[realEstate.dataColumn];
+      return { ...rest, ...(nested ?? {}) };
+    });
+  }
   await audit("export", kind, undefined, { count: rows.length });
   return new NextResponse(csv(rows), { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="flameph-${kind}-${new Date().toISOString().slice(0, 10)}.csv"` } });
 }

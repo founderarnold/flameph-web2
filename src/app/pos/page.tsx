@@ -3,6 +3,7 @@ import * as I from "@/components/icons";
 import { meta } from "@/lib/meta";
 
 const POS_URL = "https://pos.flameph.org";
+const POS_SSO_URL = "https://www.flameph.org/sso/authorize?client=flamepos&return=https%3A%2F%2Fpos.flameph.org%2Forganizations";
 
 export const metadata = meta(
   "FLAME POS — Free POS for Filipino MSMEs",
@@ -29,7 +30,8 @@ const USERS = [
 ];
 
 const FAQ = [
-  { q: "Is FLAME POS free?", a: "Yes. You can create a FLAME POS account and start using the core system for free." },
+  { q: "Is FLAME POS free?", a: "Yes. FLAME PH members can open FLAME POS and start using the core system for free." },
+  { q: "Do I need another account?", a: "No. Use your existing FLAME PH account. The first time you open FLAME POS, we securely link your identity and guide you through business setup." },
   { q: "Do I need to install software?", a: "No. FLAME POS works in a modern web browser on a phone, tablet, laptop or desktop." },
   { q: "Can I record GCash and Maya payments?", a: "Yes. FLAME POS can record these payment methods and an optional reference number. This records the payment; it is not a direct GCash or Maya payment-gateway connection." },
   { q: "Can I print receipts?", a: "Yes. You can print receipts or download a PDF. FLAME POS does not claim BIR accreditation." },
@@ -46,14 +48,11 @@ export default function Page() {
         path="/pos"
         intro="FLAME POS is a free cloud-based Point of Sale and business management system built to help Filipino MSMEs sell, track inventory, understand their business and grow."
       >
-        <a href={`${POS_URL}/register`} className="btn btn-flame text-base">Start using FLAME POS — free</a>
-        <a href={`${POS_URL}/login`} className="btn btn-outline text-base">Sign in to FLAME POS</a>
+        <a href={POS_SSO_URL} className="btn btn-flame text-base">Open FLAME POS — free</a>
+        <a href={`${POS_URL}/login`} className="btn btn-outline text-base">POS staff sign in</a>
       </PageHero>
 
-      <Section
-        title="Sell. Track. Understand. Grow."
-        intro="One easy-to-use workspace for daily selling and the business records behind every sale."
-      >
+      <Section title="Sell. Track. Understand. Grow." intro="One easy-to-use workspace for daily selling and the business records behind every sale.">
         <Grid>{FEATURES.map((feature) => <FeatureCard key={feature.title} {...feature} status="live" />)}</Grid>
       </Section>
 
@@ -73,7 +72,7 @@ export default function Page() {
       <Section title="Start in three simple steps">
         <ol className="grid gap-4 sm:grid-cols-3">
           {[
-            ["Create your free account", "Register securely using your email address."],
+            ["Use your FLAME PH account", "Sign in once with your existing FLAME PH member account."],
             ["Set up your business", "Add your business, receipt and tax-display preferences."],
             ["Add a product and sell", "Enter your opening stock, open the POS and record your first sale."],
           ].map(([title, text], index) => (
@@ -85,7 +84,7 @@ export default function Page() {
           ))}
         </ol>
         <div className="mt-6">
-          <a href={`${POS_URL}/register`} className="btn btn-flame text-base">Create my free FLAME POS account</a>
+          <a href={POS_SSO_URL} className="btn btn-flame text-base">Open FLAME POS with my FLAME PH account</a>
         </div>
       </Section>
 
@@ -108,10 +107,10 @@ export default function Page() {
         <div className="container-x py-12 text-center sm:py-16">
           <p className="font-display font-bold uppercase tracking-wider text-gold">FLAME POS is live</p>
           <h2 className="mx-auto mt-2 max-w-3xl text-3xl font-extrabold sm:text-4xl">Start running your business with clearer records today.</h2>
-          <p className="mx-auto mt-4 max-w-2xl text-white/85">No waitlist. Create your account and begin setting up your business now.</p>
+          <p className="mx-auto mt-4 max-w-2xl text-white/85">No waitlist and no second password. Continue with your FLAME PH account and begin setting up your business now.</p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <a href={`${POS_URL}/register`} className="btn btn-flame text-base">Start using FLAME POS — free</a>
-            <a href={`${POS_URL}/login`} className="btn bg-white text-primary hover:bg-white/90">Already have an account? Sign in</a>
+            <a href={POS_SSO_URL} className="btn btn-flame text-base">Open FLAME POS — free</a>
+            <a href={`${POS_URL}/login`} className="btn bg-white text-primary hover:bg-white/90">POS staff sign in</a>
           </div>
         </div>
       </section>
