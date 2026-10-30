@@ -144,15 +144,27 @@ export async function moderateBusiness(fd: FormData) {
   const id = String(fd.get("id") ?? "");
   const action = String(fd.get("moderation_action") ?? "");
   if (!/^[0-9a-f-]{36}$/i.test(id)) return;
-  const { data: business } = await ctx.db.from("businesses").select("id,owner_id,slug,name,published").eq("id", id).maybeSingle();
+  const { data: business } = await ctx.db.from("businesses").select("id,owner_id,slug,name,published,risk_level,lifecycle_status,publication_status").eq("id", id).maybeSingle();
   if (!business) return;
 
   if (action === "hide") {
-    await ctx.db.from("businesses").update({ published: false }).eq("id", id);
+    await ctx.db.from("businesses").update({ published: false, publication_status: "unpublished" }).eq("id", id);
   } else if (action === "restore") {
     const { data: owner } = await ctx.db.from("profiles").select("status").eq("id", business.owner_id).maybeSingle();
     if (owner?.status !== "active") redirect("/admin/directory?all=1&error=owner-suspended");
-    await ctx.db.from("businesses").update({ published: true }).eq("id", id);
+    await ctx.db.from("businesses").update({ published: true, publication_status: "published", lifecycle_status: "approved", risk_level: "low" }).eq("id", id);
+  } else if (action === "approve_legitimate") {
+    const { data: owner } = await ctx.db.from("profiles").select("status").eq("id", business.owner_id).maybeSingle();
+    if (owner?.status !== "active") redirect("/admin/directory?all=1&error=owner-suspended");
+    await ctx.db.from("businesses").update({ risk_level: "low", moderation_reason_categories: [], moderation_fields: [], lifecycle_status: "approved", publication_status: "published", published: true }).eq("id", id);
+  } else if (action === "request_correction") {
+    await ctx.db.from("businesses").update({ risk_level: "needs_review", lifecycle_status: "needs_correction", publication_status: "unpublished", published: false }).eq("id", id);
+  } else if (action === "keep_quarantined") {
+    await ctx.db.from("businesses").update({ risk_level: "high", lifecycle_status: "needs_correction", publication_status: "unpublished", published: false }).eq("id", id);
+  } else if (action === "reject") {
+    await ctx.db.from("businesses").update({ lifecycle_status: "rejected", publication_status: "unpublished", published: false }).eq("id", id);
+  } else if (action === "suspend") {
+    await ctx.db.from("businesses").update({ lifecycle_status: "suspended", publication_status: "unpublished", published: false }).eq("id", id);
   } else if (action === "ban_owner") {
     await Promise.all([
       ctx.db.from("profiles").update({ status: "suspended" }).eq("id", business.owner_id),
@@ -169,6 +181,23 @@ export async function moderateBusiness(fd: FormData) {
   revalidatePath(`/directory/${business.slug}`);
   revalidatePath("/admin/directory");
   redirect("/admin/directory?all=1&moderated=1");
+}
+
+export async function reviewLegacyBusiness(fd: FormData) {
+  const ctx = await adminContext(["super_admin", "admin"]);
+  const id = String(fd.get("id") ?? "");
+  const decision = String(fd.get("legacy_decision") ?? "");
+  const note = String(fd.get("note") ?? "").trim().slice(0, 1000) || null;
+  if (!/^[0-9a-f-]{36}$/i.test(id) || !["confirm_quarantine", "restore_public", "clear_review"].includes(decision)) return;
+  const { error } = await ctx.db.rpc("review_business_legacy_assessment", {
+    p_business_id: id,
+    p_decision: decision,
+    p_actor_id: ctx.user.id,
+    p_note: note,
+  });
+  revalidateTag("content"); revalidateTag("stats"); revalidateTag("directory");
+  revalidatePath("/admin/directory");
+  redirect(`/admin/directory?all=1&${error ? "error=legacy-review" : "reviewed=1"}`);
 }
 
 export async function setRole(fd: FormData) {

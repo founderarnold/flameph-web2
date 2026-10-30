@@ -8,16 +8,19 @@ import { PushToggle } from "@/components/PushToggle";
 import { hasExtras, type Listing } from "@/lib/listing";
 import { list } from "@/lib/content";
 import { OPPORTUNITY_KINDS, STAGES, type Opportunity, type Stage, dateLabel, matches, notExpired } from "@/lib/growth";
+import { accountVerificationStatus } from "@/lib/account-verification";
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
   const { supabase, user } = await requireUser();
   const sp = await searchParams;
-  const [{ data: p }, { data: biz }, { data: regs }, { count: aiCount }] = await Promise.all([
+  const [{ data: p }, { data: biz }, { data: regs }, { count: aiCount }, { data: verificationData }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase.from("businesses").select("*").eq("owner_id", user.id).limit(1).maybeSingle(),
     supabase.from("event_registrations").select("id, created_at, events(title, starts_at, city)").eq("user_id", user.id).order("created_at", { ascending: false }),
     supabase.from("ai_conversations").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    supabase.rpc("account_verification_status"),
   ]);
+  const verification = accountVerificationStatus(verificationData, user);
   // Growth features (0003 database update). Each query is empty, not an error page, until that update is run.
   const since30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [{ data: productRows }, { data: stats }, { count: newInquiries }, { data: opps }, { data: deals }, events] = await Promise.all([
@@ -42,7 +45,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const listing = biz ? ({ ...biz, product_count: productCount } as Listing) : null;
   const photos = listing?.photos?.length ?? 0;
   const steps = [
-    { label: "Confirm your email", done: Boolean(user.email_confirmed_at), href: null },
+    { label: "Confirm your email", done: verification.email_verified, href: verification.email_verified ? null : "/account/business" },
     { label: "Complete your profile", done: !incomplete, href: "/account/profile" },
     { label: "List your business (free)", done: Boolean(biz), href: "/account/business" },
     { label: hasExtras(listing) ? "Add your logo and 3 photos" : "Add 3 photos", done: photos >= 3 && (!hasExtras(listing) || Boolean(listing?.logo_url)), href: "/account/business" },

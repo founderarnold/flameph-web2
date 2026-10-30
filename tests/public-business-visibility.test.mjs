@@ -6,6 +6,7 @@ const migration = await readFile(new URL("../supabase/migrations/0006_enforce_pu
 const directory = await readFile(new URL("../src/app/directory/page.tsx", import.meta.url), "utf8");
 const detail = await readFile(new URL("../src/app/directory/[slug]/page.tsx", import.meta.url), "utf8");
 const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8");
+const config = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
 const inquiry = await readFile(new URL("../src/app/api/inquiry/route.ts", import.meta.url), "utf8");
 const ridesafe = await readFile(new URL("../src/app/ridesafe/RideSafeHome.tsx", import.meta.url), "utf8");
 const sharedFilter = await readFile(new URL("../src/lib/public-business.ts", import.meta.url), "utf8");
@@ -35,14 +36,13 @@ test("public statistics and tracking use publication eligibility", () => {
   assert.match(stats, /select count\(\*\) from public_businesses/i);
 });
 
-test("directory, detail, related listings and sitemap share one explicit predicate", () => {
+test("legacy queries stay strict while public directory traffic moves to FlamePH Pages", () => {
   assert.match(sharedFilter, /published: true[\s\S]*publication_status: "published"[\s\S]*lifecycle_status: "approved"/i);
-  assert.match(directory, /filters: PUBLIC_BUSINESS_FILTERS/i);
   assert.equal(detail.match(/PUBLIC_BUSINESS_FILTERS/g)?.length, 3);
-  assert.match(sitemap, /filters: PUBLIC_BUSINESS_FILTERS/i);
-  assert.match(directory, /const q = \(sp\.q/i);
-  assert.match(directory, /!sp\.sector[\s\S]*!sp\.region/i);
-  assert.match(directory, /name="q"[\s\S]*name="sector"[\s\S]*name="region"/i);
+  assert.match(config, /source: "\/directory"[\s\S]*pages\.flameph\.org\/directory/);
+  assert.match(config, /source: "\/directory\/:path\*"[\s\S]*pages\.flameph\.org\/directory/);
+  assert.doesNotMatch(sitemap, /\/directory\/\$\{/i);
+  assert.match(directory, /publicBusinesses<Biz>/i);
 });
 
 test("service-role and browser discovery queries include all eligibility fields", () => {

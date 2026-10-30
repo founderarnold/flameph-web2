@@ -1289,7 +1289,8 @@ begin
 
   if p_decision = 'confirm_quarantine' then
     update public.businesses
-    set lifecycle_status = 'needs_correction', publication_status = 'unpublished'
+    set lifecycle_status = 'needs_correction', publication_status = 'unpublished',
+        published = false, risk_level = 'high'
     where id = p_business_id;
 
     update public.business_legacy_assessments
@@ -1298,7 +1299,8 @@ begin
     where business_id = p_business_id;
   elsif p_decision = 'restore_public' then
     update public.businesses
-    set lifecycle_status = 'approved', publication_status = 'published'
+    set lifecycle_status = 'approved', publication_status = 'published',
+        published = true, risk_level = 'low'
     where id = p_business_id;
 
     update public.business_legacy_assessments
@@ -2120,17 +2122,23 @@ $$;
 drop policy if exists businesses_public on public.businesses;
 create policy businesses_public on public.businesses for select using (
   published and publication_status = 'published' and lifecycle_status = 'approved' and risk_level = 'low'
+  and exists (
+    select 1 from public.profiles p
+    where p.id = businesses.owner_id and p.status = 'active'
+  )
 );
 drop policy if exists products_public on public.business_products;
 create policy products_public on public.business_products for select using (exists (
   select 1 from public.businesses b where b.id = business_products.business_id
     and b.published and b.publication_status = 'published' and b.lifecycle_status = 'approved' and b.risk_level = 'low'
+    and exists (select 1 from public.profiles p where p.id = b.owner_id and p.status = 'active')
 ));
 drop policy if exists reviews_public on public.business_reviews;
 create policy reviews_public on public.business_reviews for select using (
   user_id = auth.uid() or public.is_admin() or (not hidden and exists (
     select 1 from public.businesses b where b.id = business_reviews.business_id
       and b.published and b.publication_status = 'published' and b.lifecycle_status = 'approved' and b.risk_level = 'low'
+      and exists (select 1 from public.profiles p where p.id = b.owner_id and p.status = 'active')
   ))
 );
 drop policy if exists reviews_self_insert on public.business_reviews;
@@ -2138,6 +2146,7 @@ create policy reviews_self_insert on public.business_reviews for insert with che
   user_id = auth.uid() and exists (
     select 1 from public.businesses b where b.id = business_reviews.business_id
       and b.published and b.publication_status = 'published' and b.lifecycle_status = 'approved' and b.risk_level = 'low'
+      and exists (select 1 from public.profiles p where p.id = b.owner_id and p.status = 'active')
   )
 );
 
@@ -2147,8 +2156,12 @@ where published and publication_status = 'published' and lifecycle_status = 'app
 create or replace function public.track_business(biz uuid, kind text) returns void
 language plpgsql security definer set search_path = public as $$
 begin
-  if not exists (select 1 from public.businesses where id = biz and published
-    and publication_status = 'published' and lifecycle_status = 'approved' and risk_level = 'low') then return; end if;
+  if not exists (
+    select 1 from public.businesses b
+    join public.profiles p on p.id = b.owner_id
+    where b.id = biz and b.published and b.publication_status = 'published'
+      and b.lifecycle_status = 'approved' and b.risk_level = 'low' and p.status = 'active'
+  ) then return; end if;
   insert into public.business_stats (business_id, day, views, clicks)
   values (biz, (now() at time zone 'Asia/Manila')::date,
     case when kind = 'view' then 1 else 0 end, case when kind = 'click' then 1 else 0 end)
@@ -2164,8 +2177,10 @@ language sql stable security definer set search_path = public as $$
   ), rated as (
     select count(*) as n, count(*) filter (where helpful) as up from public.ai_feedback
   ), public_businesses as (
-    select * from public.businesses where published and publication_status = 'published'
-      and lifecycle_status = 'approved' and risk_level = 'low'
+    select b.* from public.businesses b
+    join public.profiles p on p.id = b.owner_id
+    where b.published and b.publication_status = 'published'
+      and b.lifecycle_status = 'approved' and b.risk_level = 'low' and p.status = 'active'
   )
   select jsonb_build_object(
     'members', (select count(*) from m),
@@ -2216,6 +2231,160 @@ revoke all on function public.submit_business_for_review(uuid, uuid) from public
 grant execute on function public.submit_business_for_review(uuid, uuid) to service_role;
 
 
+-- ===== 0013_real_estate_funnels.sql =====
+-- Real Estate for MSMEs: keep the three journeys separate while the existing
+-- submissions table remains the single secure public-form entry point.
+
+create table if not exists public.property_inquiries (
+  id uuid primary key default gen_random_uuid(),
+  submission_id uuid unique not null references public.submissions(id) on delete cascade,
+  reference_number text unique not null,
+  user_id uuid references auth.users(id) on delete set null,
+  name text,
+  email text,
+  mobile text,
+  requirement jsonb not null default '{}',
+  consent_at timestamptz not null,
+  source text not null default 'Real Estate for MSMEs',
+  status text not null default 'new' check (status in ('new','reviewing','contacted','matching','site_visit','closed')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.corporate_h_referral_partners (
+  id uuid primary key default gen_random_uuid(),
+  submission_id uuid unique not null references public.submissions(id) on delete cascade,
+  reference_number text unique not null,
+  user_id uuid references auth.users(id) on delete set null,
+  name text,
+  email text,
+  mobile text,
+  application jsonb not null default '{}',
+  consent_at timestamptz not null,
+  orientation_version text,
+  orientation_completed_at timestamptz,
+  status text not null default 'application_submitted' check (status in ('interested','application_submitted','for_orientation','requirements_incomplete','under_review','approved','active','suspended','inactive')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.corporate_h_applications (
+  id uuid primary key default gen_random_uuid(),
+  submission_id uuid unique not null references public.submissions(id) on delete cascade,
+  reference_number text unique not null,
+  user_id uuid references auth.users(id) on delete set null,
+  name text,
+  email text,
+  mobile text,
+  application jsonb not null default '{}',
+  consent_at timestamptz not null,
+  company_approved_at timestamptz,
+  regulatory_requirements_completed_at timestamptz,
+  status text not null default 'submitted' check (status in ('submitted','initial_review','interview','orientation','training','document_verification','company_approved','requirements_incomplete','onboarded','not_selected','withdrawn')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists property_inquiries_user_created_idx on public.property_inquiries(user_id, created_at desc);
+create index if not exists property_inquiries_status_created_idx on public.property_inquiries(status, created_at desc);
+create index if not exists referral_partners_user_created_idx on public.corporate_h_referral_partners(user_id, created_at desc);
+create index if not exists referral_partners_status_created_idx on public.corporate_h_referral_partners(status, created_at desc);
+create index if not exists corporate_h_applications_user_created_idx on public.corporate_h_applications(user_id, created_at desc);
+create index if not exists corporate_h_applications_status_created_idx on public.corporate_h_applications(status, created_at desc);
+
+alter table public.property_inquiries enable row level security;
+alter table public.corporate_h_referral_partners enable row level security;
+alter table public.corporate_h_applications enable row level security;
+
+drop policy if exists "Members read own property inquiries" on public.property_inquiries;
+create policy "Members read own property inquiries" on public.property_inquiries for select to authenticated using (user_id = auth.uid());
+
+drop policy if exists "Members read own referral applications" on public.corporate_h_referral_partners;
+create policy "Members read own referral applications" on public.corporate_h_referral_partners for select to authenticated using (user_id = auth.uid());
+
+drop policy if exists "Members read own career applications" on public.corporate_h_applications;
+create policy "Members read own career applications" on public.corporate_h_applications for select to authenticated using (user_id = auth.uid());
+
+create or replace function public.route_real_estate_submission()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  reference text;
+begin
+  if new.type = 'real-estate-property' then
+    reference := 'PROP-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10));
+    insert into public.property_inquiries (submission_id, reference_number, user_id, name, email, mobile, requirement, consent_at, source)
+    values (new.id, reference, new.user_id, new.name, new.email, new.mobile, new.data, new.created_at, coalesce(new.data->>'source', 'Real Estate for MSMEs'));
+  elsif new.type = 'real-estate-referral-partner' then
+    reference := 'CH-RP-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10));
+    insert into public.corporate_h_referral_partners (submission_id, reference_number, user_id, name, email, mobile, application, consent_at)
+    values (new.id, reference, new.user_id, new.name, new.email, new.mobile, new.data, new.created_at);
+  elsif new.type = 'real-estate-career' then
+    reference := 'CH-APP-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10));
+    insert into public.corporate_h_applications (submission_id, reference_number, user_id, name, email, mobile, application, consent_at)
+    values (new.id, reference, new.user_id, new.name, new.email, new.mobile, new.data, new.created_at);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists route_real_estate_submission_after_insert on public.submissions;
+create trigger route_real_estate_submission_after_insert
+after insert on public.submissions
+for each row execute function public.route_real_estate_submission();
+
+
+-- ===== 0014_directory_moderation.sql =====
+-- Public directory moderation must be enforced by the database, not only by UI code.
+-- A published business owned by a suspended member is not publicly readable.
+update public.businesses b
+set published = false
+where b.published
+  and exists (select 1 from public.profiles p where p.id = b.owner_id and p.status = 'suspended');
+
+drop policy if exists businesses_public on public.businesses;
+create policy businesses_public on public.businesses for select using (
+  published
+  and exists (
+    select 1 from public.profiles
+    where profiles.id = businesses.owner_id
+      and profiles.status = 'active'
+  )
+);
+
+-- Products and tracking events follow the same active-owner rule.
+drop policy if exists products_public on public.business_products;
+create policy products_public on public.business_products for select using (
+  exists (
+    select 1
+    from public.businesses
+    join public.profiles on profiles.id = businesses.owner_id
+    where businesses.id = business_products.business_id
+      and businesses.published
+      and profiles.status = 'active'
+  )
+);
+
+create or replace function public.track_business_event(biz uuid, event_type text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if event_type not in ('view','contact_click') then return; end if;
+  if not exists (
+    select 1 from public.businesses b
+    join public.profiles p on p.id = b.owner_id
+    where b.id = biz and b.published and p.status = 'active'
+  ) then return; end if;
+  insert into public.business_stats (business_id, day, views, contact_clicks)
+  values (biz, current_date, case when event_type='view' then 1 else 0 end, case when event_type='contact_click' then 1 else 0 end)
+  on conflict (business_id, day) do update set
+    views = business_stats.views + excluded.views,
+    contact_clicks = business_stats.contact_clicks + excluded.contact_clicks;
+end; $$;
+
+
 -- ===== seed.sql =====
 -- FLAME PH seed: verified facts (section 3) and menu structure ONLY.
 -- All other content tables intentionally start empty. Generated by scripts/build-seed.mjs.
@@ -2238,7 +2407,7 @@ on conflict (slug) do nothing;
 
 insert into public.settings (key, value, is_public) values
   ('organization', '{"name":"FLAME PH — Federation of Leaders Advancing MSME Ecosystem in the Philippines","former_name":"FAME PH — Founders'' Association of MSMEs and Entrepreneurs, Inc.","type":"Non-stock, non-profit corporation","sec_no":"2024050150009-15","sec_registered_on":"2024-05-09","address":"Greenville Subd., Barangay San Jose, San Fernando City, Pampanga","email_primary":"flameph.org@gmail.com","email_partnerships":"federationofmsmes@gmail.com"}'::jsonb, true),
-  ('menu', '[{"key":"whatWeDo","label":"What We Do","fil":"Ano ang Ginagawa Namin","items":[{"label":"Programs & MSME Ecosystem","href":"/programs-ecosystem"},{"label":"FLAME PH Academy","href":"/academy"},{"label":"FLAME PH NegosyoTalks","href":"/negosyo-talks"},{"label":"Educational Workshops","href":"/workshops"},{"label":"Trainings & Webinars","href":"/trainings-webinars"},{"label":"Expos & Summits","href":"/expos-summits"},{"label":"Annual Awards for MSMEs","href":"/awards"}]},{"key":"membership","label":"Membership","fil":"Membership","items":[{"label":"Avail Free MSME Benefits","href":"/membership/free-benefits"},{"label":"Get More MSME Benefits","href":"/membership/more-benefits"},{"label":"Resources","href":"/resources"},{"label":"Advocacy","href":"/advocacy"},{"label":"Chapters Near You","href":"/chapters"},{"label":"Volunteering","href":"/volunteering"},{"label":"Free POS for MSMEs","href":"/pos"},{"label":"Free Business Directory","href":"/directory"},{"label":"Opportunities for MSMEs","href":"/opportunities"},{"label":"Buy Together Deals","href":"/deals"},{"label":"Biz Consult with FLAME AI","href":"/bizconsult-ai"}]},{"key":"supportUs","label":"Support Us","fil":"Suportahan Kami","items":[{"label":"FLAME PH Merchs","href":"/merch"},{"label":"Flame Signature Brands","href":"/signature-brands"},{"label":"Personalized by FLAMEPH","href":"/personalized"},{"label":"Shop/Sell/Jobs @ MarketplacePH","href":"https://www.marketplaceph.com","external":true},{"label":"Start/Grow/ScaleUp @ NegosyoDepot","href":"https://www.negosyodepot.com","external":true},{"label":"Fulfillment by MSMEs","href":"/fulfillment"}]},{"key":"getInvolved","label":"Get Involved","fil":"Makilahok","items":[{"label":"Volunteer as Mentor","href":"/get-involved/mentor"},{"label":"Join as Partner","href":"/get-involved/partner"},{"label":"Sponsor an Event","href":"/get-involved/sponsor-event"},{"label":"Sponsor a Community","href":"/get-involved/sponsor-community"},{"label":"Nominate an MSME Awardee","href":"/get-involved/nominate"},{"label":"Support Poverty Alleviation Program","href":"/get-involved/poverty-alleviation"},{"label":"News & Updates","href":"/news"},{"label":"Become an Affiliate Marketer","href":"/get-involved/affiliate"},{"label":"Become a Chapter Leader","href":"/get-involved/chapter-leader"},{"label":"Volunteer as a Resource Speaker","href":"/get-involved/resource-speaker"},{"label":"Volunteer Professional Services","href":"/get-involved/professional-services"}]},{"key":"about","label":"About Us","fil":"Tungkol sa Amin","items":[{"label":"What is FLAME PH","href":"/about"},{"label":"Meet the Founders","href":"/about/founders"},{"label":"Meet the Teams","href":"/about/team"},{"label":"Featured Chapters","href":"/about/chapters"},{"label":"Featured Mentors","href":"/about/mentors"},{"label":"Featured Partners","href":"/about/partners"}]}]'::jsonb, true),
+  ('menu', '[{"key":"explore","label":"Explore","fil":"Tuklasin","items":[{"label":"Ano Ang Gusto Mong Gawin Ngayon?","href":"/start"},{"label":"Explore FLAME PH","href":"/explore"},{"label":"FLAME PH Ecosystem","href":"/programs-ecosystem"},{"label":"FLAME PH Academy","href":"/academy"},{"label":"Workshops & Webinars","href":"/workshops"},{"label":"Events, Expos & Summits","href":"/expos-summits"},{"label":"Business Resources","href":"/resources"},{"label":"Find a Chapter","href":"/chapters"},{"label":"Featured Chapters","href":"/about/chapters"},{"label":"Become a Chapter Leader","href":"/get-involved/chapter-leader"},{"label":"Chapter Activities & Events","href":"/news"}]},{"key":"benefits","label":"Benefits","fil":"Mga Benepisyo","items":[{"label":"Free Benefits","href":"/benefits"},{"label":"Upgraded Benefits","href":"/membership/more-benefits"},{"label":"Free Mini-Website/Landing Page","href":"/directory"},{"label":"Ask FLAME AI","href":"/bizconsult-ai"},{"label":"Free Basic POS for MSMEs","href":"/pos"},{"label":"RideSafe","href":"/ridesafe"}]},{"key":"opportunities","label":"Opportunities","fil":"Mga Oportunidad","items":[{"label":"FLAME PH Opportunities","href":"/opportunities"},{"label":"Start or Grow a Business","href":"https://www.negosyodepot.com","external":true},{"label":"Sell Products or Find Customers","href":"https://www.marketplaceph.com","external":true},{"label":"Jobs & Hiring on MarketplacePH","href":"https://www.marketplaceph.com","external":true},{"label":"Easy Startup for Aspiring Managers","href":"https://www.managerspizza.com","external":true},{"label":"Real Estate for MSMEs","href":"/real-estate-for-msmes"},{"label":"Affiliate & Referral Opportunities","href":"/get-involved/affiliate"}]},{"key":"getInvolved","label":"Get Involved","fil":"Makilahok","items":[{"label":"Ways to Get Involved","href":"/get-involved"},{"label":"Volunteer With FLAME PH","href":"/volunteering"},{"label":"Become a Mentor","href":"/get-involved/mentor"},{"label":"Become a Resource Speaker","href":"/get-involved/resource-speaker"},{"label":"Volunteer Professional Services","href":"/get-involved/professional-services"},{"label":"Become an Affiliate","href":"/get-involved/affiliate"},{"label":"Nominate an MSME","href":"/get-involved/nominate"}]},{"key":"partners","label":"Partner With Us","fil":"Makipag-partner","items":[{"label":"Why Partner With FLAME PH","href":"/partners"},{"label":"Become a Strategic Partner","href":"/get-involved/partner"},{"label":"Sponsor an Event","href":"/get-involved/sponsor-event"},{"label":"Sponsor a Community","href":"/get-involved/sponsor-community"},{"label":"Support Poverty-Alleviation Programs","href":"/get-involved/poverty-alleviation"},{"label":"Contact Partnership Team","href":"/contact"}]},{"key":"about","label":"About","fil":"Tungkol sa Amin","items":[{"label":"About FLAME PH","href":"/about"},{"label":"How the Ecosystem Works","href":"/programs-ecosystem"},{"label":"Our Story & Leadership","href":"/about/founders"},{"label":"Our Team","href":"/about/team"},{"label":"Featured Mentors","href":"/about/mentors"},{"label":"Featured Partners","href":"/about/partners"},{"label":"Impact","href":"/impact"},{"label":"Contact Us","href":"/contact"}]}]'::jsonb, true),
   ('stat_thresholds', '{"founding_members":50,"ai_helpful_min_ratings":20}'::jsonb, true),
   ('social_links', '{}'::jsonb, true),
   ('launch_date', 'null'::jsonb, true),

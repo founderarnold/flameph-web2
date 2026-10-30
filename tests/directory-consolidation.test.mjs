@@ -2,21 +2,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const DIRECTORY_URL = "https://pages.flameph.org/directory";
-
-test("Membership sends visitors to the single Pages directory and keeps RideSafe last", async () => {
+test("Benefits sends visitors through the canonical directory redirect and keeps RideSafe last", async () => {
   const nav = JSON.parse(await readFile(new URL("../src/content/nav.json", import.meta.url), "utf8"));
-  const membership = nav.find((group) => group.key === "membership");
-  assert.ok(membership, "Membership menu must exist");
+  const benefits = nav.find((group) => group.key === "benefits");
+  assert.ok(benefits, "Benefits menu must exist");
 
-  const directory = membership.items.find((item) => item.label === "Free Micro Website/Business Directory");
+  const directory = benefits.items.find((item) => item.label === "Free Mini-Website/Landing Page");
   assert.deepEqual(directory, {
-    label: "Free Micro Website/Business Directory",
-    href: DIRECTORY_URL,
-    external: true,
+    label: "Free Mini-Website/Landing Page",
+    href: "/directory",
   });
-  assert.equal(membership.items.at(-1)?.label, "Free RideSafe App");
-  assert.equal(membership.items.some((item) => item.href === "/directory"), false);
+  assert.equal(benefits.items.at(-1)?.label, "RideSafe");
 });
 
 test("legacy directory routes permanently forward to the Pages directory", async () => {

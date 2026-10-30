@@ -22,17 +22,17 @@ test("shared hero pages use contextual artwork while the homepage remains outsid
 test("hero page sharing is rendered before the footer instead of inside the hero", () => {
   const hero = read("src/components/ui.tsx");
   const layout = read("src/app/layout.tsx");
-  const footerShare = read("src/components/HeroPageFooterShare.tsx");
+  const footerShare = read("src/components/PageShareBar.tsx");
   assert.doesNotMatch(hero, /ShareButtons/);
-  assert.match(layout, /<HeroPageFooterShare \/>\s*<Footer \/>/);
-  assert.match(footerShare, /showStandardHeroShare/);
-  assert.match(footerShare, /<ShareButtons path=\{pathname\}/);
+  assert.match(layout, /<PageShareBar \/>\s*<Footer \/>/);
+  assert.match(footerShare, /section\[data-page-share="true"\]/);
+  assert.match(footerShare, /<ShareButtons path=\{page\.path\}/);
 });
 
-test("hero pages replace the desktop language toggle with Join free", () => {
-  const actions = read("src/components/HeroHeaderActions.tsx");
+test("signed-out visitors can always reach Join free on desktop and mobile", () => {
+  const header = read("src/components/Header.tsx");
   const mobile = read("src/components/MobileMenu.tsx");
-  assert.match(actions, /heroPage \? <Link href="\/join"/);
-  assert.match(actions, /: <LangToggle lang=\{lang\}/);
-  assert.match(mobile, /!heroPage && <div[^]*<LangToggle lang=\{lang\}/);
+  assert.match(header, /!signedIn && <Link href="\/join"/);
+  assert.match(mobile, /<Link href="\/join" className="btn btn-flame w-full">/);
+  assert.match(mobile, /<Link href="\/login" className="btn btn-outline w-full">/);
 });

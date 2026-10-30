@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, createEmailLinkClient } from "@/lib/supabase/browser";
+import { Turnstile } from "@/components/Turnstile";
 
 /** "1" turns a button on. Tolerates stray whitespace or a byte-order mark in the Vercel value. */
 const flag = (v: string | undefined) => (v ?? "").replace(/^﻿/, "").trim() === "1";
@@ -32,6 +33,8 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [topError, setTopError] = useState(""); // for the Google / Facebook buttons, shown next to the agree box
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [authBotReset, setAuthBotReset] = useState(0);
   // "?fb=1" shows the Facebook button before it is switched on for everyone (for the app's own test sign-in).
   const [fbPreview, setFbPreview] = useState(false);
   useEffect(() => { setFbPreview(new URLSearchParams(window.location.search).get("fb") === "1"); }, []);
@@ -71,21 +74,45 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
   async function withPassword(e: React.FormEvent) {
     e.preventDefault();
     if (needConsent) return setError("Please agree to the Privacy Notice first.");
+    if (!turnstileToken) return setError("Please complete the security check.");
     setBusy(true); setError("");
     if (mode === "join") {
       const res = await fetch("/api/auth/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, email, password, consent, marketing, ref: referral }) });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok && !j.exists) { setBusy(false); return setError(j.error || "May problema. Please try again."); }
-      if (j.exists) {
-        // Already a member: try their password, otherwise point them to log in.
-        const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password });
-        setBusy(false);
-        return error ? setError("May account na ang email na ito. Log in instead, or use \"Email me a link\".") : finish();
-      }
+      if (!res.ok) { setBusy(false); return setError(j.error || "May problema. Please try again."); }
+      const { data, error } = await supabase!.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          captchaToken: turnstileToken,
+          emailRedirectTo: callback(),
+          data: {
+            full_name: name.trim(),
+            consent_privacy: true,
+            consent_marketing: marketing,
+            email_verification_required: true,
+            ...(referral ? { ref: referral } : {}),
+          },
+        },
+      });
+      setTurnstileToken(""); setAuthBotReset((n) => n + 1);
+      if (error) { setBusy(false); return setError(/already registered|already exists/i.test(error.message) ? "May account na ang email na ito. Log in instead, or use \"Email me a link\"." : "Hindi ma-create ang account. Please try again."); }
+      if (data.user && data.user.identities?.length === 0) { setBusy(false); return setError("May account na ang email na ito. Log in instead, or use \"Email me a link\"."); }
+      if (data.session) await supabase!.auth.signOut();
+      remember();
+      setBusy(false); setCodeSent(true); setCode(""); setMethod("code");
+      return;
     }
-    const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await supabase!.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+      options: { captchaToken: turnstileToken },
+    });
+    setTurnstileToken(""); setAuthBotReset((n) => n + 1);
     setBusy(false);
-    if (error) return setError(mode === "login" ? "Mali ang email o password. No password yet? Tap \"Email me a link\"." : "Account created, but we couldn't log you in. Please log in.");
+    if (error) {
+      return setError("Mali ang email o password. No password yet? Tap \"Email me a link\".");
+    }
     finish();
   }
 
@@ -93,6 +120,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
     e?.preventDefault();
     if (needConsent) return setError("Please agree to the Privacy Notice first.");
     if (!email.trim()) return setError("Type your email first.");
+    if (!turnstileToken) return setError("Please complete the security check.");
     setBusy(true); setError("");
     const target = resetting ? "/account/password" : next;
     const { error } = await (createEmailLinkClient() ?? supabase!).auth.signInWithOtp({
@@ -100,9 +128,11 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
       options: {
         emailRedirectTo: `${window.location.origin}/auth/link?next=${encodeURIComponent(target)}`,
         shouldCreateUser: mode === "join",
+        captchaToken: turnstileToken,
         data: mode === "join" ? { full_name: name, consent_privacy: true, consent_marketing: marketing, ...(referral ? { ref: referral } : {}) } : undefined,
       },
     });
+    setTurnstileToken(""); setAuthBotReset((n) => n + 1);
     setBusy(false);
     if (error) return setError(/signups? not allowed|not found/i.test(error.message) ? "No account with that email yet. Join free instead." : /rate|seconds/i.test(error.message) ? "Please wait a minute before asking for another code." : "Hindi ma-send ang code. Please try again.");
     remember();
@@ -184,8 +214,9 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
             </div>
             {mode === "join" && <p className="mt-1 text-sm text-muted">At least 8 characters.</p>}
           </div>
+          <Turnstile action="auth" onToken={setTurnstileToken} resetKey={authBotReset} />
           {error && <p role="alert" className="font-semibold text-red-700 dark:text-red-300">{error}</p>}
-          <button className="btn btn-flame w-full text-lg" disabled={busy}>{busy ? "Please wait…" : mode === "join" ? "Join free" : "Log in"}</button>
+          <button className="btn btn-flame w-full text-lg" disabled={busy || !turnstileToken}>{busy ? "Please wait…" : mode === "join" ? "Join free" : "Log in"}</button>
           {mode === "login" && (
             <button type="button" className="w-full text-center text-sm font-semibold text-mph underline" onClick={() => { setMethod("code"); setResetting(true); setError(""); }}>
               Forgot your password?
@@ -199,8 +230,9 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
           )}
           {emailField}
           {resetting && <p className="text-sm text-muted">We&apos;ll email you a sign-in link. After you tap it, you can set a new password.</p>}
+          <Turnstile action="auth" onToken={setTurnstileToken} resetKey={authBotReset} />
           {error && <p role="alert" className="font-semibold text-red-700 dark:text-red-300">{error}</p>}
-          <button className="btn btn-flame w-full text-lg" disabled={busy}>{busy ? "Sending…" : "Email me a sign-in link"}</button>
+          <button className="btn btn-flame w-full text-lg" disabled={busy || !turnstileToken}>{busy ? "Sending…" : "Email me a sign-in link"}</button>
           <button type="button" className="w-full text-center text-sm font-semibold text-mph underline" onClick={() => { setCodeSent(true); setError(""); }}>I already have a code</button>
         </form>
       ) : (

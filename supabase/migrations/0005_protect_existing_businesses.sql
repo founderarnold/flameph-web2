@@ -185,7 +185,8 @@ begin
 
   if p_decision = 'confirm_quarantine' then
     update public.businesses
-    set lifecycle_status = 'needs_correction', publication_status = 'unpublished'
+    set lifecycle_status = 'needs_correction', publication_status = 'unpublished',
+        published = false, risk_level = 'high'
     where id = p_business_id;
 
     update public.business_legacy_assessments
@@ -194,7 +195,8 @@ begin
     where business_id = p_business_id;
   elsif p_decision = 'restore_public' then
     update public.businesses
-    set lifecycle_status = 'approved', publication_status = 'published'
+    set lifecycle_status = 'approved', publication_status = 'published',
+        published = true, risk_level = 'low'
     where id = p_business_id;
 
     update public.business_legacy_assessments

@@ -19,6 +19,7 @@
 
 # production
 /build
+/backups/production-*.csv
 
 # misc
 .DS_Store

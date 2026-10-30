@@ -27,7 +27,7 @@ test("the browser cannot submit lifecycle or publication decisions", () => {
 
 test("drafts remain excluded from public discovery and sitemap", () => {
   assert.match(visibility, /create policy businesses_public[\s\S]*publication_status = 'published'[\s\S]*lifecycle_status = 'approved'/i);
-  assert.match(sitemap, /PUBLIC_BUSINESS_FILTERS/i);
+  assert.doesNotMatch(sitemap, /paths\.add\(`\/directory\/\$\{/i);
 });
 
 test("owners get an authenticated private preview without using the public route", () => {

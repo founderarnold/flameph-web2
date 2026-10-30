@@ -145,17 +145,23 @@ $$;
 drop policy if exists businesses_public on public.businesses;
 create policy businesses_public on public.businesses for select using (
   published and publication_status = 'published' and lifecycle_status = 'approved' and risk_level = 'low'
+  and exists (
+    select 1 from public.profiles p
+    where p.id = businesses.owner_id and p.status = 'active'
+  )
 );
 drop policy if exists products_public on public.business_products;
 create policy products_public on public.business_products for select using (exists (
   select 1 from public.businesses b where b.id = business_products.business_id
     and b.published and b.publication_status = 'published' and b.lifecycle_status = 'approved' and b.risk_level = 'low'
+    and exists (select 1 from public.profiles p where p.id = b.owner_id and p.status = 'active')
 ));
 drop policy if exists reviews_public on public.business_reviews;
 create policy reviews_public on public.business_reviews for select using (
   user_id = auth.uid() or public.is_admin() or (not hidden and exists (
     select 1 from public.businesses b where b.id = business_reviews.business_id
       and b.published and b.publication_status = 'published' and b.lifecycle_status = 'approved' and b.risk_level = 'low'
+      and exists (select 1 from public.profiles p where p.id = b.owner_id and p.status = 'active')
   ))
 );
 drop policy if exists reviews_self_insert on public.business_reviews;
@@ -163,6 +169,7 @@ create policy reviews_self_insert on public.business_reviews for insert with che
   user_id = auth.uid() and exists (
     select 1 from public.businesses b where b.id = business_reviews.business_id
       and b.published and b.publication_status = 'published' and b.lifecycle_status = 'approved' and b.risk_level = 'low'
+      and exists (select 1 from public.profiles p where p.id = b.owner_id and p.status = 'active')
   )
 );
 
@@ -172,8 +179,12 @@ where published and publication_status = 'published' and lifecycle_status = 'app
 create or replace function public.track_business(biz uuid, kind text) returns void
 language plpgsql security definer set search_path = public as $$
 begin
-  if not exists (select 1 from public.businesses where id = biz and published
-    and publication_status = 'published' and lifecycle_status = 'approved' and risk_level = 'low') then return; end if;
+  if not exists (
+    select 1 from public.businesses b
+    join public.profiles p on p.id = b.owner_id
+    where b.id = biz and b.published and b.publication_status = 'published'
+      and b.lifecycle_status = 'approved' and b.risk_level = 'low' and p.status = 'active'
+  ) then return; end if;
   insert into public.business_stats (business_id, day, views, clicks)
   values (biz, (now() at time zone 'Asia/Manila')::date,
     case when kind = 'view' then 1 else 0 end, case when kind = 'click' then 1 else 0 end)
@@ -189,8 +200,10 @@ language sql stable security definer set search_path = public as $$
   ), rated as (
     select count(*) as n, count(*) filter (where helpful) as up from public.ai_feedback
   ), public_businesses as (
-    select * from public.businesses where published and publication_status = 'published'
-      and lifecycle_status = 'approved' and risk_level = 'low'
+    select b.* from public.businesses b
+    join public.profiles p on p.id = b.owner_id
+    where b.published and b.publication_status = 'published'
+      and b.lifecycle_status = 'approved' and b.risk_level = 'low' and p.status = 'active'
   )
   select jsonb_build_object(
     'members', (select count(*) from m),

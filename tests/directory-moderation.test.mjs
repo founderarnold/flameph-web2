@@ -5,15 +5,10 @@ import test from "node:test";
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("legacy directory data remains protected while duplicate pages stay out of the sitemap", () => {
-  const helper = read("src/lib/directory.ts");
-  const directory = read("src/app/directory/page.tsx");
-  const detail = read("src/app/directory/[slug]/page.tsx");
+  const config = read("next.config.ts");
   const sitemap = read("src/app/sitemap.ts");
-  assert.match(helper, /eq\("status", "active"\)/);
-  assert.match(helper, /active\.has\(business\.owner_id\)/);
-  assert.match(directory, /publicBusinesses<Biz>/);
-  assert.match(detail, /publicBusinessBySlug<B>/);
-  assert.match(detail, /publicBusinesses<B>/);
+  assert.match(config, /source: "\/directory"[\s\S]*pages\.flameph\.org\/directory[\s\S]*permanent: true/);
+  assert.match(config, /source: "\/directory\/:path\*"[\s\S]*pages\.flameph\.org\/directory[\s\S]*permanent: true/);
   assert.doesNotMatch(sitemap, /publicBusinesses/);
   assert.doesNotMatch(sitemap, /paths\.add\(`\/directory\/\$\{/);
 });
@@ -40,15 +35,10 @@ test("admins can hide, restore, ban, and guarded-delete listings", () => {
   assert.match(page, /Permanently delete this business/);
 });
 
-test("signed-in members can report listings with validation and rate limits", () => {
-  const actions = read("src/app/directory/[slug]/actions.ts");
-  const page = read("src/app/directory/[slug]/page.tsx");
-  assert.match(actions, /requireUser/);
-  assert.match(actions, /business-report/);
-  assert.match(actions, /count.*>= 5/s);
-  assert.match(actions, /business\.owner_id === user\.id/);
-  assert.match(page, /Report this listing/);
-  assert.match(page, /business owner will not see who reported/i);
+test("public listing interaction is owned by FlamePH Pages", () => {
+  const config = read("next.config.ts");
+  assert.match(config, /pages\.flameph\.org\/directory/);
+  assert.match(config, /flameph-pages\.vercel\.app\/business/);
 });
 
 test("inquiries are rejected for suspended business owners", () => {
