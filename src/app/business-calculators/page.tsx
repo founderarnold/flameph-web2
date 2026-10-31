@@ -9,7 +9,7 @@ import { CalculatorPicker } from "./CalculatorPicker";
 
 export const metadata = meta(
   "Free Business Calculators for MSMEs",
-  "14 libreng calculators para sa FLAME PH members: presyo at margin, break-even, cash flow, working capital, receivables, inventory, fleet cost, capacity, payroll, employee cost, expansion, franchise at customer acquisition cost.",
+  "15 libreng calculators para sa FLAME PH members: presyo at margin, break-even, ROI, cash flow, working capital, receivables, inventory, fleet cost, capacity, payroll, employee cost, expansion, franchise at customer acquisition cost.",
   "/business-calculators",
 );
 
@@ -37,7 +37,7 @@ export default async function Page() {
         fil="Libre para sa FLAME PH members"
         title="Free Business Calculators for MSMEs"
         path="/business-calculators"
-        intro="Tigil-hula na. 14 na calculator para sa presyo, cash flow, stock, delivery, tauhan, sahod at paglago ng negosyo mo, libre at sa cellphone mo."
+        intro="Tigil-hula na. 15 na calculator para sa presyo, ROI, cash flow, stock, delivery, tauhan, sahod at paglago ng negosyo mo, libre at sa cellphone mo."
       >
         {signedIn ? (
           <a href="#calculators" className="btn btn-flame text-base">Simulan ang calculator</a>

@@ -12,6 +12,7 @@ export const CALCULATOR_GROUPS: { title: string; items: Calculator[] }[] = [
     items: [
       { id: "markup-margin", title: "Markup at Margin", text: "Tama ba ang presyo ko? Alamin ang kita bawat piraso." },
       { id: "break-even", title: "Break-Even", text: "Ilang piraso kada araw para hindi malugi?" },
+      { id: "roi", title: "Return on Investment (ROI)", text: "Sulit ba ang bibilhing makina, sasakyan o campaign? Gaano kabilis babalik ang pera?" },
       { id: "job-service-pricing", title: "Job & Service Pricing", text: "Magkano ang singil sa job, kasama ang oras, materyales at overhead?" },
     ],
   },
