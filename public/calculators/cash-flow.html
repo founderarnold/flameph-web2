@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="fil">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8-Week Cash Flow Forecast | FLAME PH</title>
+<meta name="description" content="Makita ang kakapusan ng pera ilang linggo bago ito mangyari.">
+<style>
+:root{
+  --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
+  --brand:#c2410c; --brand-ink:#ffffff; --brand-soft:#fff1e6;
+  --good:#15803d; --good-soft:#e8f6ec; --warn:#a16207; --warn-soft:#fdf6dc;
+  --bad:#b91c1c; --bad-soft:#fdecec; --field:#ffffff;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+    --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+    --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+    --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+  --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+  --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+  --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 40px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.embedded .brand{visibility:hidden}
+.embedded .wrap{padding-top:8px}
+.brand{flex:1;min-width:0;font-weight:700;color:var(--brand);font-size:14px;letter-spacing:.02em}
+.lang{flex:none;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;background:transparent;color:var(--ink2);padding:6px 12px;font:inherit;font-size:14px;cursor:pointer;min-height:36px}
+.lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);font-weight:600}
+h1{font-size:24px;line-height:1.25;margin:8px 0 4px}
+.lead{color:var(--ink2);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 16px}
+.card h2{font-size:17px;margin:0 0 12px}
+.field{margin:0 0 14px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
+.hint{display:block;color:var(--ink2);font-size:13px;font-weight:400;margin-top:2px}
+.input{position:relative}
+.input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
+.input .pre{left:12px}.input .suf{right:12px}
+input[type=text],input[type=number],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+.input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
+input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{flex:1 1 auto;min-height:44px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;font:inherit;font-size:15px;padding:8px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400}
+.check input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--brand);flex:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.btn{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:15px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.result{border-width:2px}
+.result.good{border-color:var(--good);background:var(--good-soft)}
+.result.warn{border-color:var(--warn);background:var(--warn-soft)}
+.result.bad{border-color:var(--bad);background:var(--bad-soft)}
+.verdict{font-size:18px;font-weight:600;margin:0 0 12px}
+.big{font-size:34px;font-weight:800;line-height:1.1;margin:0}
+.big-label{color:var(--ink2);font-size:14px;margin:0 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .k{color:var(--ink2);font-size:13px}
+.stat .v{font-size:20px;font-weight:700}
+table.bd{width:100%;border-collapse:collapse;font-size:15px}
+table.bd.tight{font-size:13.5px}
+table.bd.tight td,table.bd.tight th{padding:7px 2px}
+table.bd td,table.bd th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.bd td.n,table.bd th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.bd tr.tot td{font-weight:700;border-bottom:0}
+.muted{color:var(--ink2);font-size:13px}
+.note{font-size:13px;color:var(--ink2);margin:8px 0 0}
+details{margin:0 0 16px}
+summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.disclaimer{font-size:12.5px;color:var(--ink2);border-top:1px solid var(--line);padding-top:12px;margin-top:8px}
+.cta{display:block;text-decoration:none;color:var(--ink);background:var(--brand-soft);border-radius:10px;padding:12px;margin-top:12px;font-size:15px}
+.cta b{color:var(--brand)}
+.err{color:var(--bad);font-weight:600}
+.print-only{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  .no-print,.btns,.lang,details.inputs-help{display:none!important}
+  .print-only{display:block}
+  .card{break-inside:avoid;border-color:#bbb;background:#fff!important}
+  .wrap{max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <span class="brand">FLAME PH · Negosyo Calculators</span>
+  <div class="lang no-print" role="group" aria-label="Language">
+    <button type="button" data-lang="tl" aria-pressed="true">Taglish</button>
+    <button type="button" data-lang="en" aria-pressed="false">English</button>
+  </div>
+</header>
+<p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
+<h1 data-en="8-Week Cash Flow Forecast">8-Week Cash Flow Forecast</h1>
+<p class="lead" data-en="Spot a cash crunch weeks before it happens. Enter what usually comes in and goes out, and we'll place rent, payroll on the 15th and 30th, loans and the 13th month on the right weeks.">Makita ang kakapusan ng pera ilang linggo bago ito mangyari. Ilagay ang karaniwang pumapasok at lumalabas na pera, at ilalagay namin sa tamang linggo ang upa, sahod tuwing 15 at 30, hulog at 13th month.</p>
+
+<section class="card">
+  <h2 data-en="1. Cash today">1. Pera ngayon</h2>
+  <div class="field">
+    <label for="opening" data-en="Cash on hand and in the bank, GCash, Maya">Cash sa kamay at sa bangko, GCash, Maya</label>
+    <div class="input has-pre"><span class="pre">₱</span><input id="opening" type="text" inputmode="decimal" value=""></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2 data-en="2. Money coming in, per week">2. Pumapasok na pera, kada linggo</h2>
+  <div class="row2">
+    <div class="field"><label for="sales" data-en="Cash sales">Cash na benta</label><div class="input has-pre"><span class="pre">₱</span><input id="sales" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="collect" data-en="Collections from credit customers">Singil mula sa may utang / suki</label><div class="input has-pre"><span class="pre">₱</span><input id="collect" type="text" inputmode="decimal" value="0"></div></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2 data-en="3. Money going out">3. Lumalabas na pera</h2>
+  <div class="row2">
+    <div class="field"><label for="supplier" data-en="Supplier payments per week">Bayad sa supplier kada linggo</label><div class="input has-pre"><span class="pre">₱</span><input id="supplier" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="otherwk" data-en="Other expenses per week">Iba pang gastos kada linggo</label><div class="input has-pre"><span class="pre">₱</span><input id="otherwk" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="payroll" data-en="Payroll per payday (15th and 30th)">Sahod kada sweldo (15 at 30)</label><div class="input has-pre"><span class="pre">₱</span><input id="payroll" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="rent" data-en="Monthly rent">Buwanang upa</label><div class="input has-pre"><span class="pre">₱</span><input id="rent" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="utils" data-en="Monthly utilities">Buwanang kuryente, tubig, internet</label><div class="input has-pre"><span class="pre">₱</span><input id="utils" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="loan" data-en="Monthly loan payment">Buwanang hulog sa utang</label><div class="input has-pre"><span class="pre">₱</span><input id="loan" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="govt" data-en="Monthly SSS, PhilHealth, Pag-IBIG remittance">Buwanang remittance sa SSS, PhilHealth, Pag-IBIG</label><div class="input has-pre"><span class="pre">₱</span><input id="govt" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="tax" data-en="Monthly/quarterly BIR taxes (average per month)">Buwis sa BIR (average kada buwan)</label><div class="input has-pre"><span class="pre">₱</span><input id="tax" type="text" inputmode="decimal" value="0"></div></div>
+  </div>
+  <details>
+    <summary data-en="Due dates (change if different)">Petsa ng bayaran (palitan kung iba)</summary>
+    <div class="row2">
+      <div class="field"><label for="rentday" data-en="Rent due day">Araw ng upa</label><input id="rentday" type="text" inputmode="numeric" value="5"></div>
+      <div class="field"><label for="utilday" data-en="Utilities due day">Araw ng kuryente/tubig</label><input id="utilday" type="text" inputmode="numeric" value="20"></div>
+      <div class="field"><label for="loanday" data-en="Loan due day">Araw ng hulog</label><input id="loanday" type="text" inputmode="numeric" value="25"></div>
+      <div class="field"><label for="govtday" data-en="Remittance day">Araw ng remittance</label><input id="govtday" type="text" inputmode="numeric" value="10"></div>
+      <div class="field"><label for="taxday" data-en="BIR filing day">Araw ng BIR filing</label><input id="taxday" type="text" inputmode="numeric" value="25"></div>
+    </div>
+  </details>
+  <div class="field">
+    <label class="check"><input id="thirteenth" type="checkbox" checked> <span data-en="Include 13th month pay in December (one month of basic payroll, paid by Dec 24)">Isama ang 13th month sa Disyembre (isang buwang sahod, bayad bago Dis 24)</span></label>
+  </div>
+</section>
+
+<section class="card">
+  <h2 data-en="4. One-time items (optional)">4. Isang beses na gastos o pasok (opsyonal)</h2>
+  <p class="muted" style="margin:-6px 0 12px" data-en="A big supplier order, a loan release, Christmas stock, a permit renewal.">Malaking order sa supplier, release ng loan, stock pang-Pasko, renewal ng permit.</p>
+  <div id="oneoffs"></div>
+</section>
+
+<div class="btns no-print">
+  <button type="button" class="btn" id="btn-sample" data-en="Try a sample">Subukan ang halimbawa</button>
+  <button type="button" class="btn" id="btn-reset" data-en="Clear">Burahin</button>
+</div>
+
+<section class="card result" id="result" aria-live="polite"></section>
+<div class="btns no-print">
+  <button type="button" class="btn primary" id="btn-print" data-en="Download PDF / Print">I-download (PDF) / I-print</button>
+  <button type="button" class="btn" id="btn-share" data-en="Share">I-share</button>
+</div>
+<p class="disclaimer" data-en="Estimates only, for planning. Not tax, legal or accounting advice. Check government rates with SSS, PhilHealth, Pag-IBIG, DOLE and BIR, or an accountant from the FLAME professional services directory. Your numbers stay on your device.">Tantiya lang ito para sa pagpaplano. Hindi ito payong pang-buwis, legal o accounting. I-check ang mga rate sa SSS, PhilHealth, Pag-IBIG, DOLE at BIR, o sa accountant sa FLAME professional services directory. Ang mga numero mo ay nananatili sa device mo.</p>
+</div>
+<script>
+/* FLAME PH calculators: shared helpers (language, numbers, save, share, embed). */
+var FC = (function () {
+  var LANG_KEY = 'flamecalc.lang';
+  var state = { lang: 'tl' };
+  var onLang = [];
+
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+
+  // Taglish is written in the HTML; English lives in data-en. t() is for text built in JS.
+  function t(tl, en) { return state.lang === 'en' ? en : tl; }
+  function applyLang() {
+    document.documentElement.lang = state.lang === 'en' ? 'en' : 'fil';
+    document.querySelectorAll('[data-en]').forEach(function (el) {
+      if (el.dataset.tl === undefined) el.dataset.tl = el.innerHTML;
+      el.innerHTML = state.lang === 'en' ? el.dataset.en : el.dataset.tl;
+    });
+    document.querySelectorAll('.lang button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang));
+    });
+    onLang.forEach(function (f) { f(); });
+  }
+  function setLang(l) { state.lang = l; store(LANG_KEY, l); applyLang(); }
+
+  var peso0 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
+  var peso2 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function peso(n, dp) { if (!isFinite(n)) return '—'; return (dp === 0 ? peso0 : peso2).format(n); }
+  function pct(n, dp) { if (!isFinite(n)) return '—'; return n.toFixed(dp === undefined ? 1 : dp) + '%'; }
+  function int(n) { return isFinite(n) ? Math.round(n).toLocaleString('en-PH') : '—'; }
+
+  function num(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    var v = parseFloat(String(el.value).replace(/[,\s₱%]/g, ''));
+    return isFinite(v) ? v : 0;
+  }
+  function blank(id) { var el = document.getElementById(id); return !el || String(el.value).trim() === ''; }
+
+  // Remember a page's inputs on this device so owners don't retype them.
+  function saveInputs(page) {
+    var data = {};
+    document.querySelectorAll('input[id],select[id]').forEach(function (el) {
+      data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    document.querySelectorAll('.seg[id]').forEach(function (s) {
+      var on = s.querySelector('[aria-pressed="true"]'); if (on) data['seg:' + s.id] = on.dataset.v;
+    });
+    store('flamecalc.' + page, JSON.stringify(data));
+  }
+  function loadInputs(page) {
+    var raw = store('flamecalc.' + page); if (!raw) return false;
+    try {
+      var data = JSON.parse(raw);
+      Object.keys(data).forEach(function (k) {
+        if (k.indexOf('seg:') === 0) { setSeg(k.slice(4), data[k]); return; }
+        var el = document.getElementById(k); if (!el) return;
+        if (el.type === 'checkbox') el.checked = !!data[k]; else el.value = data[k];
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  function fill(values) {
+    Object.keys(values).forEach(function (k) {
+      var el = document.getElementById(k); if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!values[k]; else el.value = values[k];
+    });
+  }
+
+  function setSeg(id, v) {
+    var s = document.getElementById(id); if (!s) return;
+    s.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === v)); });
+  }
+  function seg(id) { var on = document.querySelector('#' + id + ' [aria-pressed="true"]'); return on ? on.dataset.v : null; }
+
+  // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
+  function postHeight() {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-height', height: document.documentElement.scrollHeight }, '*');
+  }
+  function postResult(calculator, inputs, outputs) {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-result', calculator: calculator, lang: state.lang, inputs: inputs, outputs: outputs }, '*');
+  }
+
+  function share(title, text) {
+    var url = location.href;
+    if (navigator.share) { navigator.share({ title: title, text: text, url: url }).catch(function () {}); return; }
+    var full = text + '\n' + url;
+    if (navigator.clipboard) navigator.clipboard.writeText(full).then(function () { alert(t('Nakopya na! I-paste sa Messenger o Viber.', 'Copied! Paste it into Messenger or Viber.')); });
+    else prompt(t('Kopyahin ito:', 'Copy this:'), full);
+  }
+
+  function init(opts) {
+    var saved = store(LANG_KEY);
+    var q = new URLSearchParams(location.search);
+    state.lang = q.get('lang') === 'en' || q.get('lang') === 'tl' ? q.get('lang') : (saved === 'en' ? 'en' : 'tl');
+    if (q.get('theme') === 'light' || q.get('theme') === 'dark') document.documentElement.dataset.theme = q.get('theme');
+    if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
+    document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+    document.querySelectorAll('.seg').forEach(function (s) {
+      s.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        setSeg(s.id, b.dataset.v); opts.calc();
+      });
+    });
+    document.addEventListener('input', function () { opts.calc(); });
+    document.addEventListener('change', function () { opts.calc(); });
+    var pr = document.getElementById('btn-print'); if (pr) pr.addEventListener('click', function () { window.print(); });
+    var sh = document.getElementById('btn-share'); if (sh) sh.addEventListener('click', function () { share(document.title, opts.shareText()); });
+    var sm = document.getElementById('btn-sample'); if (sm) sm.addEventListener('click', function () { opts.sample(); opts.calc(); });
+    var rs = document.getElementById('btn-reset'); if (rs) rs.addEventListener('click', function () {
+      document.querySelectorAll('input[id]').forEach(function (el) { if (el.type === 'checkbox') el.checked = el.defaultChecked; else el.value = el.defaultValue; });
+      if (opts.reset) opts.reset();
+      opts.calc();
+    });
+    var pd = document.getElementById('print-date'); if (pd) pd.textContent = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!loadInputs(opts.page) && opts.sample) opts.sample();
+    applyLang();
+    opts.calc();
+    if ('ResizeObserver' in window) new ResizeObserver(postHeight).observe(document.body);
+    window.addEventListener('load', postHeight);
+  }
+
+  return { t: t, peso: peso, pct: pct, int: int, num: num, blank: blank, seg: seg, setSeg: setSeg, fill: fill,
+    saveInputs: saveInputs, postResult: postResult, init: init, onLang: function (f) { onLang.push(f); }, get lang() { return state.lang; } };
+})();
+</script>
+<script>
+var WEEKS = 8, ONEOFFS = 3;
+var MONTHS_TL = ['Ene', 'Peb', 'Mar', 'Abr', 'May', 'Hun', 'Hul', 'Ago', 'Set', 'Okt', 'Nob', 'Dis'];
+var MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function weekStarts() {
+  var d = new Date(); d.setHours(0, 0, 0, 0);
+  var shift = (8 - d.getDay()) % 7; // next Monday, or today if Monday
+  d.setDate(d.getDate() + shift);
+  var out = [];
+  for (var i = 0; i < WEEKS; i++) { var s = new Date(d); s.setDate(d.getDate() + 7 * i); out.push(s); }
+  return out;
+}
+function dayLabel(d) { return (FC.lang === 'en' ? MONTHS_EN : MONTHS_TL)[d.getMonth()] + ' ' + d.getDate(); }
+function lastDay(y, m) { return new Date(y, m + 1, 0).getDate(); }
+// Does the week starting `s` contain day-of-month `day` (clamped to month length)?
+function hits(s, day) {
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(s); d.setDate(s.getDate() + i);
+    if (d.getDate() === Math.min(day, lastDay(d.getFullYear(), d.getMonth()))) return true;
+  }
+  return false;
+}
+function hitsDate(s, month, day) {
+  for (var i = 0; i < 7; i++) { var d = new Date(s); d.setDate(s.getDate() + i); if (d.getMonth() === month && d.getDate() === day) return true; }
+  return false;
+}
+function buildOneoffs() {
+  var starts = weekStarts(), html = '';
+  for (var i = 0; i < ONEOFFS; i++) {
+    var opts = starts.map(function (s, w) { return '<option value="' + w + '">' + FC.t('Linggo ', 'Week ') + (w + 1) + ' (' + dayLabel(s) + ')</option>'; }).join('');
+    if (i === 1) html += '<details><summary>' + FC.t('Magdagdag pa', 'Add more') + '</summary>';
+    html += '<div class="row2" style="margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:8px">' +
+      '<div class="field"><label for="oo' + i + 'd">' + FC.t('Ano ito?', 'What is it?') + '</label><input id="oo' + i + 'd" type="text"></div>' +
+      '<div class="field"><label for="oo' + i + 'w">' + FC.t('Kailan?', 'When?') + '</label><select id="oo' + i + 'w">' + opts + '</select></div>' +
+      '<div class="field"><label for="oo' + i + 'a">' + FC.t('Halaga', 'Amount') + '</label><div class="input has-pre"><span class="pre">₱</span><input id="oo' + i + 'a" type="text" inputmode="decimal" value=""></div></div>' +
+      '<div class="field"><label for="oo' + i + 't">' + FC.t('Pasok o labas?', 'In or out?') + '</label><select id="oo' + i + 't"><option value="out">' + FC.t('Labas (gastos)', 'Out (expense)') + '</option><option value="in">' + FC.t('Pasok (pera)', 'In (money)') + '</option></select></div>' +
+      '</div>';
+  }
+  html += '</details>';
+  var keep = {};
+  document.querySelectorAll('#oneoffs input, #oneoffs select').forEach(function (el) { keep[el.id] = el.value; });
+  document.getElementById('oneoffs').innerHTML = html;
+  FC.fill(keep);
+}
+function chart(rows, minBal) {
+  var W = 340, H = 200, padL = 4, padR = 4, padT = 22, padB = 30;
+  var vals = rows.map(function (r) { return r.end; });
+  var hi = Math.max(0, Math.max.apply(null, vals)), lo = Math.min(0, Math.min.apply(null, vals));
+  if (hi === lo) hi = 1;
+  var y = function (v) { return padT + (hi - v) / (hi - lo) * (H - padT - padB); };
+  var bw = (W - padL - padR) / rows.length, gap = 6;
+  var bars = rows.map(function (r, i) {
+    var x = padL + i * bw + gap / 2, top = Math.min(y(r.end), y(0)), h = Math.max(2, Math.abs(y(r.end) - y(0)));
+    var neg = r.end < 0;
+    var label = '';
+    return '<g><title>' + FC.t('Linggo ', 'Week ') + (i + 1) + ' (' + r.label + '): ' + FC.peso(r.end, 0) + '</title>' +
+      '<rect x="' + x + '" y="' + top + '" width="' + (bw - gap) + '" height="' + h + '" rx="4" fill="' + (neg ? 'var(--bad)' : 'var(--brand)') + '"/>' + label +
+      '<text x="' + (x + (bw - gap) / 2) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10.5" fill="var(--ink2)">' + r.label + '</text></g>';
+  }).join('');
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + FC.t('Natitirang pera kada linggo', 'Cash left each week') + '" style="display:block;margin:8px 0">' +
+    '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="var(--ink2)" stroke-width="1"/>' + bars + '</svg>';
+}
+var last = null;
+function calc() {
+  var t = FC.t, peso = FC.peso;
+  FC.saveInputs('cash-flow');
+  var out = document.getElementById('result');
+  out.className = 'card result';
+  var starts = weekStarts();
+  var sales = FC.num('sales'), collect = FC.num('collect'), supplier = FC.num('supplier'), otherwk = FC.num('otherwk');
+  var payroll = FC.num('payroll'), rent = FC.num('rent'), utils = FC.num('utils'), loan = FC.num('loan'), govt = FC.num('govt'), tax = FC.num('tax');
+  var thirteenth = document.getElementById('thirteenth').checked;
+  var bal = FC.num('opening');
+  if (FC.blank('opening') && sales + collect === 0) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang pera mo ngayon at ang karaniwang benta kada linggo.', 'Enter your cash today and your usual weekly sales.') + '</p>'; last = null; return; }
+
+  var rows = starts.map(function (s, w) {
+    var inflow = sales + collect, outflow = supplier + otherwk, notes = [];
+    var pays = (hits(s, 15) ? 1 : 0) + (hits(s, 31) ? 1 : 0);
+    if (pays && payroll) { outflow += payroll * pays; notes.push(t('sahod', 'payroll')); }
+    if (rent && hits(s, FC.num('rentday') || 5)) { outflow += rent; notes.push(t('upa', 'rent')); }
+    if (utils && hits(s, FC.num('utilday') || 20)) { outflow += utils; notes.push(t('kuryente/tubig', 'utilities')); }
+    if (loan && hits(s, FC.num('loanday') || 25)) { outflow += loan; notes.push(t('hulog', 'loan')); }
+    if (govt && hits(s, FC.num('govtday') || 10)) { outflow += govt; notes.push('SSS/PhilHealth/Pag-IBIG'); }
+    if (tax && hits(s, FC.num('taxday') || 25)) { outflow += tax; notes.push('BIR'); }
+    if (thirteenth && payroll && hitsDate(s, 11, 20)) { outflow += payroll * 2; notes.push('13th month'); }
+    for (var i = 0; i < ONEOFFS; i++) {
+      var amt = FC.num('oo' + i + 'a');
+      if (amt && parseInt(document.getElementById('oo' + i + 'w').value, 10) === w) {
+        var desc = document.getElementById('oo' + i + 'd').value.trim() || t('isang beses', 'one-time');
+        if (document.getElementById('oo' + i + 't').value === 'in') inflow += amt; else outflow += amt;
+        notes.push(desc);
+      }
+    }
+    bal += inflow - outflow;
+    return { label: dayLabel(s), inflow: inflow, outflow: outflow, end: bal, notes: notes };
+  });
+  var minBal = Math.min.apply(null, rows.map(function (r) { return r.end; }));
+  var firstNeg = rows.findIndex(function (r) { return r.end < 0; });
+  var verdict;
+  if (firstNeg >= 0) {
+    out.classList.add('bad');
+    verdict = t('Kukulangin ka ng pera sa linggo ng ' + rows[firstNeg].label + ' (Linggo ' + (firstNeg + 1) + '). Pinakamalaking kulang: ' + peso(-minBal, 0) + '.',
+      'You run short of cash in the week of ' + rows[firstNeg].label + ' (Week ' + (firstNeg + 1) + '). Biggest gap: ' + peso(-minBal, 0) + '.');
+  } else if (minBal < (sales + collect)) {
+    out.classList.add('warn');
+    verdict = t('Hindi ka kukulangin, pero manipis ang pera: ang pinakamababa ay ' + peso(minBal, 0) + ', kulang sa isang linggong benta.', 'You stay positive, but it is tight: the lowest point is ' + peso(minBal, 0) + ', less than one week of sales.');
+  } else {
+    out.classList.add('good');
+    verdict = t('Maayos! Hindi ka kukulangin ng pera sa susunod na 8 linggo. Pinakamababa: ' + peso(minBal, 0) + '.', 'Good! You won\'t run out of cash in the next 8 weeks. Lowest point: ' + peso(minBal, 0) + '.');
+  }
+  out.innerHTML =
+    '<p class="verdict">' + verdict + '</p>' +
+    '<p class="big-label" style="margin:0">' + t('Natitirang pera sa dulo ng bawat linggo', 'Cash left at the end of each week') + '</p>' +
+    chart(rows, minBal) +
+    '<table class="bd tight"><thead><tr><th>' + t('Linggo ng', 'Week of') + '</th><th class="n">' + t('Pasok', 'In') + '</th><th class="n">' + t('Labas', 'Out') + '</th><th class="n">' + t('Natira', 'Left') + '</th></tr></thead><tbody>' +
+    rows.map(function (r) {
+      return '<tr><td>' + r.label + (r.notes.length ? '<br><span class="muted">' + r.notes.join(', ') + '</span>' : '') + '</td><td class="n">' + peso(r.inflow, 0) + '</td><td class="n">' + peso(r.outflow, 0) + '</td><td class="n"' + (r.end < 0 ? ' style="color:var(--bad);font-weight:700"' : '') + '>' + peso(r.end, 0) + '</td></tr>';
+    }).join('') + '</tbody></table>' +
+    (firstNeg >= 0
+      ? '<p class="note">' + t('Mga puwedeng gawin: singilin agad ang may utang, makiusap sa supplier na i-move ang bayad, bawasan ang stock na mabagal mabenta, o mag-apply ng working capital loan bago dumating ang linggong iyon.', 'Options: collect from customers who owe you, ask suppliers to move a payment, cut slow-moving stock, or apply for a working capital loan before that week.') + '</p>' +
+        '<a class="cta no-print" href="https://www.flameph.org/opportunities" target="_top">' + t('<b>Tingnan ang grants at loans</b> sa FLAME PH, o tanungin si Ka-FLAME AI kung paano mapapabilis ang singil.', '<b>See grants and loans</b> on FLAME PH, or ask Ka-FLAME AI how to collect faster.') + '</a>'
+      : '');
+  last = { firstNeg: firstNeg, minBal: minBal, label: firstNeg >= 0 ? rows[firstNeg].label : '' };
+  FC.postResult('cash-flow', { opening: FC.num('opening'), weeklySales: sales, weeklyCollections: collect }, { weeks: rows.map(function (r) { return { weekOf: r.label, inflow: r.inflow, outflow: r.outflow, end: r.end }; }), firstShortWeek: firstNeg >= 0 ? firstNeg + 1 : null, lowestBalance: minBal });
+}
+buildOneoffs();
+FC.onLang(function () { buildOneoffs(); });
+FC.init({
+  page: 'cash-flow',
+  calc: calc,
+  sample: function () {
+    FC.fill({ opening: '25000', sales: '28000', collect: '4000', supplier: '19000', otherwk: '2500', payroll: '9000', rent: '8000', utils: '3500', loan: '5000', govt: '2400', tax: '1500', thirteenth: true,
+      oo0d: 'Stock pang-Pasko', oo0w: '3', oo0a: '30000', oo0t: 'out', oo1d: '', oo1a: '', oo2d: '', oo2a: '' });
+  },
+  reset: function () { FC.fill({ opening: '' }); },
+  shareText: function () {
+    if (!last) return FC.t('Subukan ang Cash Flow Forecast ng FLAME PH', 'Try the FLAME PH Cash Flow Forecast');
+    return last.firstNeg >= 0
+      ? FC.t('Ayon sa forecast, kukulangin ang pera sa linggo ng ' + last.label + '. Kinuwenta sa FLAME PH calculator.', 'The forecast shows a cash shortfall in the week of ' + last.label + '. Calculated with the FLAME PH calculator.')
+      : FC.t('Ayon sa forecast, sapat ang pera sa susunod na 8 linggo. Kinuwenta sa FLAME PH calculator.', 'The forecast shows enough cash for the next 8 weeks. Calculated with the FLAME PH calculator.');
+  }
+});
+FC.onLang(calc);
+</script>
+</body>
+</html>

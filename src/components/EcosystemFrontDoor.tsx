@@ -78,7 +78,7 @@ export function EcosystemFrontDoor() {
             <p className="font-display text-sm font-extrabold uppercase tracking-[.14em] text-flame-strong">Hindi mo kailangang mag-business nang mag-isa.</p>
             <h1 className="mt-3 text-[2.35rem] font-extrabold leading-[1.02] text-primary sm:text-5xl lg:text-6xl">Ano Ang Gusto Mong Gawin Ngayon <span className="text-[#e20b24]">For Your Business?</span></h1>
             <p className="mt-5 max-w-xl text-base font-medium leading-7 text-[#24324a] sm:text-lg">
-              Ang <strong>FLAME PH</strong> ang iyong digital workspace para sa araw-araw na operasyon ng negosyo: mula pag-aaral, paghanap ng supplier, customers and more opportunities, hanggang sa paggamit ng basic POS, business calculators at mga AI tools. <strong>Choose your goal and we’ll guide you to the right FLAME PH service or trusted ecosystem platform.</strong>
+              Ang <strong>FLAME PH</strong> ang iyong digital workspace para sa araw-araw na operasyon ng negosyo: mula pag-aaral, paghanap ng supplier, customers and more opportunities, hanggang sa paggamit ng basic POS, <Link href="/business-calculators" className="font-semibold text-primary underline">business calculators</Link> at mga AI tools. <strong>Choose your goal and we’ll guide you to the right FLAME PH service or trusted ecosystem platform.</strong>
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <a href="#choose-a-goal" className="btn btn-flame rounded-full px-6">Choose what you need ↓</a>
