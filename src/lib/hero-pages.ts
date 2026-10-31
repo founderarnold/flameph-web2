@@ -19,6 +19,7 @@ const EXACT_SCENES: Record<string, HeroScene> = {
   "/expos-summits": { sheet: 3, quadrant: "bottom-right", alt: "A vibrant Philippine MSME expo" },
   "/bizconsult-ai": { sheet: 4, quadrant: "top-left", alt: "A friendly AI business assistant helping a Filipino shop owner" },
   "/pos": { sheet: 4, quadrant: "top-right", alt: "A sari-sari store owner using a simple point-of-sale system" },
+  "/business-calculators": { sheet: 4, quadrant: "bottom-left", alt: "An entrepreneur working out the numbers of a small business" },
   "/resources": { sheet: 4, quadrant: "bottom-left", alt: "An entrepreneur studying practical business guides and templates" },
   "/news": { sheet: 4, quadrant: "bottom-right", alt: "A community storyteller documenting an MSME event" },
   "/awards": { sheet: 5, quadrant: "top-left", alt: "Filipino micro-entrepreneurs receiving an achievement award" },

@@ -19,6 +19,7 @@
     { "label": "Free Mini-Website/Landing Pages", "href": "/login?next=%2Faccount%2Fbusiness" },
     { "label": "Ask FLAME AI", "href": "/bizconsult-ai" },
     { "label": "Free Basic POS for MSMEs", "href": "/pos" },
+    { "label": "Free Business Calculators", "href": "/business-calculators" },
     { "label": "RideSafe", "href": "/ridesafe" }
   ]},
   { "key": "opportunities", "label": "Opportunities", "fil": "Mga Oportunidad", "items": [

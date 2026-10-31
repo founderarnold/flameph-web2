@@ -32,6 +32,7 @@ const nextConfig: NextConfig = {
       { source: "/directory", destination: "https://pages.flameph.org/directory", permanent: true },
       { source: "/directory/:path*", destination: "https://pages.flameph.org/directory", permanent: true },
       { source: "/learn", destination: "/resources", permanent: true },
+      { source: "/calculators", destination: "/business-calculators", permanent: true },
       { source: "/events", destination: "/workshops", permanent: true },
       { source: "/community", destination: "/chapters", permanent: true },
       { source: "/flameph-merchs", destination: "/merch", permanent: true },

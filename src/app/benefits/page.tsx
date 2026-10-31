@@ -15,6 +15,7 @@ const FREE_BENEFITS: { title: string; text: string; status: Status; href: string
   { title: "Workshops & events", text: "Register for workshops, trainings and expos when scheduled.", status: "live", href: "/workshops", icon: <I.IconCalendar /> },
   { title: "Local chapters", text: "Join or help start a chapter in your city or municipality.", status: "live", href: "/chapters", icon: <I.IconMap /> },
   { title: "Free Basic POS for MSMEs", text: "Sell, track inventory and understand your business using FLAME POS.", status: "live", href: "/pos", icon: <I.IconPos /> },
+  { title: "Free Business Calculators", text: "Markup and margin, payroll, employee cost with SSS, PhilHealth and Pag-IBIG, break-even, cash flow and customer acquisition cost. Tigil-hula na sa numero.", status: "live", href: "/business-calculators", icon: <I.IconFile /> },
   { title: "RideSafe", text: "Find nearby roadside services and save useful destinations.", status: "beta", href: "/ridesafe", icon: <I.IconMap /> },
   { title: "FLAME PH Academy", text: "Planned learning tracks organized by business stage.", status: "soon", href: "/academy", icon: <I.IconAward /> },
 ];
