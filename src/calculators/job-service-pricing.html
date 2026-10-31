@@ -224,7 +224,8 @@ var FC = (function () {
   // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
   function postHeight() {
     if (window.parent === window) return;
-    window.parent.postMessage({ type: 'flame-calc-height', height: document.documentElement.scrollHeight }, '*');
+    // Body height, not the document's: inside an iframe the document is never shorter than the frame, so it could only grow.
+    window.parent.postMessage({ type: 'flame-calc-height', height: Math.ceil(document.body.getBoundingClientRect().height) }, '*');
   }
   function postResult(calculator, inputs, outputs) {
     if (window.parent === window) return;

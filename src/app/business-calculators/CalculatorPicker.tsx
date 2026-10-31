@@ -59,14 +59,14 @@ export function CalculatorPicker({ lang, signedIn }: { lang?: "tl"; signedIn: bo
   // Same origin, so we can also read the height directly; this covers a message sent before hydration.
   const measure = () => {
     const doc = frame.current?.contentDocument;
-    if (doc?.readyState === "complete") setHeight(doc.documentElement.scrollHeight + 8);
+    if (doc?.readyState === "complete" && doc.body) setHeight(Math.ceil(doc.body.getBoundingClientRect().height));
   };
 
   useEffect(() => {
     measure();
     const onMessage = (e: MessageEvent) => {
       if (e.origin !== window.location.origin || e.source !== frame.current?.contentWindow) return;
-      if (e.data?.type === "flame-calc-height" && typeof e.data.height === "number") setHeight(Math.ceil(e.data.height) + 8);
+      if (e.data?.type === "flame-calc-height" && typeof e.data.height === "number") setHeight(Math.ceil(e.data.height));
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
