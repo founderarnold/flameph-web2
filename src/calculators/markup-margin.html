@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="fil">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Markup at Margin Calculator | FLAME PH</title>
+<meta name="description" content="Alamin ang tamang presyo: markup, gross margin at kita bawat piraso.">
+<style>
+:root{
+  --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
+  --brand:#c2410c; --brand-ink:#ffffff; --brand-soft:#fff1e6;
+  --good:#15803d; --good-soft:#e8f6ec; --warn:#a16207; --warn-soft:#fdf6dc;
+  --bad:#b91c1c; --bad-soft:#fdecec; --field:#ffffff;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+    --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+    --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+    --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+  --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+  --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+  --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 40px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.embedded .brand{visibility:hidden}
+.embedded .wrap{padding-top:8px}
+.brand{flex:1;min-width:0;font-weight:700;color:var(--brand);font-size:14px;letter-spacing:.02em}
+.lang{flex:none;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;background:transparent;color:var(--ink2);padding:6px 12px;font:inherit;font-size:14px;cursor:pointer;min-height:36px}
+.lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);font-weight:600}
+h1{font-size:24px;line-height:1.25;margin:8px 0 4px}
+.lead{color:var(--ink2);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 16px}
+.card h2{font-size:17px;margin:0 0 12px}
+.field{margin:0 0 14px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
+.hint{display:block;color:var(--ink2);font-size:13px;font-weight:400;margin-top:2px}
+.input{position:relative}
+.input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
+.input .pre{left:12px}.input .suf{right:12px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+.input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
+input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{flex:1 1 auto;min-height:44px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;font:inherit;font-size:15px;padding:8px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400}
+.check input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--brand);flex:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.btn{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:15px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.result{border-width:2px}
+.result.good{border-color:var(--good);background:var(--good-soft)}
+.result.warn{border-color:var(--warn);background:var(--warn-soft)}
+.result.bad{border-color:var(--bad);background:var(--bad-soft)}
+.verdict{font-size:18px;font-weight:600;margin:0 0 12px}
+.big{font-size:34px;font-weight:800;line-height:1.1;margin:0}
+.big-label{color:var(--ink2);font-size:14px;margin:0 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .k{color:var(--ink2);font-size:13px}
+.stat .v{font-size:20px;font-weight:700}
+table.bd{width:100%;border-collapse:collapse;font-size:15px}
+table.bd.tight{font-size:13.5px}
+table.bd.tight td,table.bd.tight th{padding:7px 2px}
+table.bd td,table.bd th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.bd td.n,table.bd th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.bd tr.tot td{font-weight:700;border-bottom:0}
+.muted{color:var(--ink2);font-size:13px}
+.note{font-size:13px;color:var(--ink2);margin:8px 0 0}
+details{margin:0 0 16px}
+summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.disclaimer{font-size:12.5px;color:var(--ink2);border-top:1px solid var(--line);padding-top:12px;margin-top:8px}
+.cta{display:block;text-decoration:none;color:var(--ink);background:var(--brand-soft);border-radius:10px;padding:12px;margin-top:12px;font-size:15px}
+.cta b{color:var(--brand)}
+.err{color:var(--bad);font-weight:600}
+.print-only{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  .no-print,.btns,.lang,details.inputs-help{display:none!important}
+  .print-only{display:block}
+  .card{break-inside:avoid;border-color:#bbb;background:#fff!important}
+  .wrap{max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <span class="brand">FLAME PH · Negosyo Calculators</span>
+  <div class="lang no-print" role="group" aria-label="Language">
+    <button type="button" data-lang="tl" aria-pressed="true">Taglish</button>
+    <button type="button" data-lang="en" aria-pressed="false">English</button>
+  </div>
+</header>
+<p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
+<h1 data-en="Markup &amp; Margin Calculator">Markup at Margin Calculator</h1>
+<p class="lead" data-en="Find the right selling price and see how much you really earn per piece, after costs, platform fees and VAT.">Alamin ang tamang presyo at kung magkano talaga ang kita mo bawat piraso, pagkatapos ng gastos, platform fee at VAT.</p>
+
+<section class="card">
+  <h2 data-en="1. Your cost per piece">1. Puhunan bawat piraso</h2>
+  <div class="field">
+    <label for="cost" data-en="Product cost per piece">Puhunan sa produkto (bawat piraso)</label>
+    <div class="input has-pre"><span class="pre">₱</span><input id="cost" type="text" inputmode="decimal" value=""></div>
+    <span class="hint" data-en="What you pay the supplier, or ingredients/materials for one piece.">Bayad sa supplier, o sangkap/materyales para sa isang piraso.</span>
+  </div>
+  <div class="field">
+    <label for="overhead" data-en="Other costs per piece (optional)">Iba pang gastos bawat piraso (opsyonal)</label>
+    <div class="input has-pre"><span class="pre">₱</span><input id="overhead" type="text" inputmode="decimal" value=""></div>
+    <span class="hint" data-en="Packaging, delivery, share of rent and electricity. Not sure? Divide monthly overhead by pieces sold per month.">Packaging, delivery, hati sa upa at kuryente. Hindi sigurado? Hatiin ang buwanang overhead sa dami ng nabebenta kada buwan.</span>
+  </div>
+</section>
+
+<section class="card">
+  <h2 data-en="2. How do you want to set the price?">2. Paano mo gustong i-set ang presyo?</h2>
+  <div class="field">
+    <div class="seg" id="mode">
+      <button type="button" data-v="margin" aria-pressed="true" data-en="Target margin">Target na margin</button>
+      <button type="button" data-v="markup" aria-pressed="false" data-en="Target markup">Target na markup</button>
+      <button type="button" data-v="price" aria-pressed="false" data-en="I have a price">May presyo na ako</button>
+    </div>
+  </div>
+  <div class="field" id="f-margin">
+    <label for="margin" data-en="Target gross margin">Target na gross margin</label>
+    <div class="input has-suf"><input id="margin" type="text" inputmode="decimal" value="30"><span class="suf">%</span></div>
+    <span class="hint" data-en="Share of the selling price that is profit. 30% margin means ₱30 profit on every ₱100 sale.">Bahagi ng presyo na kita. 30% margin = ₱30 kita sa bawat ₱100 na benta.</span>
+  </div>
+  <div class="field" id="f-markup" hidden>
+    <label for="markup" data-en="Target markup on cost">Target na markup sa puhunan</label>
+    <div class="input has-suf"><input id="markup" type="text" inputmode="decimal" value="50"><span class="suf">%</span></div>
+    <span class="hint" data-en="How much you add on top of cost. 50% markup on ₱100 cost = ₱150 price.">Dagdag sa ibabaw ng puhunan. 50% markup sa ₱100 puhunan = ₱150 presyo.</span>
+  </div>
+  <div class="field" id="f-price" hidden>
+    <label for="price" data-en="Your selling price (what the customer pays)">Presyo mo (binabayaran ng customer)</label>
+    <div class="input has-pre"><span class="pre">₱</span><input id="price" type="text" inputmode="decimal" value=""></div>
+  </div>
+</section>
+
+<details class="card">
+  <summary data-en="3. Selling online or VAT-registered? (optional)">3. Nagbebenta online o VAT-registered? (opsyonal)</summary>
+  <div class="field">
+    <label for="fee" data-en="Platform or payment fee">Platform o payment fee</label>
+    <div class="input has-suf"><input id="fee" type="text" inputmode="decimal" value="0"><span class="suf">%</span></div>
+    <span class="hint" data-en="Shopee, Lazada, GrabFood, foodpanda or card/GCash fees, as % of the selling price. Leave 0 if none.">Shopee, Lazada, GrabFood, foodpanda o card/GCash fee, bilang % ng presyo. 0 kung wala.</span>
+  </div>
+  <div class="field">
+    <label class="check"><input id="vat" type="checkbox"> <span data-en="I am VAT-registered (add 12% VAT to the price)">VAT-registered ako (dagdagan ng 12% VAT ang presyo)</span></label>
+    <span class="hint" data-en="Usually only if yearly sales are above ₱3 million. Most micro businesses are non-VAT.">Kadalasan kung lampas ₱3 milyon ang benta kada taon. Karamihan ng micro business ay non-VAT.</span>
+  </div>
+</details>
+
+<div class="btns no-print">
+  <button type="button" class="btn" id="btn-sample" data-en="Try a sample">Subukan ang halimbawa</button>
+  <button type="button" class="btn" id="btn-reset" data-en="Clear">Burahin</button>
+</div>
+
+<section class="card result" id="result" aria-live="polite"></section>
+
+<details class="card inputs-help">
+  <summary data-en="Markup vs margin: what's the difference?">Markup vs margin: ano ang pagkakaiba?</summary>
+  <p data-en="Markup is based on your <b>cost</b>. Margin is based on your <b>selling price</b>. They are not the same: a 50% markup is only a 33% margin. Many owners price with markup but think it is their margin, and end up earning less than they think.">Ang markup ay base sa <b>puhunan</b>. Ang margin ay base sa <b>presyo</b>. Hindi sila pareho: ang 50% markup ay 33% margin lang. Maraming negosyante ang nagpepresyo gamit ang markup pero akala nila margin na iyon, kaya mas maliit ang totoong kita.</p>
+  <table class="bd">
+    <thead><tr><th data-en="Markup">Markup</th><th class="n" data-en="Same as margin">Katumbas na margin</th></tr></thead>
+    <tbody>
+      <tr><td>25%</td><td class="n">20%</td></tr>
+      <tr><td>33%</td><td class="n">25%</td></tr>
+      <tr><td>50%</td><td class="n">33%</td></tr>
+      <tr><td>100%</td><td class="n">50%</td></tr>
+      <tr><td>150%</td><td class="n">60%</td></tr>
+    </tbody>
+  </table>
+</details>
+<div class="btns no-print">
+  <button type="button" class="btn primary" id="btn-print" data-en="Download PDF / Print">I-download (PDF) / I-print</button>
+  <button type="button" class="btn" id="btn-share" data-en="Share">I-share</button>
+</div>
+<p class="disclaimer" data-en="Estimates only, for planning. Not tax, legal or accounting advice. Check government rates with SSS, PhilHealth, Pag-IBIG, DOLE and BIR, or an accountant from the FLAME professional services directory. Your numbers stay on your device.">Tantiya lang ito para sa pagpaplano. Hindi ito payong pang-buwis, legal o accounting. I-check ang mga rate sa SSS, PhilHealth, Pag-IBIG, DOLE at BIR, o sa accountant sa FLAME professional services directory. Ang mga numero mo ay nananatili sa device mo.</p>
+</div>
+<script>
+/* FLAME PH calculators: shared helpers (language, numbers, save, share, embed). */
+var FC = (function () {
+  var LANG_KEY = 'flamecalc.lang';
+  var state = { lang: 'tl' };
+  var onLang = [];
+
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+
+  // Taglish is written in the HTML; English lives in data-en. t() is for text built in JS.
+  function t(tl, en) { return state.lang === 'en' ? en : tl; }
+  function applyLang() {
+    document.documentElement.lang = state.lang === 'en' ? 'en' : 'fil';
+    document.querySelectorAll('[data-en]').forEach(function (el) {
+      if (el.dataset.tl === undefined) el.dataset.tl = el.innerHTML;
+      el.innerHTML = state.lang === 'en' ? el.dataset.en : el.dataset.tl;
+    });
+    document.querySelectorAll('.lang button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang));
+    });
+    onLang.forEach(function (f) { f(); });
+  }
+  function setLang(l) { state.lang = l; store(LANG_KEY, l); applyLang(); }
+
+  var peso0 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
+  var peso2 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function peso(n, dp) { if (!isFinite(n)) return '—'; return (dp === 0 ? peso0 : peso2).format(n); }
+  function pct(n, dp) { if (!isFinite(n)) return '—'; return n.toFixed(dp === undefined ? 1 : dp) + '%'; }
+  function int(n) { return isFinite(n) ? Math.round(n).toLocaleString('en-PH') : '—'; }
+
+  function num(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    var v = parseFloat(String(el.value).replace(/[,\s₱%]/g, ''));
+    return isFinite(v) ? v : 0;
+  }
+  function blank(id) { var el = document.getElementById(id); return !el || String(el.value).trim() === ''; }
+
+  // Remember a page's inputs on this device so owners don't retype them.
+  function saveInputs(page) {
+    var data = {};
+    document.querySelectorAll('input[id],select[id]').forEach(function (el) {
+      data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    document.querySelectorAll('.seg[id]').forEach(function (s) {
+      var on = s.querySelector('[aria-pressed="true"]'); if (on) data['seg:' + s.id] = on.dataset.v;
+    });
+    store('flamecalc.' + page, JSON.stringify(data));
+  }
+  function loadInputs(page) {
+    var raw = store('flamecalc.' + page); if (!raw) return false;
+    try {
+      var data = JSON.parse(raw);
+      Object.keys(data).forEach(function (k) {
+        if (k.indexOf('seg:') === 0) { setSeg(k.slice(4), data[k]); return; }
+        var el = document.getElementById(k); if (!el) return;
+        if (el.type === 'checkbox') el.checked = !!data[k]; else el.value = data[k];
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  function fill(values) {
+    Object.keys(values).forEach(function (k) {
+      var el = document.getElementById(k); if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!values[k]; else el.value = values[k];
+    });
+  }
+
+  function setSeg(id, v) {
+    var s = document.getElementById(id); if (!s) return;
+    s.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === v)); });
+  }
+  function seg(id) { var on = document.querySelector('#' + id + ' [aria-pressed="true"]'); return on ? on.dataset.v : null; }
+
+  // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
+  function postHeight() {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-height', height: document.documentElement.scrollHeight }, '*');
+  }
+  function postResult(calculator, inputs, outputs) {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-result', calculator: calculator, lang: state.lang, inputs: inputs, outputs: outputs }, '*');
+  }
+
+  function share(title, text) {
+    var url = location.href;
+    if (navigator.share) { navigator.share({ title: title, text: text, url: url }).catch(function () {}); return; }
+    var full = text + '\n' + url;
+    if (navigator.clipboard) navigator.clipboard.writeText(full).then(function () { alert(t('Nakopya na! I-paste sa Messenger o Viber.', 'Copied! Paste it into Messenger or Viber.')); });
+    else prompt(t('Kopyahin ito:', 'Copy this:'), full);
+  }
+
+  function init(opts) {
+    var saved = store(LANG_KEY);
+    var q = new URLSearchParams(location.search);
+    state.lang = q.get('lang') === 'en' || q.get('lang') === 'tl' ? q.get('lang') : (saved === 'en' ? 'en' : 'tl');
+    if (q.get('theme') === 'light' || q.get('theme') === 'dark') document.documentElement.dataset.theme = q.get('theme');
+    if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
+    document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+    document.querySelectorAll('.seg').forEach(function (s) {
+      s.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        setSeg(s.id, b.dataset.v); opts.calc();
+      });
+    });
+    document.addEventListener('input', function () { opts.calc(); });
+    document.addEventListener('change', function () { opts.calc(); });
+    var pr = document.getElementById('btn-print'); if (pr) pr.addEventListener('click', function () { window.print(); });
+    var sh = document.getElementById('btn-share'); if (sh) sh.addEventListener('click', function () { share(document.title, opts.shareText()); });
+    var sm = document.getElementById('btn-sample'); if (sm) sm.addEventListener('click', function () { opts.sample(); opts.calc(); });
+    var rs = document.getElementById('btn-reset'); if (rs) rs.addEventListener('click', function () {
+      document.querySelectorAll('input[id]').forEach(function (el) { if (el.type === 'checkbox') el.checked = el.defaultChecked; else el.value = el.defaultValue; });
+      if (opts.reset) opts.reset();
+      opts.calc();
+    });
+    var pd = document.getElementById('print-date'); if (pd) pd.textContent = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!loadInputs(opts.page) && opts.sample) opts.sample();
+    applyLang();
+    opts.calc();
+    if ('ResizeObserver' in window) new ResizeObserver(postHeight).observe(document.body);
+    window.addEventListener('load', postHeight);
+  }
+
+  return { t: t, peso: peso, pct: pct, int: int, num: num, blank: blank, seg: seg, setSeg: setSeg, fill: fill,
+    saveInputs: saveInputs, postResult: postResult, init: init, onLang: function (f) { onLang.push(f); }, get lang() { return state.lang; } };
+})();
+</script>
+<script>
+function show(id, on) { document.getElementById(id).hidden = !on; }
+function niceUp(p) {
+  // Round up to a "magandang presyo": nearest ₱0.25 under ₱20, ₱1 under ₱100, ₱5 above.
+  var step = p < 20 ? 0.25 : p < 100 ? 1 : 5;
+  return Math.ceil(p / step - 1e-9) * step;
+}
+var last = null;
+function calc() {
+  var t = FC.t, peso = FC.peso, pct = FC.pct;
+  var mode = FC.seg('mode');
+  show('f-margin', mode === 'margin'); show('f-markup', mode === 'markup'); show('f-price', mode === 'price');
+  var cost = FC.num('cost') + FC.num('overhead');
+  var fee = FC.num('fee') / 100;
+  var vat = document.getElementById('vat').checked ? 0.12 : 0;
+  var out = document.getElementById('result');
+  out.className = 'card result';
+  FC.saveInputs('markup-margin');
+
+  if (cost <= 0) {
+    out.innerHTML = '<p class="verdict">' + t('Ilagay ang puhunan bawat piraso para makita ang tamang presyo.', 'Enter your cost per piece to see the right price.') + '</p>';
+    last = null; return;
+  }
+  var net; // selling price before VAT
+  if (mode === 'margin') {
+    var m = FC.num('margin') / 100;
+    if (m + fee >= 1) { out.innerHTML = '<p class="err">' + t('Masyadong mataas ang margin at fee: dapat mas mababa sa 100% ang pinagsama.', 'Margin plus fees must be below 100%.') + '</p>'; last = null; return; }
+    net = cost / (1 - fee - m);
+  } else if (mode === 'markup') {
+    net = cost * (1 + FC.num('markup') / 100);
+  } else {
+    if (FC.blank('price')) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang presyo mo para makita ang kita.', 'Enter your price to see your profit.') + '</p>'; last = null; return; }
+    net = FC.num('price') / (1 + vat);
+  }
+  var customer = net * (1 + vat);
+  var feeAmt = net * fee;
+  var profit = net - feeAmt - cost;
+  var margin = profit / net * 100;
+  var markup = (net - cost) / cost * 100;
+  var nice = niceUp(customer);
+
+  var cls = margin < 10 ? 'bad' : margin < 25 ? 'warn' : 'good';
+  out.classList.add(cls);
+  var verdict = profit <= 0
+    ? t('Lugi ka ng ' + peso(-profit) + ' bawat piraso. Taasan ang presyo o bawasan ang gastos.', 'You lose ' + peso(-profit) + ' on every piece. Raise the price or cut costs.')
+    : cls === 'bad' ? t('Manipis ang kita: ' + peso(profit) + ' bawat piraso. Isang sira o diskwento lang, lugi na.', 'Thin profit: ' + peso(profit) + ' per piece. One damaged item or discount wipes it out.')
+    : cls === 'warn' ? t('Kikita ka ng ' + peso(profit) + ' bawat piraso. Okay, pero bantayan ang gastos.', 'You earn ' + peso(profit) + ' per piece. Okay, but watch your costs.')
+    : t('Maganda! Kikita ka ng ' + peso(profit) + ' bawat piraso.', 'Good! You earn ' + peso(profit) + ' per piece.');
+
+  var showNice = mode !== 'price' && Math.abs(nice - customer) > 0.004;
+  out.innerHTML =
+    '<p class="verdict">' + verdict + '</p>' +
+    '<p class="big">' + peso(customer) + '</p>' +
+    '<p class="big-label">' + (mode === 'price' ? t('Presyo mo', 'Your price') : t('Presyong dapat singilin', 'Price to charge')) + (vat ? t(' (kasama ang VAT)', ' (VAT included)') : '') +
+      (showNice ? '<br>' + t('Gawing ', 'Round up to ') + '<b>' + peso(nice) + '</b>' + t(' para madaling suklian.', ' to make change easy.') : '') + '</p>' +
+    '<div class="stats">' +
+      '<div class="stat"><div class="k">' + t('Kita bawat piraso', 'Profit per piece') + '</div><div class="v">' + peso(profit) + '</div></div>' +
+      '<div class="stat"><div class="k">Gross margin</div><div class="v">' + pct(margin) + '</div></div>' +
+      '<div class="stat"><div class="k">Markup</div><div class="v">' + pct(markup) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Kita sa 100 piraso', 'Profit on 100 pieces') + '</div><div class="v">' + peso(profit * 100, 0) + '</div></div>' +
+    '</div>' +
+    '<table class="bd" style="margin-top:12px"><tbody>' +
+      '<tr><td>' + t('Presyo ng customer', 'Customer price') + '</td><td class="n">' + peso(customer) + '</td></tr>' +
+      (vat ? '<tr><td>' + t('Bawas: 12% VAT (ire-remit sa BIR)', 'Less: 12% VAT (remitted to BIR)') + '</td><td class="n">−' + peso(customer - net) + '</td></tr>' : '') +
+      (fee ? '<tr><td>' + t('Bawas: platform/payment fee', 'Less: platform/payment fee') + '</td><td class="n">−' + peso(feeAmt) + '</td></tr>' : '') +
+      '<tr><td>' + t('Bawas: puhunan at iba pang gastos', 'Less: cost and other costs') + '</td><td class="n">−' + peso(cost) + '</td></tr>' +
+      '<tr class="tot"><td>' + t('Kita mo', 'Your profit') + '</td><td class="n">' + peso(profit) + '</td></tr>' +
+    '</tbody></table>' +
+    '<p class="note">' + t('Gabay lang: sa retail, 20–35% margin ang karaniwan; sa pagkain, 55–70% (food cost 30–45%).', 'Rule of thumb: retail usually runs 20–35% margin; food 55–70% (food cost 30–45%).') + '</p>' +
+    (cls !== 'good' ? '<a class="cta no-print" href="https://www.flameph.org/academy" target="_top">' + t('Kailangan ng tulong sa pagpresyo? <b>Sumali sa FLAME Academy pricing workshop</b> o tanungin si Ka-FLAME AI.', 'Need help with pricing? <b>Join a FLAME Academy pricing workshop</b> or ask Ka-FLAME AI.') + '</a>' : '');
+
+  last = { customer: customer, profit: profit, margin: margin, markup: markup };
+  FC.postResult('markup-margin', { cost: FC.num('cost'), overhead: FC.num('overhead'), mode: mode, fee: fee * 100, vat: !!vat }, last);
+}
+FC.init({
+  page: 'markup-margin',
+  calc: calc,
+  sample: function () { FC.fill({ cost: '8.50', overhead: '1.50', margin: '30', markup: '50', price: '15', fee: '0', vat: false }); FC.setSeg('mode', 'margin'); },
+  reset: function () { FC.fill({ cost: '', overhead: '', price: '' }); FC.setSeg('mode', 'margin'); },
+  shareText: function () {
+    if (!last) return FC.t('Subukan ang Markup at Margin Calculator ng FLAME PH', 'Try the FLAME PH Markup & Margin Calculator');
+    return FC.t('Presyo: ' + FC.peso(last.customer) + ', kita bawat piraso: ' + FC.peso(last.profit) + ' (' + FC.pct(last.margin) + ' margin). Kinuwenta sa FLAME PH calculator.',
+      'Price: ' + FC.peso(last.customer) + ', profit per piece: ' + FC.peso(last.profit) + ' (' + FC.pct(last.margin) + ' margin). Calculated with the FLAME PH calculator.');
+  }
+});
+FC.onLang(calc);
+</script>
+</body>
+</html>

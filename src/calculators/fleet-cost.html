@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="fil">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vehicle & Fleet Operating Cost Calculator | FLAME PH</title>
+<meta name="description" content="Alamin ang totoong gastos kada kilometro at kada delivery run, para tama ang singil sa delivery.">
+<style>
+:root{
+  --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
+  --brand:#c2410c; --brand-ink:#ffffff; --brand-soft:#fff1e6;
+  --good:#15803d; --good-soft:#e8f6ec; --warn:#a16207; --warn-soft:#fdf6dc;
+  --bad:#b91c1c; --bad-soft:#fdecec; --field:#ffffff;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+    --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+    --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+    --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+  --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+  --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+  --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 40px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.embedded .brand{visibility:hidden}
+.embedded .wrap{padding-top:8px}
+.brand{flex:1;min-width:0;font-weight:700;color:var(--brand);font-size:14px;letter-spacing:.02em}
+.lang{flex:none;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;background:transparent;color:var(--ink2);padding:6px 12px;font:inherit;font-size:14px;cursor:pointer;min-height:36px}
+.lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);font-weight:600}
+h1{font-size:24px;line-height:1.25;margin:8px 0 4px}
+.lead{color:var(--ink2);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 16px}
+.card h2{font-size:17px;margin:0 0 12px}
+.field{margin:0 0 14px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
+.hint{display:block;color:var(--ink2);font-size:13px;font-weight:400;margin-top:2px}
+.input{position:relative}
+.input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
+.input .pre{left:12px}.input .suf{right:12px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+.input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
+input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{flex:1 1 auto;min-height:44px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;font:inherit;font-size:15px;padding:8px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400}
+.check input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--brand);flex:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.btn{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:15px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.result{border-width:2px}
+.result.good{border-color:var(--good);background:var(--good-soft)}
+.result.warn{border-color:var(--warn);background:var(--warn-soft)}
+.result.bad{border-color:var(--bad);background:var(--bad-soft)}
+.verdict{font-size:18px;font-weight:600;margin:0 0 12px}
+.big{font-size:34px;font-weight:800;line-height:1.1;margin:0}
+.big-label{color:var(--ink2);font-size:14px;margin:0 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .k{color:var(--ink2);font-size:13px}
+.stat .v{font-size:20px;font-weight:700}
+table.bd{width:100%;border-collapse:collapse;font-size:15px}
+table.bd.tight{font-size:13.5px}
+table.bd.tight td,table.bd.tight th{padding:7px 2px}
+table.bd td,table.bd th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.bd td.n,table.bd th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.bd tr.tot td{font-weight:700;border-bottom:0}
+.muted{color:var(--ink2);font-size:13px}
+.note{font-size:13px;color:var(--ink2);margin:8px 0 0}
+details{margin:0 0 16px}
+summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.disclaimer{font-size:12.5px;color:var(--ink2);border-top:1px solid var(--line);padding-top:12px;margin-top:8px}
+.cta{display:block;text-decoration:none;color:var(--ink);background:var(--brand-soft);border-radius:10px;padding:12px;margin-top:12px;font-size:15px}
+.cta b{color:var(--brand)}
+.err{color:var(--bad);font-weight:600}
+.print-only{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  .no-print,.btns,.lang,details.inputs-help{display:none!important}
+  .print-only{display:block}
+  .card{break-inside:avoid;border-color:#bbb;background:#fff!important}
+  .wrap{max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <span class="brand">FLAME PH · Negosyo Calculators</span>
+  <div class="lang no-print" role="group" aria-label="Language">
+    <button type="button" data-lang="tl" aria-pressed="true">Taglish</button>
+    <button type="button" data-lang="en" aria-pressed="false">English</button>
+  </div>
+</header>
+<p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
+<h1 data-en="Vehicle &amp; Fleet Operating Cost Calculator">Vehicle at Fleet Operating Cost Calculator</h1>
+<p class="lead" data-en="Find the true cost per kilometer and per delivery run of a motorcycle, tricycle, van or truck, including fuel, maintenance, insurance, registration and wear, so your delivery fee covers it.">Alamin ang totoong gastos kada kilometro at kada delivery ng motorsiklo, tricycle, van o truck, kasama ang gasolina, maintenance, insurance, rehistro at pagkaluma, para sapat ang singil mo sa delivery.</p>
+
+<section class="card">
+  <h2 data-en="1. Fuel and distance">1. Gasolina at layo</h2>
+  <div class="row2">
+    <div class="field"><label for="fuel" data-en="Fuel price per liter">Presyo ng gasolina kada litro</label><div class="input has-pre"><span class="pre">₱</span><input id="fuel" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="kpl" data-en="Kilometers per liter">Kilometro kada litro</label><input id="kpl" type="text" inputmode="decimal" value=""></div>
+    <div class="field"><label for="km" data-en="Kilometers per month">Kilometro kada buwan</label><input id="km" type="text" inputmode="decimal" value=""></div>
+    <div class="field"><label for="runs" data-en="Delivery runs per month">Delivery runs kada buwan</label><input id="runs" type="text" inputmode="decimal" value=""></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2 data-en="2. Running costs">2. Gastos sa pagpapatakbo</h2>
+  <div class="row2">
+    <div class="field"><label for="maint" data-en="Maintenance per month (oil, tires, repairs)">Maintenance kada buwan (langis, gulong, repair)</label><div class="input has-pre"><span class="pre">₱</span><input id="maint" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="driver" data-en="Driver or rider pay per month">Sahod ng driver o rider kada buwan</label><div class="input has-pre"><span class="pre">₱</span><input id="driver" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="tolls" data-en="Parking, tolls per month">Parking, toll kada buwan</label><div class="input has-pre"><span class="pre">₱</span><input id="tolls" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="ins" data-en="Insurance per year">Insurance kada taon</label><div class="input has-pre"><span class="pre">₱</span><input id="ins" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="reg" data-en="LTO registration, permits per year">Rehistro sa LTO, permit kada taon</label><div class="input has-pre"><span class="pre">₱</span><input id="reg" type="text" inputmode="decimal" value="0"></div></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2 data-en="3. The vehicle itself (wear and tear)">3. Ang sasakyan (pagkaluma)</h2>
+  <div class="row2">
+    <div class="field"><label for="price" data-en="Purchase price">Presyo nang binili</label><div class="input has-pre"><span class="pre">₱</span><input id="price" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="resale" data-en="Expected resale value">Inaasahang presyo kapag ibinenta</label><div class="input has-pre"><span class="pre">₱</span><input id="resale" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="years" data-en="Years you will use it">Ilang taon gagamitin</label><input id="years" type="text" inputmode="decimal" value="5"></div>
+    <div class="field"><label for="amort" data-en="Monthly loan interest (optional)">Buwanang interes sa loan (opsyonal)</label><div class="input has-pre"><span class="pre">₱</span><input id="amort" type="text" inputmode="decimal" value="0"></div></div>
+  </div>
+  <div class="field"><label for="margin" data-en="Target margin on delivery fee">Target na kita sa delivery fee</label><div class="input has-suf"><input id="margin" type="text" inputmode="decimal" value="20"><span class="suf">%</span></div></div>
+</section>
+
+<div class="btns no-print">
+  <button type="button" class="btn" id="btn-sample" data-en="Try a sample">Subukan ang halimbawa</button>
+  <button type="button" class="btn" id="btn-reset" data-en="Clear">Burahin</button>
+</div>
+
+<section class="card result" id="result" aria-live="polite"></section>
+<div class="btns no-print">
+  <button type="button" class="btn primary" id="btn-print" data-en="Download PDF / Print">I-download (PDF) / I-print</button>
+  <button type="button" class="btn" id="btn-share" data-en="Share">I-share</button>
+</div>
+<p class="disclaimer" data-en="Estimates only, for planning. Not tax, legal or accounting advice. Check government rates with SSS, PhilHealth, Pag-IBIG, DOLE and BIR, or an accountant from the FLAME professional services directory. Your numbers stay on your device.">Tantiya lang ito para sa pagpaplano. Hindi ito payong pang-buwis, legal o accounting. I-check ang mga rate sa SSS, PhilHealth, Pag-IBIG, DOLE at BIR, o sa accountant sa FLAME professional services directory. Ang mga numero mo ay nananatili sa device mo.</p>
+</div>
+<script>
+/* FLAME PH calculators: shared helpers (language, numbers, save, share, embed). */
+var FC = (function () {
+  var LANG_KEY = 'flamecalc.lang';
+  var state = { lang: 'tl' };
+  var onLang = [];
+
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+
+  // Taglish is written in the HTML; English lives in data-en. t() is for text built in JS.
+  function t(tl, en) { return state.lang === 'en' ? en : tl; }
+  function applyLang() {
+    document.documentElement.lang = state.lang === 'en' ? 'en' : 'fil';
+    document.querySelectorAll('[data-en]').forEach(function (el) {
+      if (el.dataset.tl === undefined) el.dataset.tl = el.innerHTML;
+      el.innerHTML = state.lang === 'en' ? el.dataset.en : el.dataset.tl;
+    });
+    document.querySelectorAll('.lang button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang));
+    });
+    onLang.forEach(function (f) { f(); });
+  }
+  function setLang(l) { state.lang = l; store(LANG_KEY, l); applyLang(); }
+
+  var peso0 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
+  var peso2 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function peso(n, dp) { if (!isFinite(n)) return '—'; return (dp === 0 ? peso0 : peso2).format(n); }
+  function pct(n, dp) { if (!isFinite(n)) return '—'; return n.toFixed(dp === undefined ? 1 : dp) + '%'; }
+  function int(n) { return isFinite(n) ? Math.round(n).toLocaleString('en-PH') : '—'; }
+
+  function num(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    var v = parseFloat(String(el.value).replace(/[,\s₱%]/g, ''));
+    return isFinite(v) ? v : 0;
+  }
+  function blank(id) { var el = document.getElementById(id); return !el || String(el.value).trim() === ''; }
+
+  // Remember a page's inputs on this device so owners don't retype them.
+  function saveInputs(page) {
+    var data = {};
+    document.querySelectorAll('input[id],select[id]').forEach(function (el) {
+      data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    document.querySelectorAll('.seg[id]').forEach(function (s) {
+      var on = s.querySelector('[aria-pressed="true"]'); if (on) data['seg:' + s.id] = on.dataset.v;
+    });
+    store('flamecalc.' + page, JSON.stringify(data));
+  }
+  function loadInputs(page) {
+    var raw = store('flamecalc.' + page); if (!raw) return false;
+    try {
+      var data = JSON.parse(raw);
+      Object.keys(data).forEach(function (k) {
+        if (k.indexOf('seg:') === 0) { setSeg(k.slice(4), data[k]); return; }
+        var el = document.getElementById(k); if (!el) return;
+        if (el.type === 'checkbox') el.checked = !!data[k]; else el.value = data[k];
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  function fill(values) {
+    Object.keys(values).forEach(function (k) {
+      var el = document.getElementById(k); if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!values[k]; else el.value = values[k];
+    });
+  }
+
+  function setSeg(id, v) {
+    var s = document.getElementById(id); if (!s) return;
+    s.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === v)); });
+  }
+  function seg(id) { var on = document.querySelector('#' + id + ' [aria-pressed="true"]'); return on ? on.dataset.v : null; }
+
+  // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
+  function postHeight() {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-height', height: document.documentElement.scrollHeight }, '*');
+  }
+  function postResult(calculator, inputs, outputs) {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-result', calculator: calculator, lang: state.lang, inputs: inputs, outputs: outputs }, '*');
+  }
+
+  function share(title, text) {
+    var url = location.href;
+    if (navigator.share) { navigator.share({ title: title, text: text, url: url }).catch(function () {}); return; }
+    var full = text + '\n' + url;
+    if (navigator.clipboard) navigator.clipboard.writeText(full).then(function () { alert(t('Nakopya na! I-paste sa Messenger o Viber.', 'Copied! Paste it into Messenger or Viber.')); });
+    else prompt(t('Kopyahin ito:', 'Copy this:'), full);
+  }
+
+  function init(opts) {
+    var saved = store(LANG_KEY);
+    var q = new URLSearchParams(location.search);
+    state.lang = q.get('lang') === 'en' || q.get('lang') === 'tl' ? q.get('lang') : (saved === 'en' ? 'en' : 'tl');
+    if (q.get('theme') === 'light' || q.get('theme') === 'dark') document.documentElement.dataset.theme = q.get('theme');
+    if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
+    document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+    document.querySelectorAll('.seg').forEach(function (s) {
+      s.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        setSeg(s.id, b.dataset.v); opts.calc();
+      });
+    });
+    document.addEventListener('input', function () { opts.calc(); });
+    document.addEventListener('change', function () { opts.calc(); });
+    var pr = document.getElementById('btn-print'); if (pr) pr.addEventListener('click', function () { window.print(); });
+    var sh = document.getElementById('btn-share'); if (sh) sh.addEventListener('click', function () { share(document.title, opts.shareText()); });
+    var sm = document.getElementById('btn-sample'); if (sm) sm.addEventListener('click', function () { opts.sample(); opts.calc(); });
+    var rs = document.getElementById('btn-reset'); if (rs) rs.addEventListener('click', function () {
+      document.querySelectorAll('input[id]').forEach(function (el) { if (el.type === 'checkbox') el.checked = el.defaultChecked; else el.value = el.defaultValue; });
+      if (opts.reset) opts.reset();
+      opts.calc();
+    });
+    var pd = document.getElementById('print-date'); if (pd) pd.textContent = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!loadInputs(opts.page) && opts.sample) opts.sample();
+    applyLang();
+    opts.calc();
+    if ('ResizeObserver' in window) new ResizeObserver(postHeight).observe(document.body);
+    window.addEventListener('load', postHeight);
+  }
+
+  return { t: t, peso: peso, pct: pct, int: int, num: num, blank: blank, seg: seg, setSeg: setSeg, fill: fill,
+    saveInputs: saveInputs, postResult: postResult, init: init, onLang: function (f) { onLang.push(f); }, get lang() { return state.lang; } };
+})();
+</script>
+<script>
+var last = null;
+function calc() {
+  var t = FC.t, peso = FC.peso;
+  FC.saveInputs('fleet-cost');
+  var out = document.getElementById('result'); out.className = 'card result';
+  var km = FC.num('km'), kpl = FC.num('kpl'), runs = FC.num('runs');
+  if (km <= 0 || kpl <= 0 || FC.num('fuel') <= 0) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang presyo ng gasolina, km kada litro at km kada buwan.', 'Enter fuel price, km per liter and km per month.') + '</p>'; last = null; return; }
+  var fuel = km / kpl * FC.num('fuel');
+  var years = Math.max(0.5, FC.num('years'));
+  var dep = Math.max(0, FC.num('price') - FC.num('resale')) / (years * 12);
+  var items = [
+    [t('Gasolina', 'Fuel'), fuel, 'v'],
+    ['Maintenance', FC.num('maint'), 'v'],
+    [t('Driver / rider', 'Driver / rider'), FC.num('driver'), 'f'],
+    [t('Parking at toll', 'Parking and tolls'), FC.num('tolls'), 'v'],
+    ['Insurance', FC.num('ins') / 12, 'f'],
+    [t('Rehistro at permit', 'Registration and permits'), FC.num('reg') / 12, 'f'],
+    [t('Pagkaluma (depreciation)', 'Wear (depreciation)'), dep, 'f'],
+    [t('Interes sa loan', 'Loan interest'), FC.num('amort'), 'f']
+  ];
+  var total = items.reduce(function (s, i) { return s + i[1]; }, 0);
+  var variable = items.filter(function (i) { return i[2] === 'v'; }).reduce(function (s, i) { return s + i[1]; }, 0);
+  var perKm = total / km, perRun = runs > 0 ? total / runs : NaN;
+  var m = Math.min(0.9, FC.num('margin') / 100);
+  var fee = isFinite(perRun) ? Math.ceil(perRun / (1 - m) / 5) * 5 : NaN;
+  out.classList.add('good');
+  out.innerHTML =
+    '<p class="verdict">' + (isFinite(perRun)
+      ? t('Bawat delivery run ay nagkakahalaga ng ' + peso(perRun) + '. Maningil ng hindi bababa sa ' + peso(fee, 0) + ' para kumita ng ' + Math.round(m * 100) + '%.', 'Each delivery run costs you ' + peso(perRun) + '. Charge at least ' + peso(fee, 0) + ' to earn ' + Math.round(m * 100) + '%.')
+      : t('Ang totoong gastos ay ' + peso(perKm) + ' kada kilometro.', 'The true cost is ' + peso(perKm) + ' per kilometer.')) + '</p>' +
+    '<p class="big">' + peso(perKm) + '</p><p class="big-label">' + t('Gastos kada kilometro', 'Cost per kilometer') + '</p>' +
+    '<div class="stats">' +
+      (isFinite(perRun) ? '<div class="stat"><div class="k">' + t('Gastos kada run', 'Cost per run') + '</div><div class="v">' + peso(perRun) + '</div></div>' +
+        '<div class="stat"><div class="k">' + t('Iminumungkahing delivery fee', 'Suggested delivery fee') + '</div><div class="v">' + peso(fee, 0) + '</div></div>' : '') +
+      '<div class="stat"><div class="k">' + t('Kada buwan', 'Per month') + '</div><div class="v">' + peso(total, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Gasolina lang kada km', 'Fuel only per km') + '</div><div class="v">' + peso(fuel / km) + '</div></div>' +
+    '</div>' +
+    '<table class="bd" style="margin-top:12px"><tbody>' + items.filter(function (i) { return i[1] > 0; }).map(function (i) { return '<tr><td>' + i[0] + '</td><td class="n">' + peso(i[1], 0) + '</td></tr>'; }).join('') +
+      '<tr class="tot"><td>' + t('Kabuuan kada buwan', 'Total per month') + '</td><td class="n">' + peso(total, 0) + '</td></tr></tbody></table>' +
+    '<p class="note">' + t('Gasolina lang ang binibilang ng marami, pero ' + FC.pct((total - fuel) / total * 100, 0) + ' ng totoong gastos ay iba pa (sahod, maintenance, pagkaluma). Ang fixed na gastos (' + peso(total - variable, 0) + ') ay hindi bumababa kahit kaunti ang biyahe.',
+      'Many only count fuel, but ' + FC.pct((total - fuel) / total * 100, 0) + ' of the true cost is something else (pay, maintenance, wear). Fixed costs (' + peso(total - variable, 0) + ') stay the same even with fewer trips.') + '</p>';
+  last = { perKm: perKm, fee: fee };
+  FC.postResult('fleet-cost', { kmPerMonth: km, runsPerMonth: runs }, { costPerKm: perKm, costPerRun: isFinite(perRun) ? perRun : null, suggestedFee: isFinite(fee) ? fee : null, monthly: total });
+}
+FC.init({
+  page: 'fleet-cost', calc: calc,
+  sample: function () { FC.fill({ fuel: '62', kpl: '40', km: '2400', runs: '240', maint: '1500', driver: '14000', tolls: '300', ins: '2500', reg: '1800', price: '85000', resale: '25000', years: '4', amort: '0', margin: '20' }); },
+  reset: function () { FC.fill({ fuel: '', kpl: '', km: '', runs: '' }); },
+  shareText: function () { return last ? FC.t('Gastos kada km: ' + FC.peso(last.perKm) + (isFinite(last.fee) ? ', delivery fee: ' + FC.peso(last.fee, 0) : '') + '. FLAME PH calculator.', 'Cost per km: ' + FC.peso(last.perKm) + (isFinite(last.fee) ? ', delivery fee: ' + FC.peso(last.fee, 0) : '') + '. FLAME PH calculator.') : 'FLAME PH Fleet Cost Calculator'; }
+});
+FC.onLang(calc);
+</script>
+</body>
+</html>

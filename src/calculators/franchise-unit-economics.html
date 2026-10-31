@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="fil">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Franchise & Micro-Store Unit Economics Calculator | FLAME PH</title>
+<meta name="description" content="Magkano ang puhunan, kita kada buwan at ilang buwan bago mabawi ang isang franchise, micro-store o depot.">
+<style>
+:root{
+  --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
+  --brand:#c2410c; --brand-ink:#ffffff; --brand-soft:#fff1e6;
+  --good:#15803d; --good-soft:#e8f6ec; --warn:#a16207; --warn-soft:#fdf6dc;
+  --bad:#b91c1c; --bad-soft:#fdecec; --field:#ffffff;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+    --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+    --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+    --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+  --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+  --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+  --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 40px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.embedded .brand{visibility:hidden}
+.embedded .wrap{padding-top:8px}
+.brand{flex:1;min-width:0;font-weight:700;color:var(--brand);font-size:14px;letter-spacing:.02em}
+.lang{flex:none;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;background:transparent;color:var(--ink2);padding:6px 12px;font:inherit;font-size:14px;cursor:pointer;min-height:36px}
+.lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);font-weight:600}
+h1{font-size:24px;line-height:1.25;margin:8px 0 4px}
+.lead{color:var(--ink2);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 16px}
+.card h2{font-size:17px;margin:0 0 12px}
+.field{margin:0 0 14px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
+.hint{display:block;color:var(--ink2);font-size:13px;font-weight:400;margin-top:2px}
+.input{position:relative}
+.input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
+.input .pre{left:12px}.input .suf{right:12px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+.input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
+input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{flex:1 1 auto;min-height:44px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;font:inherit;font-size:15px;padding:8px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400}
+.check input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--brand);flex:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.btn{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:15px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.result{border-width:2px}
+.result.good{border-color:var(--good);background:var(--good-soft)}
+.result.warn{border-color:var(--warn);background:var(--warn-soft)}
+.result.bad{border-color:var(--bad);background:var(--bad-soft)}
+.verdict{font-size:18px;font-weight:600;margin:0 0 12px}
+.big{font-size:34px;font-weight:800;line-height:1.1;margin:0}
+.big-label{color:var(--ink2);font-size:14px;margin:0 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .k{color:var(--ink2);font-size:13px}
+.stat .v{font-size:20px;font-weight:700}
+table.bd{width:100%;border-collapse:collapse;font-size:15px}
+table.bd.tight{font-size:13.5px}
+table.bd.tight td,table.bd.tight th{padding:7px 2px}
+table.bd td,table.bd th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.bd td.n,table.bd th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.bd tr.tot td{font-weight:700;border-bottom:0}
+.muted{color:var(--ink2);font-size:13px}
+.note{font-size:13px;color:var(--ink2);margin:8px 0 0}
+details{margin:0 0 16px}
+summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.disclaimer{font-size:12.5px;color:var(--ink2);border-top:1px solid var(--line);padding-top:12px;margin-top:8px}
+.cta{display:block;text-decoration:none;color:var(--ink);background:var(--brand-soft);border-radius:10px;padding:12px;margin-top:12px;font-size:15px}
+.cta b{color:var(--brand)}
+.err{color:var(--bad);font-weight:600}
+.print-only{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  .no-print,.btns,.lang,details.inputs-help{display:none!important}
+  .print-only{display:block}
+  .card{break-inside:avoid;border-color:#bbb;background:#fff!important}
+  .wrap{max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <span class="brand">FLAME PH · Negosyo Calculators</span>
+  <div class="lang no-print" role="group" aria-label="Language">
+    <button type="button" data-lang="tl" aria-pressed="true">Taglish</button>
+    <button type="button" data-lang="en" aria-pressed="false">English</button>
+  </div>
+</header>
+<p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
+<h1 data-en="Franchise / Micro-Fulfillment Unit Economics">Franchise / Micro-Fulfillment Unit Economics</h1>
+<p class="lead" data-en="Before you buy a franchise or open a micro-store or depot: how much you put in, what one unit earns each month, and how many months until you get your money back.">Bago bumili ng franchise o magbukas ng micro-store o depot: magkano ang ilalabas mo, magkano ang kita ng isang unit kada buwan, at ilang buwan bago mabawi ang puhunan.</p>
+
+<section class="card">
+  <h2 data-en="1. Start-up investment">1. Puhunan sa pagsisimula</h2>
+  <div class="row2">
+    <div class="field"><label for="fee" data-en="Franchise or package fee">Franchise o package fee</label><div class="input has-pre"><span class="pre">₱</span><input id="fee" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="fitout" data-en="Fit-out, kiosk, equipment">Fit-out, kiosk, gamit</label><div class="input has-pre"><span class="pre">₱</span><input id="fitout" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="stock" data-en="Opening inventory">Unang stock</label><div class="input has-pre"><span class="pre">₱</span><input id="stock" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="permits" data-en="Permits, deposits, advance rent">Permit, deposit, advance na upa</label><div class="input has-pre"><span class="pre">₱</span><input id="permits" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="reserve" data-en="Working capital reserve">Reserbang pondo</label><div class="input has-pre"><span class="pre">₱</span><input id="reserve" type="text" inputmode="decimal" value="0"></div></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2 data-en="2. Sales">2. Benta</h2>
+  <div class="row2">
+    <div class="field"><label for="units" data-en="Items or orders sold per day">Piraso o order na nabebenta kada araw</label><input id="units" type="text" inputmode="decimal" value=""></div>
+    <div class="field"><label for="price" data-en="Average price per item or order">Average na presyo bawat piraso o order</label><div class="input has-pre"><span class="pre">₱</span><input id="price" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="gm" data-en="Gross margin">Gross margin</label><div class="input has-suf"><input id="gm" type="text" inputmode="decimal" value="40"><span class="suf">%</span></div></div>
+    <div class="field"><label for="days" data-en="Days open per month">Araw na bukas kada buwan</label><input id="days" type="text" inputmode="decimal" value="30"></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2 data-en="3. Monthly operating costs">3. Buwanang gastos</h2>
+  <div class="row2">
+    <div class="field"><label for="rent" data-en="Rent">Upa</label><div class="input has-pre"><span class="pre">₱</span><input id="rent" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="staff" data-en="Staff (total cost)">Tauhan (kabuuang gastos)</label><div class="input has-pre"><span class="pre">₱</span><input id="staff" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="utils" data-en="Utilities, internet">Kuryente, tubig, internet</label><div class="input has-pre"><span class="pre">₱</span><input id="utils" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="other" data-en="Other (delivery, supplies)">Iba pa (delivery, supplies)</label><div class="input has-pre"><span class="pre">₱</span><input id="other" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="royalty" data-en="Royalty (% of sales)">Royalty (% ng benta)</label><div class="input has-suf"><input id="royalty" type="text" inputmode="decimal" value="0"><span class="suf">%</span></div></div>
+    <div class="field"><label for="mktg" data-en="Marketing fee (% of sales)">Marketing fee (% ng benta)</label><div class="input has-suf"><input id="mktg" type="text" inputmode="decimal" value="0"><span class="suf">%</span></div></div>
+  </div>
+</section>
+
+<div class="btns no-print">
+  <button type="button" class="btn" id="btn-sample" data-en="Try a sample">Subukan ang halimbawa</button>
+  <button type="button" class="btn" id="btn-reset" data-en="Clear">Burahin</button>
+</div>
+
+<section class="card result" id="result" aria-live="polite"></section>
+<div class="btns no-print">
+  <button type="button" class="btn primary" id="btn-print" data-en="Download PDF / Print">I-download (PDF) / I-print</button>
+  <button type="button" class="btn" id="btn-share" data-en="Share">I-share</button>
+</div>
+<p class="disclaimer" data-en="Estimates only, for planning. Not tax, legal or accounting advice. Check government rates with SSS, PhilHealth, Pag-IBIG, DOLE and BIR, or an accountant from the FLAME professional services directory. Your numbers stay on your device.">Tantiya lang ito para sa pagpaplano. Hindi ito payong pang-buwis, legal o accounting. I-check ang mga rate sa SSS, PhilHealth, Pag-IBIG, DOLE at BIR, o sa accountant sa FLAME professional services directory. Ang mga numero mo ay nananatili sa device mo.</p>
+</div>
+<script>
+/* FLAME PH calculators: shared helpers (language, numbers, save, share, embed). */
+var FC = (function () {
+  var LANG_KEY = 'flamecalc.lang';
+  var state = { lang: 'tl' };
+  var onLang = [];
+
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+
+  // Taglish is written in the HTML; English lives in data-en. t() is for text built in JS.
+  function t(tl, en) { return state.lang === 'en' ? en : tl; }
+  function applyLang() {
+    document.documentElement.lang = state.lang === 'en' ? 'en' : 'fil';
+    document.querySelectorAll('[data-en]').forEach(function (el) {
+      if (el.dataset.tl === undefined) el.dataset.tl = el.innerHTML;
+      el.innerHTML = state.lang === 'en' ? el.dataset.en : el.dataset.tl;
+    });
+    document.querySelectorAll('.lang button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang));
+    });
+    onLang.forEach(function (f) { f(); });
+  }
+  function setLang(l) { state.lang = l; store(LANG_KEY, l); applyLang(); }
+
+  var peso0 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
+  var peso2 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function peso(n, dp) { if (!isFinite(n)) return '—'; return (dp === 0 ? peso0 : peso2).format(n); }
+  function pct(n, dp) { if (!isFinite(n)) return '—'; return n.toFixed(dp === undefined ? 1 : dp) + '%'; }
+  function int(n) { return isFinite(n) ? Math.round(n).toLocaleString('en-PH') : '—'; }
+
+  function num(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    var v = parseFloat(String(el.value).replace(/[,\s₱%]/g, ''));
+    return isFinite(v) ? v : 0;
+  }
+  function blank(id) { var el = document.getElementById(id); return !el || String(el.value).trim() === ''; }
+
+  // Remember a page's inputs on this device so owners don't retype them.
+  function saveInputs(page) {
+    var data = {};
+    document.querySelectorAll('input[id],select[id]').forEach(function (el) {
+      data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    document.querySelectorAll('.seg[id]').forEach(function (s) {
+      var on = s.querySelector('[aria-pressed="true"]'); if (on) data['seg:' + s.id] = on.dataset.v;
+    });
+    store('flamecalc.' + page, JSON.stringify(data));
+  }
+  function loadInputs(page) {
+    var raw = store('flamecalc.' + page); if (!raw) return false;
+    try {
+      var data = JSON.parse(raw);
+      Object.keys(data).forEach(function (k) {
+        if (k.indexOf('seg:') === 0) { setSeg(k.slice(4), data[k]); return; }
+        var el = document.getElementById(k); if (!el) return;
+        if (el.type === 'checkbox') el.checked = !!data[k]; else el.value = data[k];
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  function fill(values) {
+    Object.keys(values).forEach(function (k) {
+      var el = document.getElementById(k); if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!values[k]; else el.value = values[k];
+    });
+  }
+
+  function setSeg(id, v) {
+    var s = document.getElementById(id); if (!s) return;
+    s.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === v)); });
+  }
+  function seg(id) { var on = document.querySelector('#' + id + ' [aria-pressed="true"]'); return on ? on.dataset.v : null; }
+
+  // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
+  function postHeight() {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-height', height: document.documentElement.scrollHeight }, '*');
+  }
+  function postResult(calculator, inputs, outputs) {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-result', calculator: calculator, lang: state.lang, inputs: inputs, outputs: outputs }, '*');
+  }
+
+  function share(title, text) {
+    var url = location.href;
+    if (navigator.share) { navigator.share({ title: title, text: text, url: url }).catch(function () {}); return; }
+    var full = text + '\n' + url;
+    if (navigator.clipboard) navigator.clipboard.writeText(full).then(function () { alert(t('Nakopya na! I-paste sa Messenger o Viber.', 'Copied! Paste it into Messenger or Viber.')); });
+    else prompt(t('Kopyahin ito:', 'Copy this:'), full);
+  }
+
+  function init(opts) {
+    var saved = store(LANG_KEY);
+    var q = new URLSearchParams(location.search);
+    state.lang = q.get('lang') === 'en' || q.get('lang') === 'tl' ? q.get('lang') : (saved === 'en' ? 'en' : 'tl');
+    if (q.get('theme') === 'light' || q.get('theme') === 'dark') document.documentElement.dataset.theme = q.get('theme');
+    if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
+    document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+    document.querySelectorAll('.seg').forEach(function (s) {
+      s.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        setSeg(s.id, b.dataset.v); opts.calc();
+      });
+    });
+    document.addEventListener('input', function () { opts.calc(); });
+    document.addEventListener('change', function () { opts.calc(); });
+    var pr = document.getElementById('btn-print'); if (pr) pr.addEventListener('click', function () { window.print(); });
+    var sh = document.getElementById('btn-share'); if (sh) sh.addEventListener('click', function () { share(document.title, opts.shareText()); });
+    var sm = document.getElementById('btn-sample'); if (sm) sm.addEventListener('click', function () { opts.sample(); opts.calc(); });
+    var rs = document.getElementById('btn-reset'); if (rs) rs.addEventListener('click', function () {
+      document.querySelectorAll('input[id]').forEach(function (el) { if (el.type === 'checkbox') el.checked = el.defaultChecked; else el.value = el.defaultValue; });
+      if (opts.reset) opts.reset();
+      opts.calc();
+    });
+    var pd = document.getElementById('print-date'); if (pd) pd.textContent = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!loadInputs(opts.page) && opts.sample) opts.sample();
+    applyLang();
+    opts.calc();
+    if ('ResizeObserver' in window) new ResizeObserver(postHeight).observe(document.body);
+    window.addEventListener('load', postHeight);
+  }
+
+  return { t: t, peso: peso, pct: pct, int: int, num: num, blank: blank, seg: seg, setSeg: setSeg, fill: fill,
+    saveInputs: saveInputs, postResult: postResult, init: init, onLang: function (f) { onLang.push(f); }, get lang() { return state.lang; } };
+})();
+</script>
+<script>
+var last = null;
+function model(sales) {
+  var gm = FC.num('gm') / 100, pct = (FC.num('royalty') + FC.num('mktg')) / 100;
+  var fixed = FC.num('rent') + FC.num('staff') + FC.num('utils') + FC.num('other');
+  return { sales: sales, gross: sales * gm, fees: sales * pct, fixed: fixed, profit: sales * (gm - pct) - fixed };
+}
+function calc() {
+  var t = FC.t, peso = FC.peso;
+  FC.saveInputs('franchise-unit-economics');
+  var out = document.getElementById('result'); out.className = 'card result';
+  var capex = ['fee', 'fitout', 'stock', 'permits', 'reserve'].reduce(function (s, id) { return s + FC.num(id); }, 0);
+  var days = Math.max(1, FC.num('days')), price = FC.num('price');
+  var sales = FC.num('units') * price * days;
+  if (capex <= 0 || sales <= 0) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang puhunan, benta kada araw at presyo.', 'Enter the investment, daily sales and price.') + '</p>'; last = null; return; }
+  var base = model(sales), low = model(sales * 0.8), high = model(sales * 1.2);
+  var payback = function (p) { return p > 0 ? capex / p : Infinity; };
+  var pb = payback(base.profit);
+  var cm = FC.num('gm') / 100 - (FC.num('royalty') + FC.num('mktg')) / 100;
+  var beDay = cm > 0 && price > 0 ? base.fixed / cm / price / days : Infinity;
+  var cls = pb <= 18 ? 'good' : pb <= 36 ? 'warn' : 'bad';
+  out.classList.add(cls);
+  var fmtPb = function (p) { return isFinite(p) ? p.toFixed(1) + t(' buwan', ' months') : t('hindi mababawi', 'never'); };
+  out.innerHTML =
+    '<p class="verdict">' + (base.profit <= 0 ? t('Lugi ang unit na ito kada buwan: ' + peso(base.profit, 0) + '. Hindi mababawi ang ' + peso(capex, 0) + '.', 'This unit loses ' + peso(-base.profit, 0) + ' a month. The ' + peso(capex, 0) + ' would never come back.')
+      : t('Kumikita ng ' + peso(base.profit, 0) + ' kada buwan; mababawi ang ' + peso(capex, 0) + ' sa loob ng ' + fmtPb(pb) + '.', 'Earns ' + peso(base.profit, 0) + ' a month; the ' + peso(capex, 0) + ' comes back in ' + fmtPb(pb) + '.')) +
+      (cls === 'bad' && base.profit > 0 ? t(' Matagal ito: karaniwang target ay 12–24 buwan.', ' That is slow: 12–24 months is a common target.') : '') + '</p>' +
+    '<p class="big">' + fmtPb(pb) + '</p><p class="big-label">' + t('Payback period (bago mabawi ang puhunan)', 'Payback period (to recover the investment)') + '</p>' +
+    '<div class="stats">' +
+      '<div class="stat"><div class="k">' + t('Kabuuang puhunan', 'Total investment') + '</div><div class="v">' + peso(capex, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Net na kita kada buwan', 'Net profit per month') + '</div><div class="v">' + peso(base.profit, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Balik kada taon (ROI)', 'Return per year (ROI)') + '</div><div class="v">' + FC.pct(base.profit * 12 / capex * 100, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Break-even kada araw', 'Break-even per day') + '</div><div class="v">' + (isFinite(beDay) ? FC.int(Math.ceil(beDay)) + t(' piraso', ' items') : '—') + '</div></div>' +
+    '</div>' +
+    '<h2 style="margin:16px 0 4px;font-size:16px">' + t('Kung mag-iba ang benta', 'If sales differ') + '</h2>' +
+    '<table class="bd tight"><thead><tr><th></th><th class="n">' + t('Benta/buwan', 'Sales/month') + '</th><th class="n">' + t('Kita/buwan', 'Profit/month') + '</th><th class="n">Payback</th></tr></thead><tbody>' +
+      [[t('Mahina (−20%)', 'Weak (−20%)'), low], [t('Inaasahan', 'Expected'), base], [t('Malakas (+20%)', 'Strong (+20%)'), high]].map(function (r) {
+        return '<tr><td>' + r[0] + '</td><td class="n">' + peso(r[1].sales, 0) + '</td><td class="n"' + (r[1].profit < 0 ? ' style="color:var(--bad);font-weight:700"' : '') + '>' + peso(r[1].profit, 0) + '</td><td class="n">' + fmtPb(payback(r[1].profit)) + '</td></tr>';
+      }).join('') + '</tbody></table>' +
+    '<table class="bd" style="margin-top:12px"><tbody>' +
+      '<tr><td>' + t('Benta kada buwan', 'Sales per month') + '</td><td class="n">' + peso(base.sales, 0) + '</td></tr>' +
+      '<tr><td>' + t('Bawas: puhunan sa paninda', 'Less: cost of goods') + '</td><td class="n">−' + peso(base.sales - base.gross, 0) + '</td></tr>' +
+      (base.fees > 0 ? '<tr><td>' + t('Bawas: royalty at marketing fee', 'Less: royalty and marketing fee') + '</td><td class="n">−' + peso(base.fees, 0) + '</td></tr>' : '') +
+      '<tr><td>' + t('Bawas: upa, tauhan at iba pa', 'Less: rent, staff and other') + '</td><td class="n">−' + peso(base.fixed, 0) + '</td></tr>' +
+      '<tr class="tot"><td>' + t('Net na kita', 'Net profit') + '</td><td class="n">' + peso(base.profit, 0) + '</td></tr>' +
+    '</tbody></table>' +
+    '<p class="note">' + t('Tanungin ang franchisor ng aktwal na benta ng ibang branch, hindi lang ang pangako. Gamitin ang "Mahina" bilang batayan ng desisyon.', 'Ask the franchisor for actual sales of existing branches, not just projections. Base your decision on the "Weak" case.') + '</p>' +
+    '<a class="cta no-print" href="https://www.negosyodepot.com" target="_blank" rel="noopener">' + t('Naghahanap ng negosyo package? <b>Tingnan ang NegosyoDepot</b>.', 'Looking for a business package? <b>Browse NegosyoDepot</b>.') + '</a>';
+  last = { profit: base.profit, pb: pb };
+  FC.postResult('franchise-unit-economics', { investment: capex, salesPerMonth: sales }, { profitPerMonth: base.profit, paybackMonths: isFinite(pb) ? pb : null, roiPerYear: base.profit * 12 / capex * 100 });
+}
+FC.init({
+  page: 'franchise-unit-economics', calc: calc,
+  sample: function () { FC.fill({ fee: '150000', fitout: '120000', stock: '30000', permits: '25000', reserve: '50000', units: '90', price: '85', gm: '45', days: '30', rent: '15000', staff: '28000', utils: '6000', other: '4000', royalty: '5', mktg: '2' }); },
+  reset: function () { FC.fill({ units: '', price: '' }); },
+  shareText: function () { return last ? FC.t('Kita kada buwan: ' + FC.peso(last.profit, 0) + ', payback: ' + (isFinite(last.pb) ? last.pb.toFixed(1) + ' buwan' : 'hindi mababawi') + '. FLAME PH calculator.', 'Profit per month: ' + FC.peso(last.profit, 0) + ', payback: ' + (isFinite(last.pb) ? last.pb.toFixed(1) + ' months' : 'never') + '. FLAME PH calculator.') : 'FLAME PH Franchise Unit Economics Calculator'; }
+});
+FC.onLang(calc);
+</script>
+</body>
+</html>

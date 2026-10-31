@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="fil">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hiring & Expansion Readiness Calculator | FLAME PH</title>
+<meta name="description" content="Kaya na ba ng pera mo ang bagong tauhan o bagong branch? Tingnan ang susunod na 12 buwan.">
+<style>
+:root{
+  --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
+  --brand:#c2410c; --brand-ink:#ffffff; --brand-soft:#fff1e6;
+  --good:#15803d; --good-soft:#e8f6ec; --warn:#a16207; --warn-soft:#fdf6dc;
+  --bad:#b91c1c; --bad-soft:#fdecec; --field:#ffffff;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+    --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+    --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+    --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+  --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+  --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+  --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 40px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.embedded .brand{visibility:hidden}
+.embedded .wrap{padding-top:8px}
+.brand{flex:1;min-width:0;font-weight:700;color:var(--brand);font-size:14px;letter-spacing:.02em}
+.lang{flex:none;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;background:transparent;color:var(--ink2);padding:6px 12px;font:inherit;font-size:14px;cursor:pointer;min-height:36px}
+.lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);font-weight:600}
+h1{font-size:24px;line-height:1.25;margin:8px 0 4px}
+.lead{color:var(--ink2);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 16px}
+.card h2{font-size:17px;margin:0 0 12px}
+.field{margin:0 0 14px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
+.hint{display:block;color:var(--ink2);font-size:13px;font-weight:400;margin-top:2px}
+.input{position:relative}
+.input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
+.input .pre{left:12px}.input .suf{right:12px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+.input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
+input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{flex:1 1 auto;min-height:44px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;font:inherit;font-size:15px;padding:8px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400}
+.check input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--brand);flex:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.btn{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:15px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.result{border-width:2px}
+.result.good{border-color:var(--good);background:var(--good-soft)}
+.result.warn{border-color:var(--warn);background:var(--warn-soft)}
+.result.bad{border-color:var(--bad);background:var(--bad-soft)}
+.verdict{font-size:18px;font-weight:600;margin:0 0 12px}
+.big{font-size:34px;font-weight:800;line-height:1.1;margin:0}
+.big-label{color:var(--ink2);font-size:14px;margin:0 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .k{color:var(--ink2);font-size:13px}
+.stat .v{font-size:20px;font-weight:700}
+table.bd{width:100%;border-collapse:collapse;font-size:15px}
+table.bd.tight{font-size:13.5px}
+table.bd.tight td,table.bd.tight th{padding:7px 2px}
+table.bd td,table.bd th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.bd td.n,table.bd th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.bd tr.tot td{font-weight:700;border-bottom:0}
+.muted{color:var(--ink2);font-size:13px}
+.note{font-size:13px;color:var(--ink2);margin:8px 0 0}
+details{margin:0 0 16px}
+summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.disclaimer{font-size:12.5px;color:var(--ink2);border-top:1px solid var(--line);padding-top:12px;margin-top:8px}
+.cta{display:block;text-decoration:none;color:var(--ink);background:var(--brand-soft);border-radius:10px;padding:12px;margin-top:12px;font-size:15px}
+.cta b{color:var(--brand)}
+.err{color:var(--bad);font-weight:600}
+.print-only{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  .no-print,.btns,.lang,details.inputs-help{display:none!important}
+  .print-only{display:block}
+  .card{break-inside:avoid;border-color:#bbb;background:#fff!important}
+  .wrap{max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <span class="brand">FLAME PH · Negosyo Calculators</span>
+  <div class="lang no-print" role="group" aria-label="Language">
+    <button type="button" data-lang="tl" aria-pressed="true">Taglish</button>
+    <button type="button" data-lang="en" aria-pressed="false">English</button>
+  </div>
+</header>
+<p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
+<h1 data-en="Hiring &amp; Expansion Readiness Calculator">Hiring at Expansion Readiness Calculator</h1>
+<p class="lead" data-en="Before you hire or open a new branch, test whether your cash can carry it until it starts paying for itself. We model the next 12 months.">Bago mag-hire o magbukas ng bagong branch, subukan kung kakayanin ng pera mo hanggang sa kumita ito. Titingnan natin ang susunod na 12 buwan.</p>
+
+<section class="card">
+  <h2 data-en="1. Your business today">1. Ang negosyo mo ngayon</h2>
+  <div class="row2">
+    <div class="field"><label for="cash" data-en="Cash on hand">Cash na hawak</label><div class="input has-pre"><span class="pre">₱</span><input id="cash" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="exp" data-en="Monthly expenses now">Buwanang gastos ngayon</label><div class="input has-pre"><span class="pre">₱</span><input id="exp" type="text" inputmode="decimal" value=""></div></div>
+  </div>
+  <label data-en="Monthly sales, last 3 months (oldest first)">Benta kada buwan, nakaraang 3 buwan (pinakaluma muna)</label>
+  <div class="row2" style="grid-template-columns:1fr 1fr 1fr;gap:8px">
+    <div class="field"><div class="input has-pre"><span class="pre">₱</span><input id="s1" type="text" inputmode="decimal" value="" aria-label="Month 1" style="font-size:15px;padding:10px 6px 10px 24px"></div></div>
+    <div class="field"><div class="input has-pre"><span class="pre">₱</span><input id="s2" type="text" inputmode="decimal" value="" aria-label="Month 2" style="font-size:15px;padding:10px 6px 10px 24px"></div></div>
+    <div class="field"><div class="input has-pre"><span class="pre">₱</span><input id="s3" type="text" inputmode="decimal" value="" aria-label="Month 3" style="font-size:15px;padding:10px 6px 10px 24px"></div></div>
+  </div>
+  <div class="field"><label for="gm" data-en="Gross margin">Gross margin</label><div class="input has-suf"><input id="gm" type="text" inputmode="decimal" value="35"><span class="suf">%</span></div>
+    <span class="hint" data-en="Monthly expenses above should not include the cost of goods; margin covers that.">Huwag isama ang puhunan sa paninda sa buwanang gastos; ang margin na ang bahala roon.</span></div>
+</section>
+
+<section class="card">
+  <h2 data-en="2. The plan">2. Ang plano</h2>
+  <div class="field"><div class="seg" id="kind">
+    <button type="button" data-v="hire" aria-pressed="true" data-en="New hire">Bagong tauhan</button>
+    <button type="button" data-v="branch" aria-pressed="false" data-en="New branch">Bagong branch</button>
+  </div></div>
+  <div class="row2">
+    <div class="field"><label for="setup" data-en="One-time cost (hiring, training, fit-out, equipment)">Isang beses na gastos (hiring, training, fit-out, gamit)</label><div class="input has-pre"><span class="pre">₱</span><input id="setup" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="newcost" data-en="New monthly cost (salary, rent, utilities)">Bagong buwanang gastos (sahod, upa, kuryente)</label><div class="input has-pre"><span class="pre">₱</span><input id="newcost" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="extra" data-en="Extra monthly sales once running">Dagdag na benta kada buwan kapag tumatakbo na</label><div class="input has-pre"><span class="pre">₱</span><input id="extra" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="ramp" data-en="Months before the extra sales start">Ilang buwan bago dumating ang dagdag na benta</label><input id="ramp" type="text" inputmode="decimal" value="2"></div>
+  </div>
+  <div class="field"><label for="buffer" data-en="Safety cushion to keep (months of expenses)">Reserbang pera na dapat laging natitira (buwan ng gastos)</label><input id="buffer" type="text" inputmode="decimal" value="2"></div>
+  <span class="hint" data-en="Tip: get the true monthly cost of a hire from the Total Employee Cost Calculator.">Tip: kunin ang totoong buwanang gastos ng tauhan sa Total Employee Cost Calculator.</span>
+</section>
+
+<div class="btns no-print">
+  <button type="button" class="btn" id="btn-sample" data-en="Try a sample">Subukan ang halimbawa</button>
+  <button type="button" class="btn" id="btn-reset" data-en="Clear">Burahin</button>
+</div>
+
+<section class="card result" id="result" aria-live="polite"></section>
+<div class="btns no-print">
+  <button type="button" class="btn primary" id="btn-print" data-en="Download PDF / Print">I-download (PDF) / I-print</button>
+  <button type="button" class="btn" id="btn-share" data-en="Share">I-share</button>
+</div>
+<p class="disclaimer" data-en="Estimates only, for planning. Not tax, legal or accounting advice. Check government rates with SSS, PhilHealth, Pag-IBIG, DOLE and BIR, or an accountant from the FLAME professional services directory. Your numbers stay on your device.">Tantiya lang ito para sa pagpaplano. Hindi ito payong pang-buwis, legal o accounting. I-check ang mga rate sa SSS, PhilHealth, Pag-IBIG, DOLE at BIR, o sa accountant sa FLAME professional services directory. Ang mga numero mo ay nananatili sa device mo.</p>
+</div>
+<script>
+/* FLAME PH calculators: shared helpers (language, numbers, save, share, embed). */
+var FC = (function () {
+  var LANG_KEY = 'flamecalc.lang';
+  var state = { lang: 'tl' };
+  var onLang = [];
+
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+
+  // Taglish is written in the HTML; English lives in data-en. t() is for text built in JS.
+  function t(tl, en) { return state.lang === 'en' ? en : tl; }
+  function applyLang() {
+    document.documentElement.lang = state.lang === 'en' ? 'en' : 'fil';
+    document.querySelectorAll('[data-en]').forEach(function (el) {
+      if (el.dataset.tl === undefined) el.dataset.tl = el.innerHTML;
+      el.innerHTML = state.lang === 'en' ? el.dataset.en : el.dataset.tl;
+    });
+    document.querySelectorAll('.lang button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang));
+    });
+    onLang.forEach(function (f) { f(); });
+  }
+  function setLang(l) { state.lang = l; store(LANG_KEY, l); applyLang(); }
+
+  var peso0 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
+  var peso2 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function peso(n, dp) { if (!isFinite(n)) return '—'; return (dp === 0 ? peso0 : peso2).format(n); }
+  function pct(n, dp) { if (!isFinite(n)) return '—'; return n.toFixed(dp === undefined ? 1 : dp) + '%'; }
+  function int(n) { return isFinite(n) ? Math.round(n).toLocaleString('en-PH') : '—'; }
+
+  function num(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    var v = parseFloat(String(el.value).replace(/[,\s₱%]/g, ''));
+    return isFinite(v) ? v : 0;
+  }
+  function blank(id) { var el = document.getElementById(id); return !el || String(el.value).trim() === ''; }
+
+  // Remember a page's inputs on this device so owners don't retype them.
+  function saveInputs(page) {
+    var data = {};
+    document.querySelectorAll('input[id],select[id]').forEach(function (el) {
+      data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    document.querySelectorAll('.seg[id]').forEach(function (s) {
+      var on = s.querySelector('[aria-pressed="true"]'); if (on) data['seg:' + s.id] = on.dataset.v;
+    });
+    store('flamecalc.' + page, JSON.stringify(data));
+  }
+  function loadInputs(page) {
+    var raw = store('flamecalc.' + page); if (!raw) return false;
+    try {
+      var data = JSON.parse(raw);
+      Object.keys(data).forEach(function (k) {
+        if (k.indexOf('seg:') === 0) { setSeg(k.slice(4), data[k]); return; }
+        var el = document.getElementById(k); if (!el) return;
+        if (el.type === 'checkbox') el.checked = !!data[k]; else el.value = data[k];
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  function fill(values) {
+    Object.keys(values).forEach(function (k) {
+      var el = document.getElementById(k); if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!values[k]; else el.value = values[k];
+    });
+  }
+
+  function setSeg(id, v) {
+    var s = document.getElementById(id); if (!s) return;
+    s.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === v)); });
+  }
+  function seg(id) { var on = document.querySelector('#' + id + ' [aria-pressed="true"]'); return on ? on.dataset.v : null; }
+
+  // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
+  function postHeight() {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-height', height: document.documentElement.scrollHeight }, '*');
+  }
+  function postResult(calculator, inputs, outputs) {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-result', calculator: calculator, lang: state.lang, inputs: inputs, outputs: outputs }, '*');
+  }
+
+  function share(title, text) {
+    var url = location.href;
+    if (navigator.share) { navigator.share({ title: title, text: text, url: url }).catch(function () {}); return; }
+    var full = text + '\n' + url;
+    if (navigator.clipboard) navigator.clipboard.writeText(full).then(function () { alert(t('Nakopya na! I-paste sa Messenger o Viber.', 'Copied! Paste it into Messenger or Viber.')); });
+    else prompt(t('Kopyahin ito:', 'Copy this:'), full);
+  }
+
+  function init(opts) {
+    var saved = store(LANG_KEY);
+    var q = new URLSearchParams(location.search);
+    state.lang = q.get('lang') === 'en' || q.get('lang') === 'tl' ? q.get('lang') : (saved === 'en' ? 'en' : 'tl');
+    if (q.get('theme') === 'light' || q.get('theme') === 'dark') document.documentElement.dataset.theme = q.get('theme');
+    if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
+    document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+    document.querySelectorAll('.seg').forEach(function (s) {
+      s.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        setSeg(s.id, b.dataset.v); opts.calc();
+      });
+    });
+    document.addEventListener('input', function () { opts.calc(); });
+    document.addEventListener('change', function () { opts.calc(); });
+    var pr = document.getElementById('btn-print'); if (pr) pr.addEventListener('click', function () { window.print(); });
+    var sh = document.getElementById('btn-share'); if (sh) sh.addEventListener('click', function () { share(document.title, opts.shareText()); });
+    var sm = document.getElementById('btn-sample'); if (sm) sm.addEventListener('click', function () { opts.sample(); opts.calc(); });
+    var rs = document.getElementById('btn-reset'); if (rs) rs.addEventListener('click', function () {
+      document.querySelectorAll('input[id]').forEach(function (el) { if (el.type === 'checkbox') el.checked = el.defaultChecked; else el.value = el.defaultValue; });
+      if (opts.reset) opts.reset();
+      opts.calc();
+    });
+    var pd = document.getElementById('print-date'); if (pd) pd.textContent = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!loadInputs(opts.page) && opts.sample) opts.sample();
+    applyLang();
+    opts.calc();
+    if ('ResizeObserver' in window) new ResizeObserver(postHeight).observe(document.body);
+    window.addEventListener('load', postHeight);
+  }
+
+  return { t: t, peso: peso, pct: pct, int: int, num: num, blank: blank, seg: seg, setSeg: setSeg, fill: fill,
+    saveInputs: saveInputs, postResult: postResult, init: init, onLang: function (f) { onLang.push(f); }, get lang() { return state.lang; } };
+})();
+</script>
+<script>
+var last = null;
+function calc() {
+  var t = FC.t, peso = FC.peso;
+  FC.saveInputs('expansion-readiness');
+  var out = document.getElementById('result'); out.className = 'card result';
+  var sales = [FC.num('s1'), FC.num('s2'), FC.num('s3')].filter(function (v) { return v > 0; });
+  var exp = FC.num('exp'), cash = FC.num('cash'), gm = FC.num('gm') / 100;
+  if (!sales.length || exp <= 0 || FC.blank('newcost')) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang cash, gastos, benta at ang bagong buwanang gastos ng plano.', 'Enter your cash, expenses, sales and the plan\'s new monthly cost.') + '</p>'; last = null; return; }
+  var base = sales.reduce(function (s, v) { return s + v; }, 0) / sales.length;
+  var trend = sales.length > 1 ? (sales[sales.length - 1] / sales[0] - 1) * 100 : 0;
+  var baseProfit = base * gm - exp;
+  var setup = FC.num('setup'), newcost = FC.num('newcost'), extra = FC.num('extra'), ramp = Math.round(FC.num('ramp'));
+  var buffer = FC.num('buffer') * exp;
+  var bal = cash - setup, low = bal, lowM = 0, cum = -setup, payback = null, months = [];
+  for (var m = 1; m <= 12; m++) {
+    var inc = (m > ramp ? extra * gm : 0) - newcost;
+    cum += inc;
+    if (payback === null && cum >= 0) payback = m;
+    bal += baseProfit + inc;
+    months.push(bal);
+    if (bal < low) { low = bal; lowM = m; }
+  }
+  var steady = extra * gm - newcost;
+  var cls = low < 0 ? 'bad' : low < buffer || steady < 0 ? 'warn' : 'good';
+  out.classList.add(cls);
+  var what = FC.seg('kind') === 'branch' ? t('bagong branch', 'new branch') : t('bagong tauhan', 'new hire');
+  var verdict = cls === 'good' ? t('Handa ka na! Kaya ng pera mo ang ' + what + ' at may reserba pa rin.', 'Go! Your cash can carry the ' + what + ' and you keep your safety cushion.')
+    : low < 0 ? t('Maghintay muna: mauubos ang pera mo sa buwan ' + lowM + ' (kulang ng ' + peso(-low, 0) + ').', 'Wait: you would run out of cash in month ' + lowM + ' (short by ' + peso(-low, 0) + ').')
+    : steady < 0 ? t('Hindi nababawi: mas malaki ang bagong gastos kaysa sa dagdag na kita kahit tumatakbo na.', 'It never pays for itself: the new cost is larger than the extra profit even once running.')
+    : t('Puwede, pero bababa sa reserba mo ang pera sa buwan ' + lowM + '. Maghanda ng backup na pondo.', 'Possible, but cash dips below your cushion in month ' + lowM + '. Line up backup funding.');
+  out.innerHTML =
+    '<p class="verdict">' + verdict + '</p>' +
+    '<p class="big">' + peso(low, 0) + '</p><p class="big-label">' + t('Pinakamababang cash sa susunod na 12 buwan', 'Lowest cash in the next 12 months') + (lowM ? t(' (buwan ' + lowM + ')', ' (month ' + lowM + ')') : '') + '</p>' +
+    '<div class="stats">' +
+      '<div class="stat"><div class="k">' + t('Mababawi ang gastos sa', 'Pays back in') + '</div><div class="v">' + (payback ? payback + t(' buwan', ' months') : t('lampas 12 buwan', 'over 12 months')) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Dagdag kita kada buwan (tumatakbo na)', 'Extra profit per month (once running)') + '</div><div class="v">' + peso(steady, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Takbo ng benta (3 buwan)', 'Sales trend (3 months)') + '</div><div class="v">' + (trend >= 0 ? '+' : '') + FC.pct(trend, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Reserbang target', 'Cushion target') + '</div><div class="v">' + peso(buffer, 0) + '</div></div>' +
+    '</div>' +
+    '<table class="bd tight" style="margin-top:12px"><thead><tr><th>' + t('Buwan', 'Month') + '</th><th class="n">' + t('Cash sa dulo', 'Cash at end') + '</th></tr></thead><tbody>' +
+      months.map(function (b, i) { return '<tr><td>' + (i + 1) + '</td><td class="n"' + (b < 0 ? ' style="color:var(--bad);font-weight:700"' : b < buffer ? ' style="color:var(--warn);font-weight:700"' : '') + '>' + peso(b, 0) + '</td></tr>'; }).join('') +
+    '</tbody></table>' +
+    (trend < 0 ? '<p class="note">' + t('Pababa ang benta mo nitong 3 buwan. Mas ligtas maghintay hanggang tumaas ulit.', 'Your sales fell over the last 3 months. It is safer to wait until they recover.') + '</p>' : '') +
+    (cls !== 'good' ? '<a class="cta no-print" href="https://www.flameph.org/opportunities" target="_top">' + t('Kailangan ng dagdag na puhunan? <b>Tingnan ang grants at loans</b> para sa MSMEs.', 'Need more capital? <b>See grants and loans</b> for MSMEs.') + '</a>' : '');
+  last = { low: low, payback: payback, cls: cls };
+  FC.postResult('expansion-readiness', { cash: cash, monthlyExpenses: exp, setup: setup, newMonthlyCost: newcost, extraSales: extra, rampMonths: ramp }, { lowestCash: low, lowestMonth: lowM, paybackMonth: payback, verdict: cls });
+}
+FC.init({
+  page: 'expansion-readiness', calc: calc,
+  sample: function () { FC.fill({ cash: '180000', exp: '60000', s1: '210000', s2: '225000', s3: '240000', gm: '35', setup: '15000', newcost: '19000', extra: '70000', ramp: '2', buffer: '2' }); FC.setSeg('kind', 'hire'); },
+  reset: function () { FC.fill({ cash: '', exp: '', s1: '', s2: '', s3: '', newcost: '', extra: '' }); },
+  shareText: function () { return last ? FC.t('Pinakamababang cash sa 12 buwan: ' + FC.peso(last.low, 0) + '. FLAME PH calculator.', 'Lowest cash over 12 months: ' + FC.peso(last.low, 0) + '. FLAME PH calculator.') : 'FLAME PH Expansion Readiness Calculator'; }
+});
+FC.onLang(calc);
+</script>
+</body>
+</html>
