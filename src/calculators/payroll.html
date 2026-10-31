@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="fil">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payroll Calculator | FLAME PH</title>
+<meta name="description" content="Kuwentahin ang sahod kada cutoff: overtime, holiday, night differential, kaltas sa SSS, PhilHealth, Pag-IBIG at withholding tax.">
+<style>
+:root{
+  --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
+  --brand:#c2410c; --brand-ink:#ffffff; --brand-soft:#fff1e6;
+  --good:#15803d; --good-soft:#e8f6ec; --warn:#a16207; --warn-soft:#fdf6dc;
+  --bad:#b91c1c; --bad-soft:#fdecec; --field:#ffffff;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+    --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+    --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+    --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+  --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+  --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+  --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 40px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.embedded .brand{visibility:hidden}
+.embedded .wrap{padding-top:8px}
+.brand{flex:1;min-width:0;font-weight:700;color:var(--brand);font-size:14px;letter-spacing:.02em}
+.lang{flex:none;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;background:transparent;color:var(--ink2);padding:6px 12px;font:inherit;font-size:14px;cursor:pointer;min-height:36px}
+.lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);font-weight:600}
+h1{font-size:24px;line-height:1.25;margin:8px 0 4px}
+.lead{color:var(--ink2);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 16px}
+.card h2{font-size:17px;margin:0 0 12px}
+.field{margin:0 0 14px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
+.hint{display:block;color:var(--ink2);font-size:13px;font-weight:400;margin-top:2px}
+.input{position:relative}
+.input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
+.input .pre{left:12px}.input .suf{right:12px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+.input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
+input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{flex:1 1 auto;min-height:44px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;font:inherit;font-size:15px;padding:8px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400}
+.check input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--brand);flex:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.btn{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:15px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.result{border-width:2px}
+.result.good{border-color:var(--good);background:var(--good-soft)}
+.result.warn{border-color:var(--warn);background:var(--warn-soft)}
+.result.bad{border-color:var(--bad);background:var(--bad-soft)}
+.verdict{font-size:18px;font-weight:600;margin:0 0 12px}
+.big{font-size:34px;font-weight:800;line-height:1.1;margin:0}
+.big-label{color:var(--ink2);font-size:14px;margin:0 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .k{color:var(--ink2);font-size:13px}
+.stat .v{font-size:20px;font-weight:700}
+table.bd{width:100%;border-collapse:collapse;font-size:15px}
+table.bd.tight{font-size:13.5px}
+table.bd.tight td,table.bd.tight th{padding:7px 2px}
+table.bd td,table.bd th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.bd td.n,table.bd th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.bd tr.tot td{font-weight:700;border-bottom:0}
+.muted{color:var(--ink2);font-size:13px}
+.note{font-size:13px;color:var(--ink2);margin:8px 0 0}
+details{margin:0 0 16px}
+summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.disclaimer{font-size:12.5px;color:var(--ink2);border-top:1px solid var(--line);padding-top:12px;margin-top:8px}
+.cta{display:block;text-decoration:none;color:var(--ink);background:var(--brand-soft);border-radius:10px;padding:12px;margin-top:12px;font-size:15px}
+.cta b{color:var(--brand)}
+.err{color:var(--bad);font-weight:600}
+.print-only{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  .no-print,.btns,.lang,details.inputs-help{display:none!important}
+  .print-only{display:block}
+  .card{break-inside:avoid;border-color:#bbb;background:#fff!important}
+  .wrap{max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <span class="brand">FLAME PH · Negosyo Calculators</span>
+  <div class="lang no-print" role="group" aria-label="Language">
+    <button type="button" data-lang="tl" aria-pressed="true">Taglish</button>
+    <button type="button" data-lang="en" aria-pressed="false">English</button>
+  </div>
+</header>
+<p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
+<h1 data-en="Payroll Calculator">Payroll Calculator</h1>
+<p class="lead" data-en="Compute one employee's pay for a cutoff: overtime, holiday and night differential, absences, SSS, PhilHealth, Pag-IBIG and withholding tax. Get a payslip you can print.">Kuwentahin ang sahod ng isang empleyado kada cutoff: overtime, holiday, night differential, absent, SSS, PhilHealth, Pag-IBIG at withholding tax. May payslip na puwedeng i-print.</p>
+
+<section class="card">
+  <h2 data-en="1. Employee and pay">1. Empleyado at sahod</h2>
+  <div class="field"><label for="ename" data-en="Employee name (for the payslip)">Pangalan ng empleyado (para sa payslip)</label><input id="ename" type="text" value=""></div>
+  <div class="field">
+    <div class="seg" id="paytype">
+      <button type="button" data-v="monthly" aria-pressed="true" data-en="Monthly salary">Buwanang sahod</button>
+      <button type="button" data-v="daily" aria-pressed="false" data-en="Daily rate">Arawang sahod</button>
+    </div>
+  </div>
+  <div class="field" id="f-monthly"><label for="monthly" data-en="Basic monthly salary">Basic na buwanang sahod</label><div class="input has-pre"><span class="pre">₱</span><input id="monthly" type="text" inputmode="decimal" value=""></div></div>
+  <div class="field" id="f-daily" hidden>
+    <div class="row2">
+      <div class="field"><label for="daily" data-en="Daily rate">Arawang sahod</label><div class="input has-pre"><span class="pre">₱</span><input id="daily" type="text" inputmode="decimal" value=""></div></div>
+      <div class="field"><label for="daysworked" data-en="Days worked this cutoff">Araw na pumasok ngayong cutoff</label><input id="daysworked" type="text" inputmode="decimal" value="13"></div>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="field"><label for="freq" data-en="Pay schedule">Iskedyul ng sahod</label><select id="freq"><option value="semi" data-en="Every 15th and 30th">Tuwing 15 at 30</option><option value="monthly" data-en="Once a month">Isang beses kada buwan</option></select></div>
+    <div class="field"><label for="days" data-en="Work days per week">Araw ng trabaho kada linggo</label><select id="days"><option value="5">5</option><option value="6" selected>6</option></select></div>
+  </div>
+  <div class="field">
+    <label class="check"><input id="mwe" type="checkbox"> <span data-en="Minimum wage earner (no withholding tax)">Minimum wage earner (walang withholding tax)</span></label>
+  </div>
+</section>
+
+<section class="card">
+  <h2 data-en="2. This cutoff">2. Ngayong cutoff</h2>
+  <div class="row2">
+    <div class="field"><label for="ot" data-en="Overtime hours (regular day)">Overtime (oras, regular na araw)</label><input id="ot" type="text" inputmode="decimal" value="0"></div>
+    <div class="field"><label for="nd" data-en="Night shift hours (10pm–6am)">Oras sa night shift (10pm–6am)</label><input id="nd" type="text" inputmode="decimal" value="0"></div>
+    <div class="field"><label for="rh" data-en="Regular holidays worked (days)">Regular holiday na pinasukan (araw)</label><input id="rh" type="text" inputmode="decimal" value="0"></div>
+    <div class="field"><label for="sh" data-en="Special days worked (days)">Special non-working day na pinasukan (araw)</label><input id="sh" type="text" inputmode="decimal" value="0"></div>
+    <div class="field" id="f-absent"><label for="absent" data-en="Days absent (unpaid)">Araw na absent (walang bayad)</label><input id="absent" type="text" inputmode="decimal" value="0"></div>
+    <div class="field"><label for="late" data-en="Minutes late or undertime">Minuto ng late o undertime</label><input id="late" type="text" inputmode="decimal" value="0"></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label for="allow" data-en="Allowances this cutoff (non-taxable)">Allowance ngayong cutoff (hindi taxable)</label><div class="input has-pre"><span class="pre">₱</span><input id="allow" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="otherded" data-en="Other deductions (cash advance, loans)">Iba pang kaltas (cash advance, utang)</label><div class="input has-pre"><span class="pre">₱</span><input id="otherded" type="text" inputmode="decimal" value="0"></div></div>
+  </div>
+</section>
+
+<div class="btns no-print">
+  <button type="button" class="btn" id="btn-sample" data-en="Try a sample">Subukan ang halimbawa</button>
+  <button type="button" class="btn" id="btn-reset" data-en="Clear">Burahin</button>
+</div>
+
+<section class="card result" id="result" aria-live="polite"></section>
+
+<details class="card inputs-help">
+  <summary data-en="Rates used and how we compute">Mga rate na ginamit at paano kinuwenta</summary>
+  <div id="rates"></div>
+</details>
+<div class="btns no-print">
+  <button type="button" class="btn primary" id="btn-print" data-en="Download PDF / Print">I-download (PDF) / I-print</button>
+  <button type="button" class="btn" id="btn-share" data-en="Share">I-share</button>
+</div>
+<p class="disclaimer" data-en="Estimates only, for planning. Not tax, legal or accounting advice. Check government rates with SSS, PhilHealth, Pag-IBIG, DOLE and BIR, or an accountant from the FLAME professional services directory. Your numbers stay on your device.">Tantiya lang ito para sa pagpaplano. Hindi ito payong pang-buwis, legal o accounting. I-check ang mga rate sa SSS, PhilHealth, Pag-IBIG, DOLE at BIR, o sa accountant sa FLAME professional services directory. Ang mga numero mo ay nananatili sa device mo.</p>
+</div>
+<script>
+/* FLAME PH calculators: shared helpers (language, numbers, save, share, embed). */
+var FC = (function () {
+  var LANG_KEY = 'flamecalc.lang';
+  var state = { lang: 'tl' };
+  var onLang = [];
+
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+
+  // Taglish is written in the HTML; English lives in data-en. t() is for text built in JS.
+  function t(tl, en) { return state.lang === 'en' ? en : tl; }
+  function applyLang() {
+    document.documentElement.lang = state.lang === 'en' ? 'en' : 'fil';
+    document.querySelectorAll('[data-en]').forEach(function (el) {
+      if (el.dataset.tl === undefined) el.dataset.tl = el.innerHTML;
+      el.innerHTML = state.lang === 'en' ? el.dataset.en : el.dataset.tl;
+    });
+    document.querySelectorAll('.lang button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang));
+    });
+    onLang.forEach(function (f) { f(); });
+  }
+  function setLang(l) { state.lang = l; store(LANG_KEY, l); applyLang(); }
+
+  var peso0 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
+  var peso2 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function peso(n, dp) { if (!isFinite(n)) return '—'; return (dp === 0 ? peso0 : peso2).format(n); }
+  function pct(n, dp) { if (!isFinite(n)) return '—'; return n.toFixed(dp === undefined ? 1 : dp) + '%'; }
+  function int(n) { return isFinite(n) ? Math.round(n).toLocaleString('en-PH') : '—'; }
+
+  function num(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    var v = parseFloat(String(el.value).replace(/[,\s₱%]/g, ''));
+    return isFinite(v) ? v : 0;
+  }
+  function blank(id) { var el = document.getElementById(id); return !el || String(el.value).trim() === ''; }
+
+  // Remember a page's inputs on this device so owners don't retype them.
+  function saveInputs(page) {
+    var data = {};
+    document.querySelectorAll('input[id],select[id]').forEach(function (el) {
+      data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    document.querySelectorAll('.seg[id]').forEach(function (s) {
+      var on = s.querySelector('[aria-pressed="true"]'); if (on) data['seg:' + s.id] = on.dataset.v;
+    });
+    store('flamecalc.' + page, JSON.stringify(data));
+  }
+  function loadInputs(page) {
+    var raw = store('flamecalc.' + page); if (!raw) return false;
+    try {
+      var data = JSON.parse(raw);
+      Object.keys(data).forEach(function (k) {
+        if (k.indexOf('seg:') === 0) { setSeg(k.slice(4), data[k]); return; }
+        var el = document.getElementById(k); if (!el) return;
+        if (el.type === 'checkbox') el.checked = !!data[k]; else el.value = data[k];
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  function fill(values) {
+    Object.keys(values).forEach(function (k) {
+      var el = document.getElementById(k); if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!values[k]; else el.value = values[k];
+    });
+  }
+
+  function setSeg(id, v) {
+    var s = document.getElementById(id); if (!s) return;
+    s.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === v)); });
+  }
+  function seg(id) { var on = document.querySelector('#' + id + ' [aria-pressed="true"]'); return on ? on.dataset.v : null; }
+
+  // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
+  function postHeight() {
+    if (window.parent === window) return;
+    // Body height, not the document's: inside an iframe the document is never shorter than the frame, so it could only grow.
+    window.parent.postMessage({ type: 'flame-calc-height', height: Math.ceil(document.body.getBoundingClientRect().height) }, '*');
+  }
+  function postResult(calculator, inputs, outputs) {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-result', calculator: calculator, lang: state.lang, inputs: inputs, outputs: outputs }, '*');
+  }
+
+  function share(title, text) {
+    var url = location.href;
+    if (navigator.share) { navigator.share({ title: title, text: text, url: url }).catch(function () {}); return; }
+    var full = text + '\n' + url;
+    if (navigator.clipboard) navigator.clipboard.writeText(full).then(function () { alert(t('Nakopya na! I-paste sa Messenger o Viber.', 'Copied! Paste it into Messenger or Viber.')); });
+    else prompt(t('Kopyahin ito:', 'Copy this:'), full);
+  }
+
+  function init(opts) {
+    var saved = store(LANG_KEY);
+    var q = new URLSearchParams(location.search);
+    state.lang = q.get('lang') === 'en' || q.get('lang') === 'tl' ? q.get('lang') : (saved === 'en' ? 'en' : 'tl');
+    if (q.get('theme') === 'light' || q.get('theme') === 'dark') document.documentElement.dataset.theme = q.get('theme');
+    if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
+    document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+    document.querySelectorAll('.seg').forEach(function (s) {
+      s.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        setSeg(s.id, b.dataset.v); opts.calc();
+      });
+    });
+    document.addEventListener('input', function () { opts.calc(); });
+    document.addEventListener('change', function () { opts.calc(); });
+    var pr = document.getElementById('btn-print'); if (pr) pr.addEventListener('click', function () { window.print(); });
+    var sh = document.getElementById('btn-share'); if (sh) sh.addEventListener('click', function () { share(document.title, opts.shareText()); });
+    var sm = document.getElementById('btn-sample'); if (sm) sm.addEventListener('click', function () { opts.sample(); opts.calc(); });
+    var rs = document.getElementById('btn-reset'); if (rs) rs.addEventListener('click', function () {
+      document.querySelectorAll('input[id]').forEach(function (el) { if (el.type === 'checkbox') el.checked = el.defaultChecked; else el.value = el.defaultValue; });
+      if (opts.reset) opts.reset();
+      opts.calc();
+    });
+    var pd = document.getElementById('print-date'); if (pd) pd.textContent = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!loadInputs(opts.page) && opts.sample) opts.sample();
+    applyLang();
+    opts.calc();
+    if ('ResizeObserver' in window) new ResizeObserver(postHeight).observe(document.body);
+    window.addEventListener('load', postHeight);
+  }
+
+  return { t: t, peso: peso, pct: pct, int: int, num: num, blank: blank, seg: seg, setSeg: setSeg, fill: fill,
+    saveInputs: saveInputs, postResult: postResult, init: init, onLang: function (f) { onLang.push(f); }, get lang() { return state.lang; } };
+})();
+</script>
+<script>
+// Same government rates as the Employee Cost calculator; update both when agencies change rates.
+var RATES = {
+  asOf: '2025',
+  sss: { min: 5000, max: 35000, step: 500, er: 0.10, ee: 0.05, ecLow: 10, ecHigh: 30, ecCut: 15000 },
+  philhealth: { rate: 0.05, floor: 10000, ceiling: 100000 },
+  pagibig: { er: 0.02, ee: 0.02, eeLow: 0.01, eeLowCut: 1500, maxBase: 10000 },
+  // BIR monthly withholding table (TRAIN law, 2023 onward): [over, base tax, rate on excess]
+  tax: [[666667, 183541.80, 0.35], [166667, 33541.80, 0.30], [66667, 8541.80, 0.25], [33333, 1875, 0.20], [20833, 0, 0.15], [0, 0, 0]],
+  premium: { ot: 1.25, nd: 0.10, regHoliday: 1.00, special: 0.30 }
+};
+function sssMsc(salary) {
+  var r = RATES.sss;
+  return Math.min(r.max, Math.max(r.min, Math.floor((salary + r.step / 2) / r.step) * r.step));
+}
+function monthlyTax(taxable) {
+  for (var i = 0; i < RATES.tax.length; i++) {
+    var b = RATES.tax[i];
+    if (taxable > b[0]) return b[1] + (taxable - b[0]) * b[2];
+  }
+  return 0;
+}
+var last = null;
+function calc() {
+  var t = FC.t, peso = FC.peso;
+  var type = FC.seg('paytype');
+  document.getElementById('f-monthly').hidden = type !== 'monthly';
+  document.getElementById('f-daily').hidden = type !== 'daily';
+  document.getElementById('f-absent').hidden = type !== 'monthly';
+  FC.saveInputs('payroll');
+  renderRates();
+  var out = document.getElementById('result');
+  out.className = 'card result';
+
+  var semi = document.getElementById('freq').value === 'semi';
+  var cut = semi ? 2 : 1;
+  var workDays = parseInt(document.getElementById('days').value, 10) === 6 ? 313 : 261;
+  var dailyRate, basic, monthlyEquiv;
+  if (type === 'monthly') {
+    monthlyEquiv = FC.num('monthly');
+    dailyRate = monthlyEquiv * 12 / workDays;
+    basic = monthlyEquiv / cut;
+  } else {
+    dailyRate = FC.num('daily');
+    basic = dailyRate * FC.num('daysworked');
+    monthlyEquiv = dailyRate * workDays / 12;
+  }
+  if (dailyRate <= 0) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang sahod para makita ang payslip.', 'Enter the pay to see the payslip.') + '</p>'; last = null; return; }
+  var hourly = dailyRate / 8;
+  var P = RATES.premium;
+  var earnings = [
+    [type === 'monthly' ? t('Basic na sahod', 'Basic pay') : t('Basic (' + FC.num('daysworked') + ' araw)', 'Basic (' + FC.num('daysworked') + ' days)'), basic],
+    [t('Overtime (' + FC.num('ot') + ' oras × 125%)', 'Overtime (' + FC.num('ot') + ' hrs × 125%)'), FC.num('ot') * hourly * P.ot],
+    [t('Night differential (' + FC.num('nd') + ' oras × 10%)', 'Night differential (' + FC.num('nd') + ' hrs × 10%)'), FC.num('nd') * hourly * P.nd],
+    [t('Regular holiday pay (dagdag 100%)', 'Regular holiday pay (extra 100%)'), FC.num('rh') * dailyRate * P.regHoliday],
+    [t('Special day pay (dagdag 30%)', 'Special day pay (extra 30%)'), FC.num('sh') * dailyRate * P.special]
+  ];
+  var absent = type === 'monthly' ? FC.num('absent') * dailyRate : 0;
+  var late = FC.num('late') * hourly / 60;
+  var taxableGross = earnings.reduce(function (s, e) { return s + e[1]; }, 0) - absent - late;
+  var allow = FC.num('allow');
+
+  // Contributions are based on the monthly salary and split evenly across cutoffs.
+  var msc = sssMsc(monthlyEquiv);
+  var sssEe = msc * RATES.sss.ee / cut;
+  var phEe = Math.min(RATES.philhealth.ceiling, Math.max(RATES.philhealth.floor, monthlyEquiv)) * RATES.philhealth.rate / 2 / cut;
+  var piEe = Math.min(RATES.pagibig.maxBase, monthlyEquiv) * (monthlyEquiv <= RATES.pagibig.eeLowCut ? RATES.pagibig.eeLow : RATES.pagibig.ee) / cut;
+  var mwe = document.getElementById('mwe').checked;
+  var taxable = Math.max(0, taxableGross - sssEe - phEe - piEe);
+  var tax = mwe ? 0 : monthlyTax(taxable * cut) / cut;
+  var other = FC.num('otherded');
+  var deductions = [
+    [t('Absent', 'Absences'), absent],
+    [t('Late / undertime', 'Late / undertime'), late],
+    ['SSS', sssEe], ['PhilHealth', phEe], ['Pag-IBIG', piEe],
+    ['Withholding tax', tax],
+    [t('Iba pang kaltas', 'Other deductions'), other]
+  ];
+  var gross = taxableGross + absent + late + allow;
+  var totalDed = deductions.reduce(function (s, d) { return s + d[1]; }, 0);
+  var net = gross - totalDed;
+
+  var erShare = (msc * RATES.sss.er + (msc < RATES.sss.ecCut ? RATES.sss.ecLow : RATES.sss.ecHigh) +
+    Math.min(RATES.philhealth.ceiling, Math.max(RATES.philhealth.floor, monthlyEquiv)) * RATES.philhealth.rate / 2 +
+    Math.min(RATES.pagibig.maxBase, monthlyEquiv) * RATES.pagibig.er) / cut;
+
+  out.classList.add(net > 0 ? 'good' : 'bad');
+  var line = function (r, neg) { return r[1] > 0.004 ? '<tr><td>' + r[0] + '</td><td class="n">' + (neg ? '−' : '') + peso(r[1]) + '</td></tr>' : ''; };
+  var name = document.getElementById('ename').value.trim();
+  out.innerHTML =
+    '<p class="verdict">' + (net > 0
+      ? t('Net pay' + (name ? ' ni ' + name : '') + ' ngayong cutoff: ' + peso(net) + '.', (name ? name + '\'s net' : 'Net') + ' pay this cutoff: ' + peso(net) + '.')
+      : t('Mas malaki ang kaltas kaysa sa sahod. I-check ang cash advance o utang.', 'Deductions are larger than the pay. Check cash advances or loans.')) + '</p>' +
+    '<p class="big">' + peso(net) + '</p>' +
+    '<p class="big-label">' + t('Net pay (matatanggap ng empleyado)', 'Net pay (what the employee receives)') + '</p>' +
+    '<h2 style="margin:12px 0 4px;font-size:16px">' + t('Kita', 'Earnings') + '</h2>' +
+    '<table class="bd"><tbody>' + earnings.map(function (e) { return line(e); }).join('') +
+      (allow > 0 ? line([t('Allowance', 'Allowances'), allow]) : '') +
+      '<tr class="tot"><td>Gross pay</td><td class="n">' + peso(gross) + '</td></tr></tbody></table>' +
+    '<h2 style="margin:12px 0 4px;font-size:16px">' + t('Kaltas', 'Deductions') + '</h2>' +
+    '<table class="bd"><tbody>' + deductions.map(function (d) { return line(d, true); }).join('') +
+      '<tr class="tot"><td>' + t('Kabuuang kaltas', 'Total deductions') + '</td><td class="n">−' + peso(totalDed) + '</td></tr></tbody></table>' +
+    '<div class="stats" style="margin-top:12px">' +
+      '<div class="stat"><div class="k">' + t('Arawang rate', 'Daily rate') + '</div><div class="v">' + peso(dailyRate) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Kada oras', 'Hourly rate') + '</div><div class="v">' + peso(hourly) + '</div></div>' +
+      '<div class="stat" style="grid-column:1/-1"><div class="k">' + t('Employer share na ire-remit mo (SSS, EC, PhilHealth, Pag-IBIG)', 'Employer share you remit (SSS, EC, PhilHealth, Pag-IBIG)') + '</div><div class="v">' + peso(erShare) + '</div></div>' +
+    '</div>' +
+    '<p class="note">' + t('Ire-remit mo sa ahensya ang kaltas ng empleyado at ang employer share. Ang 13th month ay hiwalay na bayad tuwing Disyembre.', 'You remit both the employee deductions and the employer share to the agencies. The 13th month is paid separately in December.') + '</p>' +
+    '<a class="cta no-print" href="employee-cost.html">' + t('Gusto mong makita ang totoong gastos sa empleyado buong taon? <b>Gamitin ang Total Employee Cost Calculator.</b>', 'Want the true yearly cost of this employee? <b>Use the Total Employee Cost Calculator.</b>') + '</a>';
+
+  last = { net: net, name: name };
+  FC.postResult('payroll', { payType: type, monthly: monthlyEquiv, schedule: semi ? 'semi-monthly' : 'monthly', ot: FC.num('ot'), nd: FC.num('nd') }, { gross: gross, totalDeductions: totalDed, net: net, withholdingTax: tax, employerShare: erShare });
+}
+function renderRates() {
+  var t = FC.t;
+  document.getElementById('rates').innerHTML =
+    '<p class="muted">' + t('Batay sa mga rate ng ' + RATES.asOf + '. I-verify bago gamitin sa totoong payroll.', 'Based on ' + RATES.asOf + ' rates. Verify before using for real payroll.') + '</p>' +
+    '<table class="bd"><tbody>' +
+    '<tr><td>' + t('Kada oras', 'Hourly') + '</td><td>' + t('Arawang rate ÷ 8. Arawang rate = buwanang sahod × 12 ÷ 313 (6 na araw) o ÷ 261 (5 araw).', 'Daily rate ÷ 8. Daily rate = monthly salary × 12 ÷ 313 (6-day week) or ÷ 261 (5-day week).') + '</td></tr>' +
+    '<tr><td>Overtime</td><td>' + t('125% ng kada oras sa regular na araw.', '125% of the hourly rate on a regular day.') + '</td></tr>' +
+    '<tr><td>Night diff</td><td>' + t('Dagdag 10% ng kada oras mula 10pm hanggang 6am.', 'Extra 10% of the hourly rate from 10pm to 6am.') + '</td></tr>' +
+    '<tr><td>Holiday</td><td>' + t('Regular holiday na pinasukan: dagdag 100% ng arawang rate (kabuuang 200%). Special day: dagdag 30%.', 'Regular holiday worked: extra 100% of the daily rate (200% in total). Special day worked: extra 30%.') + '</td></tr>' +
+    '<tr><td>SSS, PhilHealth, Pag-IBIG</td><td>' + t('Kaltas ng empleyado: SSS 5% ng MSC, PhilHealth 2.5%, Pag-IBIG 2% (max ₱200). Hinahati sa dalawang cutoff.', 'Employee share: SSS 5% of MSC, PhilHealth 2.5%, Pag-IBIG 2% (max ₱200). Split across the two cutoffs.') + '</td></tr>' +
+    '<tr><td>Withholding tax</td><td>' + t('BIR TRAIN table: walang tax hanggang ₱20,833 kada buwan (₱250,000 kada taon) na taxable na sahod. Minimum wage earners ay exempted.', 'BIR TRAIN table: no tax up to ₱20,833 a month (₱250,000 a year) of taxable pay. Minimum wage earners are exempt.') + '</td></tr>' +
+    '</tbody></table>';
+}
+FC.init({
+  page: 'payroll',
+  calc: calc,
+  sample: function () {
+    FC.fill({ ename: 'Juan Dela Cruz', monthly: '18000', daily: '', daysworked: '13', ot: '6', nd: '0', rh: '1', sh: '0', absent: '0', late: '30', allow: '500', otherded: '0', mwe: false });
+    FC.setSeg('paytype', 'monthly'); document.getElementById('freq').value = 'semi'; document.getElementById('days').value = '6';
+  },
+  reset: function () { FC.fill({ ename: '', monthly: '', daily: '', daysworked: '13', ot: '0', nd: '0', rh: '0', sh: '0', absent: '0', late: '0', allow: '0', otherded: '0' }); FC.setSeg('paytype', 'monthly'); },
+  shareText: function () {
+    if (!last) return FC.t('Subukan ang Payroll Calculator ng FLAME PH', 'Try the FLAME PH Payroll Calculator');
+    return FC.t('Net pay ngayong cutoff: ' + FC.peso(last.net) + '. Kinuwenta sa FLAME PH Payroll Calculator.', 'Net pay this cutoff: ' + FC.peso(last.net) + '. Calculated with the FLAME PH Payroll Calculator.');
+  }
+});
+FC.onLang(calc);
+</script>
+</body>
+</html>

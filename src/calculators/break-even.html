@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="fil">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Break-Even Calculator | FLAME PH</title>
+<meta name="description" content="Ilang piraso ang kailangang mabenta para hindi malugi? Alamin kada buwan at kada araw.">
+<style>
+:root{
+  --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
+  --brand:#c2410c; --brand-ink:#ffffff; --brand-soft:#fff1e6;
+  --good:#15803d; --good-soft:#e8f6ec; --warn:#a16207; --warn-soft:#fdf6dc;
+  --bad:#b91c1c; --bad-soft:#fdecec; --field:#ffffff;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+    --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+    --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+    --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+  --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+  --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+  --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 40px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.embedded .brand{visibility:hidden}
+.embedded .wrap{padding-top:8px}
+.brand{flex:1;min-width:0;font-weight:700;color:var(--brand);font-size:14px;letter-spacing:.02em}
+.lang{flex:none;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;background:transparent;color:var(--ink2);padding:6px 12px;font:inherit;font-size:14px;cursor:pointer;min-height:36px}
+.lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);font-weight:600}
+h1{font-size:24px;line-height:1.25;margin:8px 0 4px}
+.lead{color:var(--ink2);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 16px}
+.card h2{font-size:17px;margin:0 0 12px}
+.field{margin:0 0 14px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
+.hint{display:block;color:var(--ink2);font-size:13px;font-weight:400;margin-top:2px}
+.input{position:relative}
+.input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
+.input .pre{left:12px}.input .suf{right:12px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+.input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
+input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{flex:1 1 auto;min-height:44px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;font:inherit;font-size:15px;padding:8px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400}
+.check input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--brand);flex:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.btn{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:15px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.result{border-width:2px}
+.result.good{border-color:var(--good);background:var(--good-soft)}
+.result.warn{border-color:var(--warn);background:var(--warn-soft)}
+.result.bad{border-color:var(--bad);background:var(--bad-soft)}
+.verdict{font-size:18px;font-weight:600;margin:0 0 12px}
+.big{font-size:34px;font-weight:800;line-height:1.1;margin:0}
+.big-label{color:var(--ink2);font-size:14px;margin:0 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .k{color:var(--ink2);font-size:13px}
+.stat .v{font-size:20px;font-weight:700}
+table.bd{width:100%;border-collapse:collapse;font-size:15px}
+table.bd.tight{font-size:13.5px}
+table.bd.tight td,table.bd.tight th{padding:7px 2px}
+table.bd td,table.bd th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.bd td.n,table.bd th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.bd tr.tot td{font-weight:700;border-bottom:0}
+.muted{color:var(--ink2);font-size:13px}
+.note{font-size:13px;color:var(--ink2);margin:8px 0 0}
+details{margin:0 0 16px}
+summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.disclaimer{font-size:12.5px;color:var(--ink2);border-top:1px solid var(--line);padding-top:12px;margin-top:8px}
+.cta{display:block;text-decoration:none;color:var(--ink);background:var(--brand-soft);border-radius:10px;padding:12px;margin-top:12px;font-size:15px}
+.cta b{color:var(--brand)}
+.err{color:var(--bad);font-weight:600}
+.print-only{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  .no-print,.btns,.lang,details.inputs-help{display:none!important}
+  .print-only{display:block}
+  .card{break-inside:avoid;border-color:#bbb;background:#fff!important}
+  .wrap{max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <span class="brand">FLAME PH · Negosyo Calculators</span>
+  <div class="lang no-print" role="group" aria-label="Language">
+    <button type="button" data-lang="tl" aria-pressed="true">Taglish</button>
+    <button type="button" data-lang="en" aria-pressed="false">English</button>
+  </div>
+</header>
+<p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
+<h1 data-en="Break-Even Calculator">Break-Even Calculator</h1>
+<p class="lead" data-en="How much do you need to sell each month, and each day, just to cover all your costs? Use it before launching a product, menu item or new branch.">Ilang piraso o magkano ang kailangang mabenta kada buwan, at kada araw, para lang mabawi lahat ng gastos? Gamitin bago maglunsad ng produkto, menu item o bagong branch.</p>
+
+<section class="card">
+  <h2 data-en="1. Fixed costs per month">1. Fixed na gastos kada buwan</h2>
+  <p class="muted" style="margin:-6px 0 12px" data-en="Costs you pay even if you sell nothing.">Gastos na binabayaran kahit walang benta.</p>
+  <div class="row2">
+    <div class="field"><label for="rent" data-en="Rent">Upa</label><div class="input has-pre"><span class="pre">₱</span><input id="rent" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="wages" data-en="Staff wages (total cost)">Sahod ng tauhan (kabuuang gastos)</label><div class="input has-pre"><span class="pre">₱</span><input id="wages" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="utils" data-en="Electricity, water, internet">Kuryente, tubig, internet</label><div class="input has-pre"><span class="pre">₱</span><input id="utils" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="loan" data-en="Loan payments">Hulog sa utang</label><div class="input has-pre"><span class="pre">₱</span><input id="loan" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="ownpay" data-en="Your own pay (owner's salary)">Sahod mo bilang may-ari</label><div class="input has-pre"><span class="pre">₱</span><input id="ownpay" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="otherfix" data-en="Other (permits, fees, marketing)">Iba pa (permit, fees, marketing)</label><div class="input has-pre"><span class="pre">₱</span><input id="otherfix" type="text" inputmode="decimal" value="0"></div></div>
+  </div>
+  <span class="hint" data-en="Tip: get the true staff cost from the Total Employee Cost Calculator.">Tip: kunin ang totoong gastos sa tauhan sa Total Employee Cost Calculator.</span>
+</section>
+
+<section class="card">
+  <h2 data-en="2. Per piece (or per order)">2. Bawat piraso (o bawat order)</h2>
+  <div class="row2">
+    <div class="field"><label for="price" data-en="Selling price">Presyo</label><div class="input has-pre"><span class="pre">₱</span><input id="price" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="varcost" data-en="Variable cost">Variable na gastos</label><div class="input has-pre"><span class="pre">₱</span><input id="varcost" type="text" inputmode="decimal" value=""></div></div>
+  </div>
+  <span class="hint" data-en="Variable cost = ingredients, product cost, packaging and fees for one piece. It goes up as you sell more.">Variable na gastos = sangkap, puhunan sa produkto, packaging at fees sa isang piraso. Tumataas habang dumadami ang benta.</span>
+</section>
+
+<section class="card">
+  <h2 data-en="3. Your store">3. Ang tindahan mo</h2>
+  <div class="row2">
+    <div class="field"><label for="opendays" data-en="Days open per month">Araw na bukas kada buwan</label><input id="opendays" type="text" inputmode="numeric" value="26"></div>
+    <div class="field"><label for="current" data-en="Current sales per day (pieces, optional)">Kasalukuyang benta kada araw (piraso, opsyonal)</label><input id="current" type="text" inputmode="decimal" value=""></div>
+  </div>
+</section>
+
+<div class="btns no-print">
+  <button type="button" class="btn" id="btn-sample" data-en="Try a sample">Subukan ang halimbawa</button>
+  <button type="button" class="btn" id="btn-reset" data-en="Clear">Burahin</button>
+</div>
+
+<section class="card result" id="result" aria-live="polite"></section>
+<div class="btns no-print">
+  <button type="button" class="btn primary" id="btn-print" data-en="Download PDF / Print">I-download (PDF) / I-print</button>
+  <button type="button" class="btn" id="btn-share" data-en="Share">I-share</button>
+</div>
+<p class="disclaimer" data-en="Estimates only, for planning. Not tax, legal or accounting advice. Check government rates with SSS, PhilHealth, Pag-IBIG, DOLE and BIR, or an accountant from the FLAME professional services directory. Your numbers stay on your device.">Tantiya lang ito para sa pagpaplano. Hindi ito payong pang-buwis, legal o accounting. I-check ang mga rate sa SSS, PhilHealth, Pag-IBIG, DOLE at BIR, o sa accountant sa FLAME professional services directory. Ang mga numero mo ay nananatili sa device mo.</p>
+</div>
+<script>
+/* FLAME PH calculators: shared helpers (language, numbers, save, share, embed). */
+var FC = (function () {
+  var LANG_KEY = 'flamecalc.lang';
+  var state = { lang: 'tl' };
+  var onLang = [];
+
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+
+  // Taglish is written in the HTML; English lives in data-en. t() is for text built in JS.
+  function t(tl, en) { return state.lang === 'en' ? en : tl; }
+  function applyLang() {
+    document.documentElement.lang = state.lang === 'en' ? 'en' : 'fil';
+    document.querySelectorAll('[data-en]').forEach(function (el) {
+      if (el.dataset.tl === undefined) el.dataset.tl = el.innerHTML;
+      el.innerHTML = state.lang === 'en' ? el.dataset.en : el.dataset.tl;
+    });
+    document.querySelectorAll('.lang button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang));
+    });
+    onLang.forEach(function (f) { f(); });
+  }
+  function setLang(l) { state.lang = l; store(LANG_KEY, l); applyLang(); }
+
+  var peso0 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
+  var peso2 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function peso(n, dp) { if (!isFinite(n)) return '—'; return (dp === 0 ? peso0 : peso2).format(n); }
+  function pct(n, dp) { if (!isFinite(n)) return '—'; return n.toFixed(dp === undefined ? 1 : dp) + '%'; }
+  function int(n) { return isFinite(n) ? Math.round(n).toLocaleString('en-PH') : '—'; }
+
+  function num(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    var v = parseFloat(String(el.value).replace(/[,\s₱%]/g, ''));
+    return isFinite(v) ? v : 0;
+  }
+  function blank(id) { var el = document.getElementById(id); return !el || String(el.value).trim() === ''; }
+
+  // Remember a page's inputs on this device so owners don't retype them.
+  function saveInputs(page) {
+    var data = {};
+    document.querySelectorAll('input[id],select[id]').forEach(function (el) {
+      data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    document.querySelectorAll('.seg[id]').forEach(function (s) {
+      var on = s.querySelector('[aria-pressed="true"]'); if (on) data['seg:' + s.id] = on.dataset.v;
+    });
+    store('flamecalc.' + page, JSON.stringify(data));
+  }
+  function loadInputs(page) {
+    var raw = store('flamecalc.' + page); if (!raw) return false;
+    try {
+      var data = JSON.parse(raw);
+      Object.keys(data).forEach(function (k) {
+        if (k.indexOf('seg:') === 0) { setSeg(k.slice(4), data[k]); return; }
+        var el = document.getElementById(k); if (!el) return;
+        if (el.type === 'checkbox') el.checked = !!data[k]; else el.value = data[k];
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  function fill(values) {
+    Object.keys(values).forEach(function (k) {
+      var el = document.getElementById(k); if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!values[k]; else el.value = values[k];
+    });
+  }
+
+  function setSeg(id, v) {
+    var s = document.getElementById(id); if (!s) return;
+    s.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === v)); });
+  }
+  function seg(id) { var on = document.querySelector('#' + id + ' [aria-pressed="true"]'); return on ? on.dataset.v : null; }
+
+  // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
+  function postHeight() {
+    if (window.parent === window) return;
+    // Body height, not the document's: inside an iframe the document is never shorter than the frame, so it could only grow.
+    window.parent.postMessage({ type: 'flame-calc-height', height: Math.ceil(document.body.getBoundingClientRect().height) }, '*');
+  }
+  function postResult(calculator, inputs, outputs) {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-result', calculator: calculator, lang: state.lang, inputs: inputs, outputs: outputs }, '*');
+  }
+
+  function share(title, text) {
+    var url = location.href;
+    if (navigator.share) { navigator.share({ title: title, text: text, url: url }).catch(function () {}); return; }
+    var full = text + '\n' + url;
+    if (navigator.clipboard) navigator.clipboard.writeText(full).then(function () { alert(t('Nakopya na! I-paste sa Messenger o Viber.', 'Copied! Paste it into Messenger or Viber.')); });
+    else prompt(t('Kopyahin ito:', 'Copy this:'), full);
+  }
+
+  function init(opts) {
+    var saved = store(LANG_KEY);
+    var q = new URLSearchParams(location.search);
+    state.lang = q.get('lang') === 'en' || q.get('lang') === 'tl' ? q.get('lang') : (saved === 'en' ? 'en' : 'tl');
+    if (q.get('theme') === 'light' || q.get('theme') === 'dark') document.documentElement.dataset.theme = q.get('theme');
+    if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
+    document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+    document.querySelectorAll('.seg').forEach(function (s) {
+      s.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        setSeg(s.id, b.dataset.v); opts.calc();
+      });
+    });
+    document.addEventListener('input', function () { opts.calc(); });
+    document.addEventListener('change', function () { opts.calc(); });
+    var pr = document.getElementById('btn-print'); if (pr) pr.addEventListener('click', function () { window.print(); });
+    var sh = document.getElementById('btn-share'); if (sh) sh.addEventListener('click', function () { share(document.title, opts.shareText()); });
+    var sm = document.getElementById('btn-sample'); if (sm) sm.addEventListener('click', function () { opts.sample(); opts.calc(); });
+    var rs = document.getElementById('btn-reset'); if (rs) rs.addEventListener('click', function () {
+      document.querySelectorAll('input[id]').forEach(function (el) { if (el.type === 'checkbox') el.checked = el.defaultChecked; else el.value = el.defaultValue; });
+      if (opts.reset) opts.reset();
+      opts.calc();
+    });
+    var pd = document.getElementById('print-date'); if (pd) pd.textContent = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!loadInputs(opts.page) && opts.sample) opts.sample();
+    applyLang();
+    opts.calc();
+    if ('ResizeObserver' in window) new ResizeObserver(postHeight).observe(document.body);
+    window.addEventListener('load', postHeight);
+  }
+
+  return { t: t, peso: peso, pct: pct, int: int, num: num, blank: blank, seg: seg, setSeg: setSeg, fill: fill,
+    saveInputs: saveInputs, postResult: postResult, init: init, onLang: function (f) { onLang.push(f); }, get lang() { return state.lang; } };
+})();
+</script>
+<script>
+var FIX = ['rent', 'wages', 'utils', 'loan', 'ownpay', 'otherfix'];
+var last = null;
+function calc() {
+  var t = FC.t, peso = FC.peso;
+  var fixed = FIX.reduce(function (s, id) { return s + FC.num(id); }, 0);
+  var price = FC.num('price'), vc = FC.num('varcost');
+  var days = Math.max(1, FC.num('opendays') || 26);
+  var out = document.getElementById('result');
+  out.className = 'card result';
+  FC.saveInputs('break-even');
+
+  if (price <= 0 || fixed <= 0) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang fixed na gastos at presyo para makita ang break-even.', 'Enter your fixed costs and price to see your break-even.') + '</p>'; last = null; return; }
+  var cm = price - vc;
+  if (cm <= 0) {
+    out.classList.add('bad');
+    out.innerHTML = '<p class="verdict">' + t('Lugi ka sa bawat benta: mas mataas o kapareho ng presyo ang variable na gastos. Hindi ka magbe-break-even kahit gaano karami ang mabenta.', 'You lose on every sale: variable cost is equal to or above the price. You will never break even, however much you sell.') + '</p>';
+    last = null; return;
+  }
+  var units = fixed / cm;
+  var unitsDay = units / days;
+  var sales = units * price;
+  var cmr = cm / price * 100;
+  var cur = FC.num('current');
+  var html = '';
+  var verdict = t('Kailangan mong makabenta ng ' + FC.int(Math.ceil(unitsDay)) + ' piraso kada araw para hindi malugi.', 'You need to sell ' + FC.int(Math.ceil(unitsDay)) + ' pieces a day to avoid a loss.');
+  if (cur > 0) {
+    var curMonth = cur * days;
+    var profit = curMonth * cm - fixed;
+    var safety = (curMonth - units) / curMonth * 100;
+    if (profit >= 0) {
+      out.classList.add(safety < 15 ? 'warn' : 'good');
+      verdict += ' ' + t('Sa ' + FC.int(cur) + ' kada araw ngayon, kumikita ka ng mga ' + peso(profit, 0) + ' kada buwan.', 'At your current ' + FC.int(cur) + ' a day, you make about ' + peso(profit, 0) + ' a month.');
+    } else {
+      out.classList.add('bad');
+      verdict += ' ' + t('Sa ' + FC.int(cur) + ' kada araw ngayon, lugi ka ng mga ' + peso(-profit, 0) + ' kada buwan.', 'At your current ' + FC.int(cur) + ' a day, you lose about ' + peso(-profit, 0) + ' a month.');
+    }
+    html = '<div class="stat" style="grid-column:1/-1"><div class="k">' + t('Margin of safety (gaano kalaki ang puwedeng bumaba ng benta bago malugi)', 'Margin of safety (how far sales can drop before a loss)') + '</div><div class="v">' + (safety >= 0 ? FC.pct(safety, 0) : t('Wala, kulang ang benta', 'None, sales are short')) + '</div></div>';
+  } else {
+    out.classList.add('good');
+  }
+  out.innerHTML =
+    '<p class="verdict">' + verdict + '</p>' +
+    '<p class="big">' + FC.int(Math.ceil(unitsDay)) + ' <span style="font-size:18px;font-weight:600">' + t('piraso kada araw', 'pieces per day') + '</span></p>' +
+    '<p class="big-label">' + t('o ' + peso(Math.ceil(unitsDay) * price, 0) + ' na benta kada araw', 'or ' + peso(Math.ceil(unitsDay) * price, 0) + ' in sales per day') + '</p>' +
+    '<div class="stats">' +
+      '<div class="stat"><div class="k">' + t('Piraso kada buwan', 'Pieces per month') + '</div><div class="v">' + FC.int(Math.ceil(units)) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Benta kada buwan', 'Sales per month') + '</div><div class="v">' + peso(sales, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Kita bawat piraso (bago fixed)', 'Earned per piece (before fixed)') + '</div><div class="v">' + peso(cm) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Fixed na gastos kada buwan', 'Fixed costs per month') + '</div><div class="v">' + peso(fixed, 0) + '</div></div>' +
+      html +
+    '</div>' +
+    '<p class="note">' + t('Bawat piraso ay nag-aambag ng ' + peso(cm) + ' (' + FC.pct(cmr, 0) + ' ng presyo) para bayaran ang fixed na gastos. Pagkatapos mabawi ang ' + peso(fixed, 0) + ', kita na ang lahat ng susunod.',
+      'Each piece contributes ' + peso(cm) + ' (' + FC.pct(cmr, 0) + ' of the price) toward fixed costs. Once ' + peso(fixed, 0) + ' is covered, the rest is profit.') + '</p>' +
+    '<a class="cta no-print" href="markup-margin.html">' + t('Masyadong mataas ang break-even? <b>Subukan ang Markup at Margin Calculator</b> o maghanap ng mas murang supplier sa NegosyoDepot.', 'Break-even too high? <b>Try the Markup & Margin Calculator</b> or find cheaper suppliers on NegosyoDepot.') + '</a>';
+  last = { unitsDay: Math.ceil(unitsDay), salesMonth: sales };
+  FC.postResult('break-even', { fixed: fixed, price: price, varcost: vc, days: days }, { unitsPerMonth: units, unitsPerDay: unitsDay, salesPerMonth: sales });
+}
+FC.init({
+  page: 'break-even',
+  calc: calc,
+  sample: function () { FC.fill({ rent: '8000', wages: '15000', utils: '3500', loan: '0', ownpay: '12000', otherfix: '1500', price: '75', varcost: '38', opendays: '26', current: '45' }); },
+  reset: function () { FC.fill({ price: '', varcost: '', current: '' }); },
+  shareText: function () {
+    if (!last) return FC.t('Subukan ang Break-Even Calculator ng FLAME PH', 'Try the FLAME PH Break-Even Calculator');
+    return FC.t('Break-even: ' + last.unitsDay + ' piraso kada araw. Kinuwenta sa FLAME PH calculator.', 'Break-even: ' + last.unitsDay + ' pieces a day. Calculated with the FLAME PH calculator.');
+  }
+});
+FC.onLang(calc);
+</script>
+</body>
+</html>

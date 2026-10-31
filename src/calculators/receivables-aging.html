@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Break-Even Calculator | FLAME PH</title>
-<meta name="description" content="Ilang piraso ang kailangang mabenta para hindi malugi? Alamin kada buwan at kada araw.">
+<title>Receivable Aging & Collection Tracker | FLAME PH</title>
+<meta name="description" content="Bantayan ang mga may utang sa negosyo mo, kung gaano na katagal, at magpadala ng magalang na paalala.">
 <style>
 :root{
   --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
@@ -49,7 +49,7 @@ label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
 .input{position:relative}
 .input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
 .input .pre{left:12px}.input .suf{right:12px}
-input[type=text],input[type=number],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
 .input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
 input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -107,39 +107,20 @@ summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:
   </div>
 </header>
 <p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
-<h1 data-en="Break-Even Calculator">Break-Even Calculator</h1>
-<p class="lead" data-en="How much do you need to sell each month, and each day, just to cover all your costs? Use it before launching a product, menu item or new branch.">Ilang piraso o magkano ang kailangang mabenta kada buwan, at kada araw, para lang mabawi lahat ng gastos? Gamitin bago maglunsad ng produkto, menu item o bagong branch.</p>
+<h1 data-en="Receivable Aging &amp; Collection Tracker">Receivable Aging at Collection Tracker</h1>
+<p class="lead" data-en="List who owes you and when it was due. See how long each is overdue, how much cash is trapped, and send a polite reminder by Messenger or Viber.">Ilista kung sino ang may utang at kailan ang due date. Makita kung gaano na katagal, magkano ang perang nakabitin, at magpadala ng magalang na paalala sa Messenger o Viber.</p>
 
 <section class="card">
-  <h2 data-en="1. Fixed costs per month">1. Fixed na gastos kada buwan</h2>
-  <p class="muted" style="margin:-6px 0 12px" data-en="Costs you pay even if you sell nothing.">Gastos na binabayaran kahit walang benta.</p>
-  <div class="row2">
-    <div class="field"><label for="rent" data-en="Rent">Upa</label><div class="input has-pre"><span class="pre">₱</span><input id="rent" type="text" inputmode="decimal" value="0"></div></div>
-    <div class="field"><label for="wages" data-en="Staff wages (total cost)">Sahod ng tauhan (kabuuang gastos)</label><div class="input has-pre"><span class="pre">₱</span><input id="wages" type="text" inputmode="decimal" value="0"></div></div>
-    <div class="field"><label for="utils" data-en="Electricity, water, internet">Kuryente, tubig, internet</label><div class="input has-pre"><span class="pre">₱</span><input id="utils" type="text" inputmode="decimal" value="0"></div></div>
-    <div class="field"><label for="loan" data-en="Loan payments">Hulog sa utang</label><div class="input has-pre"><span class="pre">₱</span><input id="loan" type="text" inputmode="decimal" value="0"></div></div>
-    <div class="field"><label for="ownpay" data-en="Your own pay (owner's salary)">Sahod mo bilang may-ari</label><div class="input has-pre"><span class="pre">₱</span><input id="ownpay" type="text" inputmode="decimal" value="0"></div></div>
-    <div class="field"><label for="otherfix" data-en="Other (permits, fees, marketing)">Iba pa (permit, fees, marketing)</label><div class="input has-pre"><span class="pre">₱</span><input id="otherfix" type="text" inputmode="decimal" value="0"></div></div>
-  </div>
-  <span class="hint" data-en="Tip: get the true staff cost from the Total Employee Cost Calculator.">Tip: kunin ang totoong gastos sa tauhan sa Total Employee Cost Calculator.</span>
+  <h2 data-en="Who owes you">Mga may utang</h2>
+  <div id="rows"></div>
+  <span class="hint" data-en="Saved on this device only, so you can come back and update it.">Naka-save lang sa device na ito, kaya puwede mong balikan at i-update.</span>
 </section>
 
-<section class="card">
-  <h2 data-en="2. Per piece (or per order)">2. Bawat piraso (o bawat order)</h2>
-  <div class="row2">
-    <div class="field"><label for="price" data-en="Selling price">Presyo</label><div class="input has-pre"><span class="pre">₱</span><input id="price" type="text" inputmode="decimal" value=""></div></div>
-    <div class="field"><label for="varcost" data-en="Variable cost">Variable na gastos</label><div class="input has-pre"><span class="pre">₱</span><input id="varcost" type="text" inputmode="decimal" value=""></div></div>
-  </div>
-  <span class="hint" data-en="Variable cost = ingredients, product cost, packaging and fees for one piece. It goes up as you sell more.">Variable na gastos = sangkap, puhunan sa produkto, packaging at fees sa isang piraso. Tumataas habang dumadami ang benta.</span>
-</section>
-
-<section class="card">
-  <h2 data-en="3. Your store">3. Ang tindahan mo</h2>
-  <div class="row2">
-    <div class="field"><label for="opendays" data-en="Days open per month">Araw na bukas kada buwan</label><input id="opendays" type="text" inputmode="numeric" value="26"></div>
-    <div class="field"><label for="current" data-en="Current sales per day (pieces, optional)">Kasalukuyang benta kada araw (piraso, opsyonal)</label><input id="current" type="text" inputmode="decimal" value=""></div>
-  </div>
-</section>
+<details class="card">
+  <summary data-en="Collection speed (optional)">Bilis ng paniningil (opsyonal)</summary>
+  <div class="field"><label for="credit" data-en="Credit sales per month">Benta na pautang kada buwan</label><div class="input has-pre"><span class="pre">₱</span><input id="credit" type="text" inputmode="decimal" value=""></div></div>
+  <div class="field"><label for="terms" data-en="Your payment terms (days)">Terms mo (araw)</label><input id="terms" type="text" inputmode="numeric" value="30"></div>
+</details>
 
 <div class="btns no-print">
   <button type="button" class="btn" id="btn-sample" data-en="Try a sample">Subukan ang halimbawa</button>
@@ -230,7 +211,8 @@ var FC = (function () {
   // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
   function postHeight() {
     if (window.parent === window) return;
-    window.parent.postMessage({ type: 'flame-calc-height', height: document.documentElement.scrollHeight }, '*');
+    // Body height, not the document's: inside an iframe the document is never shorter than the frame, so it could only grow.
+    window.parent.postMessage({ type: 'flame-calc-height', height: Math.ceil(document.body.getBoundingClientRect().height) }, '*');
   }
   function postResult(calculator, inputs, outputs) {
     if (window.parent === window) return;
@@ -281,72 +263,89 @@ var FC = (function () {
 })();
 </script>
 <script>
-var FIX = ['rent', 'wages', 'utils', 'loan', 'ownpay', 'otherfix'];
+var ROWS = 12, SHOWN = 4;
+function buildRows() {
+  var html = '';
+  for (var i = 0; i < ROWS; i++) {
+    if (i === SHOWN) html += '<details><summary>' + FC.t('Magdagdag pa', 'Add more') + '</summary>';
+    html += '<div class="row2" style="border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px">' +
+      '<div class="field" style="grid-column:1/-1"><label for="r' + i + 'n">' + FC.t('Pangalan ng customer', 'Customer name') + '</label><input id="r' + i + 'n" type="text"></div>' +
+      '<div class="field"><label for="r' + i + 'a">' + FC.t('Halaga', 'Amount') + '</label><div class="input has-pre"><span class="pre">₱</span><input id="r' + i + 'a" type="text" inputmode="decimal"></div></div>' +
+      '<div class="field"><label for="r' + i + 'd">' + FC.t('Due date', 'Due date') + '</label><input id="r' + i + 'd" type="date"></div>' +
+      '</div>';
+  }
+  html += '</details>';
+  var keep = {};
+  document.querySelectorAll('#rows input').forEach(function (el) { keep[el.id] = el.value; });
+  document.getElementById('rows').innerHTML = html;
+  FC.fill(keep);
+}
+function daysLate(iso) {
+  var d = new Date(iso + 'T00:00:00'), now = new Date(); now.setHours(0, 0, 0, 0);
+  return Math.round((now - d) / 864e5);
+}
+var BUCKETS = [[-Infinity, 0], [1, 30], [31, 60], [61, 90], [91, Infinity]];
 var last = null;
+function bucketName(i) { return [FC.t('Hindi pa due', 'Not yet due'), '1–30', '31–60', '61–90', '90+'][i]; }
+function reminder(r) {
+  return FC.t('Hi ' + r.name + '! Magandang araw po. Paalala lang po sa balanse ninyong ' + FC.peso(r.amount) + ' na due noong ' + r.due + '. Salamat po sa inyong pagbabayad!',
+    'Hi ' + r.name + '! A friendly reminder about your balance of ' + FC.peso(r.amount) + ', due on ' + r.due + '. Thank you for settling it!');
+}
 function calc() {
   var t = FC.t, peso = FC.peso;
-  var fixed = FIX.reduce(function (s, id) { return s + FC.num(id); }, 0);
-  var price = FC.num('price'), vc = FC.num('varcost');
-  var days = Math.max(1, FC.num('opendays') || 26);
-  var out = document.getElementById('result');
-  out.className = 'card result';
-  FC.saveInputs('break-even');
-
-  if (price <= 0 || fixed <= 0) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang fixed na gastos at presyo para makita ang break-even.', 'Enter your fixed costs and price to see your break-even.') + '</p>'; last = null; return; }
-  var cm = price - vc;
-  if (cm <= 0) {
-    out.classList.add('bad');
-    out.innerHTML = '<p class="verdict">' + t('Lugi ka sa bawat benta: mas mataas o kapareho ng presyo ang variable na gastos. Hindi ka magbe-break-even kahit gaano karami ang mabenta.', 'You lose on every sale: variable cost is equal to or above the price. You will never break even, however much you sell.') + '</p>';
-    last = null; return;
+  FC.saveInputs('receivables-aging');
+  var out = document.getElementById('result'); out.className = 'card result';
+  var list = [];
+  for (var i = 0; i < ROWS; i++) {
+    var a = FC.num('r' + i + 'a'), due = document.getElementById('r' + i + 'd').value;
+    if (a > 0) list.push({ name: document.getElementById('r' + i + 'n').value.trim() || t('Customer ', 'Customer ') + (i + 1), amount: a, due: due, late: due ? daysLate(due) : 0 });
   }
-  var units = fixed / cm;
-  var unitsDay = units / days;
-  var sales = units * price;
-  var cmr = cm / price * 100;
-  var cur = FC.num('current');
-  var html = '';
-  var verdict = t('Kailangan mong makabenta ng ' + FC.int(Math.ceil(unitsDay)) + ' piraso kada araw para hindi malugi.', 'You need to sell ' + FC.int(Math.ceil(unitsDay)) + ' pieces a day to avoid a loss.');
-  if (cur > 0) {
-    var curMonth = cur * days;
-    var profit = curMonth * cm - fixed;
-    var safety = (curMonth - units) / curMonth * 100;
-    if (profit >= 0) {
-      out.classList.add(safety < 15 ? 'warn' : 'good');
-      verdict += ' ' + t('Sa ' + FC.int(cur) + ' kada araw ngayon, kumikita ka ng mga ' + peso(profit, 0) + ' kada buwan.', 'At your current ' + FC.int(cur) + ' a day, you make about ' + peso(profit, 0) + ' a month.');
-    } else {
-      out.classList.add('bad');
-      verdict += ' ' + t('Sa ' + FC.int(cur) + ' kada araw ngayon, lugi ka ng mga ' + peso(-profit, 0) + ' kada buwan.', 'At your current ' + FC.int(cur) + ' a day, you lose about ' + peso(-profit, 0) + ' a month.');
-    }
-    html = '<div class="stat" style="grid-column:1/-1"><div class="k">' + t('Margin of safety (gaano kalaki ang puwedeng bumaba ng benta bago malugi)', 'Margin of safety (how far sales can drop before a loss)') + '</div><div class="v">' + (safety >= 0 ? FC.pct(safety, 0) : t('Wala, kulang ang benta', 'None, sales are short')) + '</div></div>';
-  } else {
-    out.classList.add('good');
-  }
+  if (!list.length) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang pangalan, halaga at due date ng mga may utang.', 'Enter each customer\'s name, amount and due date.') + '</p>'; last = null; return; }
+  var sums = [0, 0, 0, 0, 0];
+  list.forEach(function (r) { for (var b = 0; b < BUCKETS.length; b++) if (r.late >= BUCKETS[b][0] && r.late <= BUCKETS[b][1]) { r.bucket = b; sums[b] += r.amount; } });
+  var total = sums.reduce(function (s, v) { return s + v; }, 0);
+  var overdue = total - sums[0];
+  var over60 = sums[3] + sums[4];
+  var share = overdue / total * 100;
+  out.classList.add(over60 > 0 || share > 30 ? 'bad' : share > 0 ? 'warn' : 'good');
+  list.sort(function (a, b) { return b.late - a.late; });
+  var credit = FC.num('credit');
+  var dso = credit > 0 ? total / credit * 30 : NaN;
   out.innerHTML =
-    '<p class="verdict">' + verdict + '</p>' +
-    '<p class="big">' + FC.int(Math.ceil(unitsDay)) + ' <span style="font-size:18px;font-weight:600">' + t('piraso kada araw', 'pieces per day') + '</span></p>' +
-    '<p class="big-label">' + t('o ' + peso(Math.ceil(unitsDay) * price, 0) + ' na benta kada araw', 'or ' + peso(Math.ceil(unitsDay) * price, 0) + ' in sales per day') + '</p>' +
-    '<div class="stats">' +
-      '<div class="stat"><div class="k">' + t('Piraso kada buwan', 'Pieces per month') + '</div><div class="v">' + FC.int(Math.ceil(units)) + '</div></div>' +
-      '<div class="stat"><div class="k">' + t('Benta kada buwan', 'Sales per month') + '</div><div class="v">' + peso(sales, 0) + '</div></div>' +
-      '<div class="stat"><div class="k">' + t('Kita bawat piraso (bago fixed)', 'Earned per piece (before fixed)') + '</div><div class="v">' + peso(cm) + '</div></div>' +
-      '<div class="stat"><div class="k">' + t('Fixed na gastos kada buwan', 'Fixed costs per month') + '</div><div class="v">' + peso(fixed, 0) + '</div></div>' +
-      html +
-    '</div>' +
-    '<p class="note">' + t('Bawat piraso ay nag-aambag ng ' + peso(cm) + ' (' + FC.pct(cmr, 0) + ' ng presyo) para bayaran ang fixed na gastos. Pagkatapos mabawi ang ' + peso(fixed, 0) + ', kita na ang lahat ng susunod.',
-      'Each piece contributes ' + peso(cm) + ' (' + FC.pct(cmr, 0) + ' of the price) toward fixed costs. Once ' + peso(fixed, 0) + ' is covered, the rest is profit.') + '</p>' +
-    '<a class="cta no-print" href="markup-margin.html">' + t('Masyadong mataas ang break-even? <b>Subukan ang Markup at Margin Calculator</b> o maghanap ng mas murang supplier sa NegosyoDepot.', 'Break-even too high? <b>Try the Markup & Margin Calculator</b> or find cheaper suppliers on NegosyoDepot.') + '</a>';
-  last = { unitsDay: Math.ceil(unitsDay), salesMonth: sales };
-  FC.postResult('break-even', { fixed: fixed, price: price, varcost: vc, days: days }, { unitsPerMonth: units, unitsPerDay: unitsDay, salesPerMonth: sales });
+    '<p class="verdict">' + (overdue > 0
+      ? t(peso(overdue, 0) + ' ang lampas na sa due date (' + FC.pct(share, 0) + ' ng lahat ng utang). Unahin ang pinakamatagal.', peso(overdue, 0) + ' is past due (' + FC.pct(share, 0) + ' of all receivables). Start with the oldest.')
+      : t('Walang overdue. Maganda ang paniningil mo!', 'Nothing is overdue. Great collecting!')) + '</p>' +
+    '<p class="big">' + peso(total, 0) + '</p><p class="big-label">' + t('Kabuuang utang sa iyo', 'Total owed to you') + '</p>' +
+    '<table class="bd tight"><thead><tr><th>' + t('Ilang araw lampas', 'Days past due') + '</th><th class="n">' + t('Halaga', 'Amount') + '</th><th class="n">%</th></tr></thead><tbody>' +
+      sums.map(function (s, i) { return '<tr><td>' + bucketName(i) + '</td><td class="n"' + (i >= 3 && s > 0 ? ' style="color:var(--bad);font-weight:700"' : '') + '>' + peso(s, 0) + '</td><td class="n">' + FC.pct(s / total * 100, 0) + '</td></tr>'; }).join('') +
+    '</tbody></table>' +
+    (isFinite(dso) ? '<p class="note">' + t('Average na ' + Math.round(dso) + ' araw bago ka mabayaran (terms mo: ' + FC.num('terms') + ' araw).', 'On average you get paid in ' + Math.round(dso) + ' days (your terms: ' + FC.num('terms') + ' days).') + '</p>' : '') +
+    '<h2 style="margin:16px 0 4px;font-size:16px">' + t('Sisingilin', 'To collect') + '</h2>' +
+    '<table class="bd tight"><tbody>' + list.map(function (r, i) {
+      return '<tr><td>' + r.name + '<br><span class="muted">' + (r.due ? (r.late > 0 ? t(r.late + ' araw lampas', r.late + ' days late') : t('due sa ' + r.due, 'due ' + r.due)) : t('walang due date', 'no due date')) + '</span></td><td class="n">' + peso(r.amount, 0) +
+        (r.late > 0 ? '<br><button type="button" class="btn no-print" style="min-height:36px;padding:4px 10px;font-size:13px;margin-top:4px" data-remind="' + i + '">' + t('Kopyahin ang paalala', 'Copy reminder') + '</button>' : '') + '</td></tr>';
+    }).join('') + '</tbody></table>' +
+    (over60 > 0 ? '<p class="note">' + t('Para sa lampas 60 araw: tumawag nang personal, mag-alok ng hulugan, at itigil muna ang bagong pautang sa kanila.', 'For over 60 days: call in person, offer an installment plan, and pause new credit to them.') + '</p>' : '');
+  out.querySelectorAll('[data-remind]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var msg = reminder(list[+b.dataset.remind]);
+      if (navigator.clipboard) navigator.clipboard.writeText(msg).then(function () { b.textContent = t('Nakopya!', 'Copied!'); });
+      else prompt(t('Kopyahin ito:', 'Copy this:'), msg);
+    });
+  });
+  last = { total: total, overdue: overdue };
+  FC.postResult('receivables-aging', { customers: list.length }, { total: total, overdue: overdue, buckets: sums, dso: isFinite(dso) ? dso : null });
 }
+buildRows();
+FC.onLang(buildRows);
 FC.init({
-  page: 'break-even',
-  calc: calc,
-  sample: function () { FC.fill({ rent: '8000', wages: '15000', utils: '3500', loan: '0', ownpay: '12000', otherfix: '1500', price: '75', varcost: '38', opendays: '26', current: '45' }); },
-  reset: function () { FC.fill({ price: '', varcost: '', current: '' }); },
-  shareText: function () {
-    if (!last) return FC.t('Subukan ang Break-Even Calculator ng FLAME PH', 'Try the FLAME PH Break-Even Calculator');
-    return FC.t('Break-even: ' + last.unitsDay + ' piraso kada araw. Kinuwenta sa FLAME PH calculator.', 'Break-even: ' + last.unitsDay + ' pieces a day. Calculated with the FLAME PH calculator.');
-  }
+  page: 'receivables-aging', calc: calc,
+  sample: function () {
+    var d = function (n) { var x = new Date(); x.setDate(x.getDate() - n); return x.toISOString().slice(0, 10); };
+    FC.fill({ r0n: 'Aling Nena Store', r0a: '8500', r0d: d(75), r1n: 'Kuya Ben Carinderia', r1a: '3200', r1d: d(20), r2n: 'ABC Trading', r2a: '15000', r2d: d(-10), r3n: 'Mang Jose', r3a: '1800', r3d: d(40), credit: '45000', terms: '30' });
+  },
+  reset: function () { for (var i = 0; i < ROWS; i++) FC.fill({ ['r' + i + 'n']: '', ['r' + i + 'a']: '', ['r' + i + 'd']: '' }); FC.fill({ credit: '' }); },
+  shareText: function () { return last ? FC.t('Receivables: ' + FC.peso(last.total, 0) + ', overdue ' + FC.peso(last.overdue, 0) + '. FLAME PH tracker.', 'Receivables: ' + FC.peso(last.total, 0) + ', overdue ' + FC.peso(last.overdue, 0) + '. FLAME PH tracker.') : 'FLAME PH Receivables Tracker'; }
 });
 FC.onLang(calc);
 </script>

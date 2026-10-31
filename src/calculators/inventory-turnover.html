@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Total Employee Cost Calculator | FLAME PH</title>
-<meta name="description" content="Alamin ang totoong gastos sa empleyado: sahod, SSS, PhilHealth, Pag-IBIG, 13th month at iba pa.">
+<title>Inventory Investment & Turnover Calculator | FLAME PH</title>
+<meta name="description" content="Magkano ang perang nakatali sa stock mo, gaano kabilis ito nauubos, at kailan dapat mag-order ulit.">
 <style>
 :root{
   --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
@@ -49,7 +49,7 @@ label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
 .input{position:relative}
 .input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
 .input .pre{left:12px}.input .suf{right:12px}
-input[type=text],input[type=number],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
 .input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
 input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -107,60 +107,31 @@ summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:
   </div>
 </header>
 <p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
-<h1 data-en="Total Employee Cost Calculator">Total Employee Cost Calculator</h1>
-<p class="lead" data-en="The salary is only part of it. See the true monthly cost of a worker, including SSS, PhilHealth, Pag-IBIG, 13th month pay and leave.">Hindi lang sahod ang gastos. Alamin ang totoong buwanang gastos sa isang empleyado, kasama ang SSS, PhilHealth, Pag-IBIG, 13th month at leave.</p>
+<h1 data-en="Inventory Investment &amp; Turnover Calculator">Inventory Investment at Turnover Calculator</h1>
+<p class="lead" data-en="See how much cash is tied up in stock, how fast it sells, and when to reorder so you avoid both empty shelves and dead stock.">Alamin kung magkano ang perang nakatali sa stock, gaano kabilis itong nabebenta, at kailan mag-order ulit para walang ubos na paninda at walang patay na stock.</p>
 
 <section class="card">
-  <h2 data-en="1. Pay">1. Sahod</h2>
-  <div class="field">
-    <div class="seg" id="paytype">
-      <button type="button" data-v="monthly" aria-pressed="true" data-en="Monthly salary">Buwanang sahod</button>
-      <button type="button" data-v="daily" aria-pressed="false" data-en="Daily rate">Arawang sahod</button>
-    </div>
-  </div>
-  <div class="field" id="f-monthly">
-    <label for="monthly" data-en="Basic monthly salary">Basic na buwanang sahod</label>
-    <div class="input has-pre"><span class="pre">₱</span><input id="monthly" type="text" inputmode="decimal" value=""></div>
-  </div>
-  <div class="field" id="f-daily" hidden>
-    <label for="daily" data-en="Daily rate">Arawang sahod</label>
-    <div class="input has-pre"><span class="pre">₱</span><input id="daily" type="text" inputmode="decimal" value=""></div>
-  </div>
+  <h2 data-en="1. Your whole stock (at cost)">1. Lahat ng stock mo (sa puhunan)</h2>
   <div class="row2">
-    <div class="field">
-      <label for="days" data-en="Work days per week">Araw ng trabaho kada linggo</label>
-      <select id="days"><option value="5">5</option><option value="6" selected>6</option></select>
-    </div>
-    <div class="field">
-      <label for="staff" data-en="Number of employees">Bilang ng empleyado</label>
-      <input id="staff" type="text" inputmode="numeric" value="1">
-    </div>
+    <div class="field"><label for="begin" data-en="Stock value at start of month">Halaga ng stock sa simula ng buwan</label><div class="input has-pre"><span class="pre">₱</span><input id="begin" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="end" data-en="Stock value at end of month">Halaga ng stock sa dulo ng buwan</label><div class="input has-pre"><span class="pre">₱</span><input id="end" type="text" inputmode="decimal" value=""></div></div>
   </div>
-  <div class="field">
-    <label for="minwage" data-en="Minimum daily wage in your region (optional)">Minimum wage kada araw sa inyong rehiyon (opsyonal)</label>
-    <div class="input has-pre"><span class="pre">₱</span><input id="minwage" type="text" inputmode="decimal" value=""></div>
-    <span class="hint" data-en="Check the current wage order for your region on the DOLE / RTWPB website. We will warn you if the pay is below it.">Tingnan ang kasalukuyang wage order ng rehiyon ninyo sa website ng DOLE / RTWPB. Magbababala kami kung mas mababa ang sahod.</span>
-  </div>
+  <div class="field"><label for="cogs" data-en="Cost of goods sold this month">Puhunan ng nabentang paninda ngayong buwan</label><div class="input has-pre"><span class="pre">₱</span><input id="cogs" type="text" inputmode="decimal" value=""></div>
+    <span class="hint" data-en="Sales × (1 − your margin), or start stock + purchases − end stock.">Benta × (1 − margin), o simula ng stock + binili − dulo ng stock.</span></div>
 </section>
 
-<section class="card">
-  <h2 data-en="2. Other costs per employee">2. Iba pang gastos bawat empleyado</h2>
-  <div class="field">
-    <label for="allow" data-en="Allowances per month (meals, transport, load)">Allowance kada buwan (pagkain, pamasahe, load)</label>
-    <div class="input has-pre"><span class="pre">₱</span><input id="allow" type="text" inputmode="decimal" value="0"></div>
+<details class="card" id="item">
+  <summary data-en="2. Reorder point for one item (optional)">2. Kailan mag-order ng isang item (opsyonal)</summary>
+  <div class="field"><label for="iname" data-en="Item name">Pangalan ng item</label><input id="iname" type="text" value=""></div>
+  <div class="row2">
+    <div class="field"><label for="daily" data-en="Average sold per day (pieces)">Average na nabebenta kada araw (piraso)</label><input id="daily" type="text" inputmode="decimal" value=""></div>
+    <div class="field"><label for="lead" data-en="Supplier lead time (days)">Ilang araw bago dumating ang order</label><input id="lead" type="text" inputmode="decimal" value="3"></div>
+    <div class="field"><label for="safety" data-en="Safety stock (days)">Safety stock (araw)</label><input id="safety" type="text" inputmode="decimal" value="2"></div>
+    <div class="field"><label for="cover" data-en="Days each order should last">Ilang araw dapat tumagal ang bawat order</label><input id="cover" type="text" inputmode="decimal" value="7"></div>
+    <div class="field"><label for="unitcost" data-en="Cost per piece">Puhunan bawat piraso</label><div class="input has-pre"><span class="pre">₱</span><input id="unitcost" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="onhand" data-en="Pieces on hand now">Piraso na nasa tindahan ngayon</label><input id="onhand" type="text" inputmode="decimal" value=""></div>
   </div>
-  <div class="field">
-    <label for="yearly" data-en="Yearly extras (uniforms, training, medical, bonus)">Taunang dagdag (uniporme, training, medical, bonus)</label>
-    <div class="input has-pre"><span class="pre">₱</span><input id="yearly" type="text" inputmode="decimal" value="0"></div>
-  </div>
-  <div class="field">
-    <label class="check"><input id="sil" type="checkbox" checked> <span data-en="Include 5 days service incentive leave (required after 1 year of service)">Isama ang 5 araw na service incentive leave (kailangan pagkalipas ng 1 taon)</span></label>
-  </div>
-  <div class="field">
-    <label class="check"><input id="bmbe" type="checkbox"> <span data-en="My business is a registered BMBE">BMBE-registered ang negosyo ko</span></label>
-    <span class="hint" data-en="Barangay Micro Business Enterprises can be exempt from the minimum wage law, but must still pay SSS, PhilHealth, Pag-IBIG and 13th month.">Ang BMBE ay puwedeng exempted sa minimum wage, pero kailangan pa ring magbayad ng SSS, PhilHealth, Pag-IBIG at 13th month.</span>
-  </div>
-</section>
+</details>
 
 <div class="btns no-print">
   <button type="button" class="btn" id="btn-sample" data-en="Try a sample">Subukan ang halimbawa</button>
@@ -168,11 +139,6 @@ summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:
 </div>
 
 <section class="card result" id="result" aria-live="polite"></section>
-
-<details class="card inputs-help">
-  <summary data-en="Rates used and how we compute">Mga rate na ginamit at paano kinuwenta</summary>
-  <div id="rates"></div>
-</details>
 <div class="btns no-print">
   <button type="button" class="btn primary" id="btn-print" data-en="Download PDF / Print">I-download (PDF) / I-print</button>
   <button type="button" class="btn" id="btn-share" data-en="Share">I-share</button>
@@ -256,7 +222,8 @@ var FC = (function () {
   // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
   function postHeight() {
     if (window.parent === window) return;
-    window.parent.postMessage({ type: 'flame-calc-height', height: document.documentElement.scrollHeight }, '*');
+    // Body height, not the document's: inside an iframe the document is never shorter than the frame, so it could only grow.
+    window.parent.postMessage({ type: 'flame-calc-height', height: Math.ceil(document.body.getBoundingClientRect().height) }, '*');
   }
   function postResult(calculator, inputs, outputs) {
     if (window.parent === window) return;
@@ -307,127 +274,58 @@ var FC = (function () {
 })();
 </script>
 <script>
-// Government contribution rates. Update this one block when agencies change rates.
-var RATES = {
-  asOf: '2025',
-  sss: { min: 5000, max: 35000, step: 500, er: 0.10, ee: 0.05, ecLow: 10, ecHigh: 30, ecCut: 15000 },
-  philhealth: { rate: 0.05, floor: 10000, ceiling: 100000 },
-  pagibig: { er: 0.02, ee: 0.02, eeLow: 0.01, eeLowCut: 1500, maxBase: 10000 },
-  silDays: 5
-};
-function sssMsc(salary) {
-  var r = RATES.sss;
-  var msc = Math.floor((salary + r.step / 2) / r.step) * r.step; // e.g. ₱5,250–₱5,749.99 → ₱5,500
-  return Math.min(r.max, Math.max(r.min, msc));
-}
-function compute(monthly, daysPerWeek) {
-  var msc = sssMsc(monthly);
-  var sssEr = msc * RATES.sss.er, sssEe = msc * RATES.sss.ee;
-  var ec = msc < RATES.sss.ecCut ? RATES.sss.ecLow : RATES.sss.ecHigh;
-  var phBase = Math.min(RATES.philhealth.ceiling, Math.max(RATES.philhealth.floor, monthly));
-  var ph = phBase * RATES.philhealth.rate;
-  var piBase = Math.min(RATES.pagibig.maxBase, monthly);
-  var piEr = piBase * RATES.pagibig.er;
-  var piEe = piBase * (monthly <= RATES.pagibig.eeLowCut ? RATES.pagibig.eeLow : RATES.pagibig.ee);
-  var workDays = daysPerWeek === 6 ? 313 : 261; // DOLE factors for paid days per year
-  var dailyRate = monthly * 12 / workDays;
-  return { msc: msc, sssEr: sssEr, sssEe: sssEe, ec: ec, phEr: ph / 2, phEe: ph / 2, piEr: piEr, piEe: piEe,
-    thirteenth: monthly / 12, dailyRate: dailyRate, workDays: workDays };
-}
 var last = null;
 function calc() {
   var t = FC.t, peso = FC.peso;
-  var type = FC.seg('paytype');
-  document.getElementById('f-monthly').hidden = type !== 'monthly';
-  document.getElementById('f-daily').hidden = type !== 'daily';
-  var days = parseInt(document.getElementById('days').value, 10);
-  var workDays = days === 6 ? 313 : 261;
-  var monthly = type === 'monthly' ? FC.num('monthly') : FC.num('daily') * workDays / 12;
-  var staff = Math.max(1, Math.round(FC.num('staff')) || 1);
-  var out = document.getElementById('result');
-  out.className = 'card result';
-  FC.saveInputs('employee-cost');
-  renderRates();
-
-  if (monthly <= 0) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang sahod para makita ang totoong gastos.', 'Enter the pay to see the true cost.') + '</p>'; last = null; return; }
-
-  var c = compute(monthly, days);
-  var allow = FC.num('allow');
-  var extras = FC.num('yearly') / 12;
-  var sil = document.getElementById('sil').checked ? c.dailyRate * RATES.silDays / 12 : 0;
-  var govt = c.sssEr + c.ec + c.phEr + c.piEr;
-  var perMonth = monthly + allow + govt + c.thirteenth + sil + extras;
-  var over = (perMonth / monthly - 1) * 100;
-  var takeHome = monthly + allow - c.sssEe - c.phEe - c.piEe;
-
-  var minw = FC.num('minwage');
-  var bmbe = document.getElementById('bmbe').checked;
-  var belowMin = minw > 0 && c.dailyRate < minw - 0.005;
-  out.classList.add(belowMin && !bmbe ? 'bad' : 'good');
-
-  var rows = [
-    [t('Basic na sahod', 'Basic salary'), monthly],
-    [t('Allowance', 'Allowances'), allow],
-    ['SSS (employer, MSC ' + peso(c.msc, 0) + ')', c.sssEr],
-    ['SSS EC (employees\' compensation)', c.ec],
-    ['PhilHealth (employer)', c.phEr],
-    ['Pag-IBIG (employer)', c.piEr],
-    [t('13th month (nakalaan kada buwan)', '13th month (set aside monthly)'), c.thirteenth],
-    [t('Service incentive leave (nakalaan)', 'Service incentive leave (set aside)'), sil],
-    [t('Uniporme, training, iba pa', 'Uniforms, training, other'), extras]
-  ].filter(function (r) { return r[1] > 0; });
-
-  var warn = '';
-  if (belowMin && !bmbe) warn = '<p class="err">' + t('Babala: ang arawang sahod (' + peso(c.dailyRate) + ') ay mas mababa sa minimum wage na ' + peso(minw) + '.', 'Warning: the daily rate (' + peso(c.dailyRate) + ') is below the ' + peso(minw) + ' minimum wage.') + '</p>';
-  else if (belowMin && bmbe) warn = '<p class="note">' + t('Mas mababa sa minimum wage, pero puwede ito kung BMBE-registered at may valid na Certificate of Authority.', 'Below minimum wage, which a BMBE with a valid Certificate of Authority may pay.') + '</p>';
-
-  out.innerHTML =
-    '<p class="verdict">' + t('Ang ' + peso(monthly, 0) + ' na sahod ay talagang ' + peso(perMonth, 0) + ' kada buwan ang gastos mo, ' + Math.round(over) + '% na dagdag.',
-      'A ' + peso(monthly, 0) + ' salary really costs you ' + peso(perMonth, 0) + ' a month, ' + Math.round(over) + '% more.') + '</p>' +
-    warn +
-    '<p class="big">' + peso(perMonth * staff, 0) + '</p>' +
-    '<p class="big-label">' + (staff > 1 ? t('Kabuuang gastos kada buwan para sa ' + staff + ' empleyado', 'Total monthly cost for ' + staff + ' employees') : t('Kabuuang gastos kada buwan', 'Total monthly cost')) + '</p>' +
-    '<div class="stats">' +
-      '<div class="stat"><div class="k">' + t('Kada taon', 'Per year') + '</div><div class="v">' + peso(perMonth * 12 * staff, 0) + '</div></div>' +
-      '<div class="stat"><div class="k">' + t('Kada araw ng trabaho', 'Per work day') + '</div><div class="v">' + peso(perMonth * 12 / c.workDays * staff, 0) + '</div></div>' +
-      '<div class="stat"><div class="k">' + t('Arawang rate', 'Daily rate') + '</div><div class="v">' + peso(c.dailyRate) + '</div></div>' +
-      '<div class="stat"><div class="k">' + t('Take-home ng empleyado', 'Employee take-home') + '</div><div class="v">' + peso(takeHome, 0) + '</div></div>' +
-    '</div>' +
-    '<h2 style="margin:16px 0 4px;font-size:16px">' + t('Breakdown bawat empleyado, kada buwan', 'Breakdown per employee, per month') + '</h2>' +
-    '<table class="bd"><tbody>' +
-      rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td class="n">' + peso(r[1]) + '</td></tr>'; }).join('') +
-      '<tr class="tot"><td>' + t('Kabuuan', 'Total') + '</td><td class="n">' + peso(perMonth) + '</td></tr>' +
-    '</tbody></table>' +
-    '<p class="note">' + t('Kaltas sa empleyado (hindi gastos mo, pero ikaw ang magre-remit): SSS ' + peso(c.sssEe) + ', PhilHealth ' + peso(c.phEe) + ', Pag-IBIG ' + peso(c.piEe) + '. Hindi kasama ang withholding tax.',
-      'Employee deductions (not your cost, but you remit them): SSS ' + peso(c.sssEe) + ', PhilHealth ' + peso(c.phEe) + ', Pag-IBIG ' + peso(c.piEe) + '. Withholding tax not included.') + '</p>' +
-    '<a class="cta no-print" href="cash-flow.html">' + t('Kaya na bang mag-hire? <b>Gamitin ang Cash Flow Forecast</b> para makita kung kakayanin ng pera mo, o maghanap ng tauhan sa MarketplacePH.', 'Ready to hire? <b>Use the Cash Flow Forecast</b> to check you can afford it, or find staff on MarketplacePH.') + '</a>';
-
-  last = { monthly: monthly, perMonth: perMonth, staff: staff };
-  FC.postResult('employee-cost', { monthly: monthly, staff: staff, days: days, allow: allow }, { perEmployeeMonthly: perMonth, totalMonthly: perMonth * staff, totalYearly: perMonth * 12 * staff, govtMonthly: govt });
-}
-function renderRates() {
-  var t = FC.t, p = FC.peso, R = RATES;
-  document.getElementById('rates').innerHTML =
-    '<p class="muted">' + t('Batay sa mga rate ng ' + R.asOf + '. I-verify bago gamitin sa payroll.', 'Based on ' + R.asOf + ' rates. Verify before using for payroll.') + '</p>' +
-    '<table class="bd"><tbody>' +
-    '<tr><td>SSS</td><td>' + t('15% ng Monthly Salary Credit (employer 10%, empleyado 5%). MSC ' + p(R.sss.min, 0) + ' hanggang ' + p(R.sss.max, 0) + '. EC: ₱10 kung MSC ay mas mababa sa ₱15,000, kung hindi ₱30.',
-      '15% of Monthly Salary Credit (employer 10%, employee 5%). MSC ' + p(R.sss.min, 0) + ' to ' + p(R.sss.max, 0) + '. EC: ₱10 if MSC is below ₱15,000, otherwise ₱30.') + '</td></tr>' +
-    '<tr><td>PhilHealth</td><td>' + t('5% ng basic na sahod, hati ang employer at empleyado. Minimum base ₱10,000, maximum ₱100,000.', '5% of basic salary, split equally. Salary floor ₱10,000, ceiling ₱100,000.') + '</td></tr>' +
-    '<tr><td>Pag-IBIG</td><td>' + t('2% employer at 2% empleyado, hanggang ₱10,000 na sahod (max ₱200 bawat isa).', '2% employer and 2% employee, on salary up to ₱10,000 (max ₱200 each).') + '</td></tr>' +
-    '<tr><td>13th month</td><td>' + t('Basic na sahod sa isang taon ÷ 12. Bayaran bago mag-Disyembre 24.', 'Total basic salary for the year ÷ 12. Pay by December 24.') + '</td></tr>' +
-    '<tr><td>' + t('Arawang rate', 'Daily rate') + '</td><td>' + t('Buwanang sahod × 12 ÷ 313 (6 na araw) o ÷ 261 (5 araw).', 'Monthly salary × 12 ÷ 313 (6-day week) or ÷ 261 (5-day week).') + '</td></tr>' +
-    '</tbody></table>';
+  FC.saveInputs('inventory-turnover');
+  var out = document.getElementById('result'); out.className = 'card result';
+  var avg = (FC.num('begin') + FC.num('end')) / 2, cogs = FC.num('cogs');
+  var html = '', verdict = '', cls = 'good', days = NaN;
+  if (avg > 0 && cogs > 0) {
+    var turns = cogs / avg; days = 30 / turns;
+    cls = days > 90 ? 'bad' : days > 45 ? 'warn' : 'good';
+    verdict = days > 90 ? t('Mabagal: ' + Math.round(days) + ' araw bago maubos ang stock. ' + peso(avg, 0) + ' ang nakatali sa paninda.', 'Slow: stock takes ' + Math.round(days) + ' days to sell. ' + peso(avg, 0) + ' is tied up in goods.')
+      : days > 45 ? t('Katamtaman: ' + Math.round(days) + ' araw ang stock. Hanapin ang mabagal na item para mabawasan ang nakatali na pera.', 'Average: ' + Math.round(days) + ' days of stock. Find slow items to free up cash.')
+      : t('Maganda! Nauubos ang stock sa loob ng ' + Math.round(days) + ' araw.', 'Good! Stock sells through in ' + Math.round(days) + ' days.');
+    html += '<p class="big">' + Math.round(days) + ' ' + t('araw', 'days') + '</p><p class="big-label">' + t('Ilang araw bago maubos ang stock (days of inventory)', 'Days to sell through your stock (days of inventory)') + '</p>' +
+      '<div class="stats">' +
+        '<div class="stat"><div class="k">' + t('Perang nakatali sa stock', 'Cash tied up in stock') + '</div><div class="v">' + peso(avg, 0) + '</div></div>' +
+        '<div class="stat"><div class="k">' + t('Turnover kada buwan', 'Turnover per month') + '</div><div class="v">' + turns.toFixed(1) + '×</div></div>' +
+        '<div class="stat"><div class="k">' + t('Turnover kada taon', 'Turnover per year') + '</div><div class="v">' + (turns * 12).toFixed(1) + '×</div></div>' +
+        '<div class="stat"><div class="k">' + t('Kung 30 araw lang ang stock', 'If stock covered 30 days') + '</div><div class="v">' + peso(cogs, 0) + '</div></div>' +
+      '</div>' +
+      (avg > cogs ? '<p class="note">' + t('Puwede mong mapalaya ang mga ' + peso(avg - cogs, 0) + ' kung 30 araw lang ang stock na hawak mo.', 'You could free about ' + peso(avg - cogs, 0) + ' by holding only 30 days of stock.') + '</p>' : '');
+  }
+  var daily = FC.num('daily');
+  if (daily > 0) {
+    var rop = daily * (FC.num('lead') + FC.num('safety'));
+    var qty = Math.ceil(daily * Math.max(1, FC.num('cover')));
+    var onhand = FC.num('onhand');
+    var name = document.getElementById('iname').value.trim() || t('ang item', 'the item');
+    var uc = FC.num('unitcost');
+    var now = !FC.blank('onhand') && onhand <= rop;
+    if (!verdict) { cls = now ? 'warn' : 'good'; }
+    html += '<h2 style="margin:16px 0 4px;font-size:16px">' + t('Reorder para sa ', 'Reorder for ') + name + '</h2>' +
+      '<table class="bd"><tbody>' +
+      '<tr><td>' + t('Mag-order kapag natira na lang ang', 'Reorder when stock falls to') + '</td><td class="n">' + FC.int(Math.ceil(rop)) + ' ' + t('piraso', 'pcs') + '</td></tr>' +
+      '<tr><td>' + t('Dami ng iorder', 'Order quantity') + '</td><td class="n">' + FC.int(qty) + ' ' + t('piraso', 'pcs') + '</td></tr>' +
+      (uc > 0 ? '<tr><td>' + t('Halaga ng order', 'Order cost') + '</td><td class="n">' + peso(qty * uc, 0) + '</td></tr>' : '') +
+      (!FC.blank('onhand') ? '<tr class="tot"><td>' + t('Ilang araw pa tatagal ang nasa tindahan', 'Days the stock on hand will last') + '</td><td class="n">' + (onhand / daily).toFixed(1) + '</td></tr>' : '') +
+      '</tbody></table>' +
+      (now ? '<p class="err">' + t('Mag-order na ngayon: ' + FC.int(onhand) + ' piraso na lang, mas mababa sa reorder point.', 'Order now: only ' + FC.int(onhand) + ' left, below the reorder point.') + '</p>' : '');
+  }
+  if (!html) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang halaga ng stock at puhunan ng nabenta, o ang benta kada araw ng isang item.', 'Enter your stock values and cost of goods sold, or one item\'s daily sales.') + '</p>'; last = null; return; }
+  out.classList.add(cls);
+  out.innerHTML = (verdict ? '<p class="verdict">' + verdict + '</p>' : '') + html +
+    (cls === 'bad' ? '<a class="cta no-print" href="https://www.flameph.org/academy" target="_top">' + t('Matuto ng inventory control sa <b>FLAME PH Academy</b>, o gamitin ang libreng FLAME POS para bantayan ang stock.', 'Learn inventory control at <b>FLAME PH Academy</b>, or track stock with the free FLAME POS.') + '</a>' : '');
+  last = { days: days, avg: avg };
+  FC.postResult('inventory-turnover', { begin: FC.num('begin'), end: FC.num('end'), cogs: cogs }, { averageInventory: avg, daysOfInventory: isFinite(days) ? days : null });
 }
 FC.init({
-  page: 'employee-cost',
-  calc: calc,
-  sample: function () { FC.fill({ monthly: '15000', daily: '', staff: '2', minwage: '', allow: '1000', yearly: '3000', sil: true, bmbe: false }); FC.setSeg('paytype', 'monthly'); document.getElementById('days').value = '6'; },
-  reset: function () { FC.fill({ monthly: '', daily: '', staff: '1', minwage: '', allow: '0', yearly: '0' }); FC.setSeg('paytype', 'monthly'); },
-  shareText: function () {
-    if (!last) return FC.t('Subukan ang Employee Cost Calculator ng FLAME PH', 'Try the FLAME PH Employee Cost Calculator');
-    return FC.t('Ang ' + FC.peso(last.monthly, 0) + ' na sahod ay ' + FC.peso(last.perMonth, 0) + ' kada buwan ang totoong gastos. Kinuwenta sa FLAME PH calculator.',
-      'A ' + FC.peso(last.monthly, 0) + ' salary really costs ' + FC.peso(last.perMonth, 0) + ' a month. Calculated with the FLAME PH calculator.');
-  }
+  page: 'inventory-turnover', calc: calc,
+  sample: function () { FC.fill({ begin: '120000', end: '100000', cogs: '75000', iname: 'Coke 1.5L', daily: '18', lead: '3', safety: '2', cover: '7', unitcost: '68', onhand: '80' }); },
+  reset: function () { FC.fill({ begin: '', end: '', cogs: '', iname: '', daily: '', unitcost: '', onhand: '' }); },
+  shareText: function () { return last && isFinite(last.days) ? FC.t('Days of inventory: ' + Math.round(last.days) + ' araw, ' + FC.peso(last.avg, 0) + ' ang nakatali sa stock. Kinuwenta sa FLAME PH calculator.', 'Days of inventory: ' + Math.round(last.days) + ', ' + FC.peso(last.avg, 0) + ' tied up in stock. Calculated with the FLAME PH calculator.') : 'FLAME PH Inventory Turnover Calculator'; }
 });
 FC.onLang(calc);
 </script>

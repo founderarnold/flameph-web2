@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Payroll Calculator | FLAME PH</title>
-<meta name="description" content="Kuwentahin ang sahod kada cutoff: overtime, holiday, night differential, kaltas sa SSS, PhilHealth, Pag-IBIG at withholding tax.">
+<title>Total Employee Cost Calculator | FLAME PH</title>
+<meta name="description" content="Alamin ang totoong gastos sa empleyado: sahod, SSS, PhilHealth, Pag-IBIG, 13th month at iba pa.">
 <style>
 :root{
   --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
@@ -49,7 +49,7 @@ label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
 .input{position:relative}
 .input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
 .input .pre{left:12px}.input .suf{right:12px}
-input[type=text],input[type=number],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
 .input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
 input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -107,47 +107,58 @@ summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:
   </div>
 </header>
 <p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
-<h1 data-en="Payroll Calculator">Payroll Calculator</h1>
-<p class="lead" data-en="Compute one employee's pay for a cutoff: overtime, holiday and night differential, absences, SSS, PhilHealth, Pag-IBIG and withholding tax. Get a payslip you can print.">Kuwentahin ang sahod ng isang empleyado kada cutoff: overtime, holiday, night differential, absent, SSS, PhilHealth, Pag-IBIG at withholding tax. May payslip na puwedeng i-print.</p>
+<h1 data-en="Total Employee Cost Calculator">Total Employee Cost Calculator</h1>
+<p class="lead" data-en="The salary is only part of it. See the true monthly cost of a worker, including SSS, PhilHealth, Pag-IBIG, 13th month pay and leave.">Hindi lang sahod ang gastos. Alamin ang totoong buwanang gastos sa isang empleyado, kasama ang SSS, PhilHealth, Pag-IBIG, 13th month at leave.</p>
 
 <section class="card">
-  <h2 data-en="1. Employee and pay">1. Empleyado at sahod</h2>
-  <div class="field"><label for="ename" data-en="Employee name (for the payslip)">Pangalan ng empleyado (para sa payslip)</label><input id="ename" type="text" value=""></div>
+  <h2 data-en="1. Pay">1. Sahod</h2>
   <div class="field">
     <div class="seg" id="paytype">
       <button type="button" data-v="monthly" aria-pressed="true" data-en="Monthly salary">Buwanang sahod</button>
       <button type="button" data-v="daily" aria-pressed="false" data-en="Daily rate">Arawang sahod</button>
     </div>
   </div>
-  <div class="field" id="f-monthly"><label for="monthly" data-en="Basic monthly salary">Basic na buwanang sahod</label><div class="input has-pre"><span class="pre">₱</span><input id="monthly" type="text" inputmode="decimal" value=""></div></div>
+  <div class="field" id="f-monthly">
+    <label for="monthly" data-en="Basic monthly salary">Basic na buwanang sahod</label>
+    <div class="input has-pre"><span class="pre">₱</span><input id="monthly" type="text" inputmode="decimal" value=""></div>
+  </div>
   <div class="field" id="f-daily" hidden>
-    <div class="row2">
-      <div class="field"><label for="daily" data-en="Daily rate">Arawang sahod</label><div class="input has-pre"><span class="pre">₱</span><input id="daily" type="text" inputmode="decimal" value=""></div></div>
-      <div class="field"><label for="daysworked" data-en="Days worked this cutoff">Araw na pumasok ngayong cutoff</label><input id="daysworked" type="text" inputmode="decimal" value="13"></div>
-    </div>
+    <label for="daily" data-en="Daily rate">Arawang sahod</label>
+    <div class="input has-pre"><span class="pre">₱</span><input id="daily" type="text" inputmode="decimal" value=""></div>
   </div>
   <div class="row2">
-    <div class="field"><label for="freq" data-en="Pay schedule">Iskedyul ng sahod</label><select id="freq"><option value="semi" data-en="Every 15th and 30th">Tuwing 15 at 30</option><option value="monthly" data-en="Once a month">Isang beses kada buwan</option></select></div>
-    <div class="field"><label for="days" data-en="Work days per week">Araw ng trabaho kada linggo</label><select id="days"><option value="5">5</option><option value="6" selected>6</option></select></div>
+    <div class="field">
+      <label for="days" data-en="Work days per week">Araw ng trabaho kada linggo</label>
+      <select id="days"><option value="5">5</option><option value="6" selected>6</option></select>
+    </div>
+    <div class="field">
+      <label for="staff" data-en="Number of employees">Bilang ng empleyado</label>
+      <input id="staff" type="text" inputmode="numeric" value="1">
+    </div>
   </div>
   <div class="field">
-    <label class="check"><input id="mwe" type="checkbox"> <span data-en="Minimum wage earner (no withholding tax)">Minimum wage earner (walang withholding tax)</span></label>
+    <label for="minwage" data-en="Minimum daily wage in your region (optional)">Minimum wage kada araw sa inyong rehiyon (opsyonal)</label>
+    <div class="input has-pre"><span class="pre">₱</span><input id="minwage" type="text" inputmode="decimal" value=""></div>
+    <span class="hint" data-en="Check the current wage order for your region on the DOLE / RTWPB website. We will warn you if the pay is below it.">Tingnan ang kasalukuyang wage order ng rehiyon ninyo sa website ng DOLE / RTWPB. Magbababala kami kung mas mababa ang sahod.</span>
   </div>
 </section>
 
 <section class="card">
-  <h2 data-en="2. This cutoff">2. Ngayong cutoff</h2>
-  <div class="row2">
-    <div class="field"><label for="ot" data-en="Overtime hours (regular day)">Overtime (oras, regular na araw)</label><input id="ot" type="text" inputmode="decimal" value="0"></div>
-    <div class="field"><label for="nd" data-en="Night shift hours (10pm–6am)">Oras sa night shift (10pm–6am)</label><input id="nd" type="text" inputmode="decimal" value="0"></div>
-    <div class="field"><label for="rh" data-en="Regular holidays worked (days)">Regular holiday na pinasukan (araw)</label><input id="rh" type="text" inputmode="decimal" value="0"></div>
-    <div class="field"><label for="sh" data-en="Special days worked (days)">Special non-working day na pinasukan (araw)</label><input id="sh" type="text" inputmode="decimal" value="0"></div>
-    <div class="field" id="f-absent"><label for="absent" data-en="Days absent (unpaid)">Araw na absent (walang bayad)</label><input id="absent" type="text" inputmode="decimal" value="0"></div>
-    <div class="field"><label for="late" data-en="Minutes late or undertime">Minuto ng late o undertime</label><input id="late" type="text" inputmode="decimal" value="0"></div>
+  <h2 data-en="2. Other costs per employee">2. Iba pang gastos bawat empleyado</h2>
+  <div class="field">
+    <label for="allow" data-en="Allowances per month (meals, transport, load)">Allowance kada buwan (pagkain, pamasahe, load)</label>
+    <div class="input has-pre"><span class="pre">₱</span><input id="allow" type="text" inputmode="decimal" value="0"></div>
   </div>
-  <div class="row2">
-    <div class="field"><label for="allow" data-en="Allowances this cutoff (non-taxable)">Allowance ngayong cutoff (hindi taxable)</label><div class="input has-pre"><span class="pre">₱</span><input id="allow" type="text" inputmode="decimal" value="0"></div></div>
-    <div class="field"><label for="otherded" data-en="Other deductions (cash advance, loans)">Iba pang kaltas (cash advance, utang)</label><div class="input has-pre"><span class="pre">₱</span><input id="otherded" type="text" inputmode="decimal" value="0"></div></div>
+  <div class="field">
+    <label for="yearly" data-en="Yearly extras (uniforms, training, medical, bonus)">Taunang dagdag (uniporme, training, medical, bonus)</label>
+    <div class="input has-pre"><span class="pre">₱</span><input id="yearly" type="text" inputmode="decimal" value="0"></div>
+  </div>
+  <div class="field">
+    <label class="check"><input id="sil" type="checkbox" checked> <span data-en="Include 5 days service incentive leave (required after 1 year of service)">Isama ang 5 araw na service incentive leave (kailangan pagkalipas ng 1 taon)</span></label>
+  </div>
+  <div class="field">
+    <label class="check"><input id="bmbe" type="checkbox"> <span data-en="My business is a registered BMBE">BMBE-registered ang negosyo ko</span></label>
+    <span class="hint" data-en="Barangay Micro Business Enterprises can be exempt from the minimum wage law, but must still pay SSS, PhilHealth, Pag-IBIG and 13th month.">Ang BMBE ay puwedeng exempted sa minimum wage, pero kailangan pa ring magbayad ng SSS, PhilHealth, Pag-IBIG at 13th month.</span>
   </div>
 </section>
 
@@ -245,7 +256,8 @@ var FC = (function () {
   // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
   function postHeight() {
     if (window.parent === window) return;
-    window.parent.postMessage({ type: 'flame-calc-height', height: document.documentElement.scrollHeight }, '*');
+    // Body height, not the document's: inside an iframe the document is never shorter than the frame, so it could only grow.
+    window.parent.postMessage({ type: 'flame-calc-height', height: Math.ceil(document.body.getBoundingClientRect().height) }, '*');
   }
   function postResult(calculator, inputs, outputs) {
     if (window.parent === window) return;
@@ -296,26 +308,32 @@ var FC = (function () {
 })();
 </script>
 <script>
-// Same government rates as the Employee Cost calculator; update both when agencies change rates.
+// Government contribution rates. Update this one block when agencies change rates.
 var RATES = {
   asOf: '2025',
   sss: { min: 5000, max: 35000, step: 500, er: 0.10, ee: 0.05, ecLow: 10, ecHigh: 30, ecCut: 15000 },
   philhealth: { rate: 0.05, floor: 10000, ceiling: 100000 },
   pagibig: { er: 0.02, ee: 0.02, eeLow: 0.01, eeLowCut: 1500, maxBase: 10000 },
-  // BIR monthly withholding table (TRAIN law, 2023 onward): [over, base tax, rate on excess]
-  tax: [[666667, 183541.80, 0.35], [166667, 33541.80, 0.30], [66667, 8541.80, 0.25], [33333, 1875, 0.20], [20833, 0, 0.15], [0, 0, 0]],
-  premium: { ot: 1.25, nd: 0.10, regHoliday: 1.00, special: 0.30 }
+  silDays: 5
 };
 function sssMsc(salary) {
   var r = RATES.sss;
-  return Math.min(r.max, Math.max(r.min, Math.floor((salary + r.step / 2) / r.step) * r.step));
+  var msc = Math.floor((salary + r.step / 2) / r.step) * r.step; // e.g. ₱5,250–₱5,749.99 → ₱5,500
+  return Math.min(r.max, Math.max(r.min, msc));
 }
-function monthlyTax(taxable) {
-  for (var i = 0; i < RATES.tax.length; i++) {
-    var b = RATES.tax[i];
-    if (taxable > b[0]) return b[1] + (taxable - b[0]) * b[2];
-  }
-  return 0;
+function compute(monthly, daysPerWeek) {
+  var msc = sssMsc(monthly);
+  var sssEr = msc * RATES.sss.er, sssEe = msc * RATES.sss.ee;
+  var ec = msc < RATES.sss.ecCut ? RATES.sss.ecLow : RATES.sss.ecHigh;
+  var phBase = Math.min(RATES.philhealth.ceiling, Math.max(RATES.philhealth.floor, monthly));
+  var ph = phBase * RATES.philhealth.rate;
+  var piBase = Math.min(RATES.pagibig.maxBase, monthly);
+  var piEr = piBase * RATES.pagibig.er;
+  var piEe = piBase * (monthly <= RATES.pagibig.eeLowCut ? RATES.pagibig.eeLow : RATES.pagibig.ee);
+  var workDays = daysPerWeek === 6 ? 313 : 261; // DOLE factors for paid days per year
+  var dailyRate = monthly * 12 / workDays;
+  return { msc: msc, sssEr: sssEr, sssEe: sssEe, ec: ec, phEr: ph / 2, phEe: ph / 2, piEr: piEr, piEe: piEe,
+    thirteenth: monthly / 12, dailyRate: dailyRate, workDays: workDays };
 }
 var last = null;
 function calc() {
@@ -323,115 +341,93 @@ function calc() {
   var type = FC.seg('paytype');
   document.getElementById('f-monthly').hidden = type !== 'monthly';
   document.getElementById('f-daily').hidden = type !== 'daily';
-  document.getElementById('f-absent').hidden = type !== 'monthly';
-  FC.saveInputs('payroll');
-  renderRates();
+  var days = parseInt(document.getElementById('days').value, 10);
+  var workDays = days === 6 ? 313 : 261;
+  var monthly = type === 'monthly' ? FC.num('monthly') : FC.num('daily') * workDays / 12;
+  var staff = Math.max(1, Math.round(FC.num('staff')) || 1);
   var out = document.getElementById('result');
   out.className = 'card result';
+  FC.saveInputs('employee-cost');
+  renderRates();
 
-  var semi = document.getElementById('freq').value === 'semi';
-  var cut = semi ? 2 : 1;
-  var workDays = parseInt(document.getElementById('days').value, 10) === 6 ? 313 : 261;
-  var dailyRate, basic, monthlyEquiv;
-  if (type === 'monthly') {
-    monthlyEquiv = FC.num('monthly');
-    dailyRate = monthlyEquiv * 12 / workDays;
-    basic = monthlyEquiv / cut;
-  } else {
-    dailyRate = FC.num('daily');
-    basic = dailyRate * FC.num('daysworked');
-    monthlyEquiv = dailyRate * workDays / 12;
-  }
-  if (dailyRate <= 0) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang sahod para makita ang payslip.', 'Enter the pay to see the payslip.') + '</p>'; last = null; return; }
-  var hourly = dailyRate / 8;
-  var P = RATES.premium;
-  var earnings = [
-    [type === 'monthly' ? t('Basic na sahod', 'Basic pay') : t('Basic (' + FC.num('daysworked') + ' araw)', 'Basic (' + FC.num('daysworked') + ' days)'), basic],
-    [t('Overtime (' + FC.num('ot') + ' oras × 125%)', 'Overtime (' + FC.num('ot') + ' hrs × 125%)'), FC.num('ot') * hourly * P.ot],
-    [t('Night differential (' + FC.num('nd') + ' oras × 10%)', 'Night differential (' + FC.num('nd') + ' hrs × 10%)'), FC.num('nd') * hourly * P.nd],
-    [t('Regular holiday pay (dagdag 100%)', 'Regular holiday pay (extra 100%)'), FC.num('rh') * dailyRate * P.regHoliday],
-    [t('Special day pay (dagdag 30%)', 'Special day pay (extra 30%)'), FC.num('sh') * dailyRate * P.special]
-  ];
-  var absent = type === 'monthly' ? FC.num('absent') * dailyRate : 0;
-  var late = FC.num('late') * hourly / 60;
-  var taxableGross = earnings.reduce(function (s, e) { return s + e[1]; }, 0) - absent - late;
+  if (monthly <= 0) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang sahod para makita ang totoong gastos.', 'Enter the pay to see the true cost.') + '</p>'; last = null; return; }
+
+  var c = compute(monthly, days);
   var allow = FC.num('allow');
+  var extras = FC.num('yearly') / 12;
+  var sil = document.getElementById('sil').checked ? c.dailyRate * RATES.silDays / 12 : 0;
+  var govt = c.sssEr + c.ec + c.phEr + c.piEr;
+  var perMonth = monthly + allow + govt + c.thirteenth + sil + extras;
+  var over = (perMonth / monthly - 1) * 100;
+  var takeHome = monthly + allow - c.sssEe - c.phEe - c.piEe;
 
-  // Contributions are based on the monthly salary and split evenly across cutoffs.
-  var msc = sssMsc(monthlyEquiv);
-  var sssEe = msc * RATES.sss.ee / cut;
-  var phEe = Math.min(RATES.philhealth.ceiling, Math.max(RATES.philhealth.floor, monthlyEquiv)) * RATES.philhealth.rate / 2 / cut;
-  var piEe = Math.min(RATES.pagibig.maxBase, monthlyEquiv) * (monthlyEquiv <= RATES.pagibig.eeLowCut ? RATES.pagibig.eeLow : RATES.pagibig.ee) / cut;
-  var mwe = document.getElementById('mwe').checked;
-  var taxable = Math.max(0, taxableGross - sssEe - phEe - piEe);
-  var tax = mwe ? 0 : monthlyTax(taxable * cut) / cut;
-  var other = FC.num('otherded');
-  var deductions = [
-    [t('Absent', 'Absences'), absent],
-    [t('Late / undertime', 'Late / undertime'), late],
-    ['SSS', sssEe], ['PhilHealth', phEe], ['Pag-IBIG', piEe],
-    ['Withholding tax', tax],
-    [t('Iba pang kaltas', 'Other deductions'), other]
-  ];
-  var gross = taxableGross + absent + late + allow;
-  var totalDed = deductions.reduce(function (s, d) { return s + d[1]; }, 0);
-  var net = gross - totalDed;
+  var minw = FC.num('minwage');
+  var bmbe = document.getElementById('bmbe').checked;
+  var belowMin = minw > 0 && c.dailyRate < minw - 0.005;
+  out.classList.add(belowMin && !bmbe ? 'bad' : 'good');
 
-  var erShare = (msc * RATES.sss.er + (msc < RATES.sss.ecCut ? RATES.sss.ecLow : RATES.sss.ecHigh) +
-    Math.min(RATES.philhealth.ceiling, Math.max(RATES.philhealth.floor, monthlyEquiv)) * RATES.philhealth.rate / 2 +
-    Math.min(RATES.pagibig.maxBase, monthlyEquiv) * RATES.pagibig.er) / cut;
+  var rows = [
+    [t('Basic na sahod', 'Basic salary'), monthly],
+    [t('Allowance', 'Allowances'), allow],
+    ['SSS (employer, MSC ' + peso(c.msc, 0) + ')', c.sssEr],
+    ['SSS EC (employees\' compensation)', c.ec],
+    ['PhilHealth (employer)', c.phEr],
+    ['Pag-IBIG (employer)', c.piEr],
+    [t('13th month (nakalaan kada buwan)', '13th month (set aside monthly)'), c.thirteenth],
+    [t('Service incentive leave (nakalaan)', 'Service incentive leave (set aside)'), sil],
+    [t('Uniporme, training, iba pa', 'Uniforms, training, other'), extras]
+  ].filter(function (r) { return r[1] > 0; });
 
-  out.classList.add(net > 0 ? 'good' : 'bad');
-  var line = function (r, neg) { return r[1] > 0.004 ? '<tr><td>' + r[0] + '</td><td class="n">' + (neg ? '−' : '') + peso(r[1]) + '</td></tr>' : ''; };
-  var name = document.getElementById('ename').value.trim();
+  var warn = '';
+  if (belowMin && !bmbe) warn = '<p class="err">' + t('Babala: ang arawang sahod (' + peso(c.dailyRate) + ') ay mas mababa sa minimum wage na ' + peso(minw) + '.', 'Warning: the daily rate (' + peso(c.dailyRate) + ') is below the ' + peso(minw) + ' minimum wage.') + '</p>';
+  else if (belowMin && bmbe) warn = '<p class="note">' + t('Mas mababa sa minimum wage, pero puwede ito kung BMBE-registered at may valid na Certificate of Authority.', 'Below minimum wage, which a BMBE with a valid Certificate of Authority may pay.') + '</p>';
+
   out.innerHTML =
-    '<p class="verdict">' + (net > 0
-      ? t('Net pay' + (name ? ' ni ' + name : '') + ' ngayong cutoff: ' + peso(net) + '.', (name ? name + '\'s net' : 'Net') + ' pay this cutoff: ' + peso(net) + '.')
-      : t('Mas malaki ang kaltas kaysa sa sahod. I-check ang cash advance o utang.', 'Deductions are larger than the pay. Check cash advances or loans.')) + '</p>' +
-    '<p class="big">' + peso(net) + '</p>' +
-    '<p class="big-label">' + t('Net pay (matatanggap ng empleyado)', 'Net pay (what the employee receives)') + '</p>' +
-    '<h2 style="margin:12px 0 4px;font-size:16px">' + t('Kita', 'Earnings') + '</h2>' +
-    '<table class="bd"><tbody>' + earnings.map(function (e) { return line(e); }).join('') +
-      (allow > 0 ? line([t('Allowance', 'Allowances'), allow]) : '') +
-      '<tr class="tot"><td>Gross pay</td><td class="n">' + peso(gross) + '</td></tr></tbody></table>' +
-    '<h2 style="margin:12px 0 4px;font-size:16px">' + t('Kaltas', 'Deductions') + '</h2>' +
-    '<table class="bd"><tbody>' + deductions.map(function (d) { return line(d, true); }).join('') +
-      '<tr class="tot"><td>' + t('Kabuuang kaltas', 'Total deductions') + '</td><td class="n">−' + peso(totalDed) + '</td></tr></tbody></table>' +
-    '<div class="stats" style="margin-top:12px">' +
-      '<div class="stat"><div class="k">' + t('Arawang rate', 'Daily rate') + '</div><div class="v">' + peso(dailyRate) + '</div></div>' +
-      '<div class="stat"><div class="k">' + t('Kada oras', 'Hourly rate') + '</div><div class="v">' + peso(hourly) + '</div></div>' +
-      '<div class="stat" style="grid-column:1/-1"><div class="k">' + t('Employer share na ire-remit mo (SSS, EC, PhilHealth, Pag-IBIG)', 'Employer share you remit (SSS, EC, PhilHealth, Pag-IBIG)') + '</div><div class="v">' + peso(erShare) + '</div></div>' +
+    '<p class="verdict">' + t('Ang ' + peso(monthly, 0) + ' na sahod ay talagang ' + peso(perMonth, 0) + ' kada buwan ang gastos mo, ' + Math.round(over) + '% na dagdag.',
+      'A ' + peso(monthly, 0) + ' salary really costs you ' + peso(perMonth, 0) + ' a month, ' + Math.round(over) + '% more.') + '</p>' +
+    warn +
+    '<p class="big">' + peso(perMonth * staff, 0) + '</p>' +
+    '<p class="big-label">' + (staff > 1 ? t('Kabuuang gastos kada buwan para sa ' + staff + ' empleyado', 'Total monthly cost for ' + staff + ' employees') : t('Kabuuang gastos kada buwan', 'Total monthly cost')) + '</p>' +
+    '<div class="stats">' +
+      '<div class="stat"><div class="k">' + t('Kada taon', 'Per year') + '</div><div class="v">' + peso(perMonth * 12 * staff, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Kada araw ng trabaho', 'Per work day') + '</div><div class="v">' + peso(perMonth * 12 / c.workDays * staff, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Arawang rate', 'Daily rate') + '</div><div class="v">' + peso(c.dailyRate) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Take-home ng empleyado', 'Employee take-home') + '</div><div class="v">' + peso(takeHome, 0) + '</div></div>' +
     '</div>' +
-    '<p class="note">' + t('Ire-remit mo sa ahensya ang kaltas ng empleyado at ang employer share. Ang 13th month ay hiwalay na bayad tuwing Disyembre.', 'You remit both the employee deductions and the employer share to the agencies. The 13th month is paid separately in December.') + '</p>' +
-    '<a class="cta no-print" href="employee-cost.html">' + t('Gusto mong makita ang totoong gastos sa empleyado buong taon? <b>Gamitin ang Total Employee Cost Calculator.</b>', 'Want the true yearly cost of this employee? <b>Use the Total Employee Cost Calculator.</b>') + '</a>';
+    '<h2 style="margin:16px 0 4px;font-size:16px">' + t('Breakdown bawat empleyado, kada buwan', 'Breakdown per employee, per month') + '</h2>' +
+    '<table class="bd"><tbody>' +
+      rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td class="n">' + peso(r[1]) + '</td></tr>'; }).join('') +
+      '<tr class="tot"><td>' + t('Kabuuan', 'Total') + '</td><td class="n">' + peso(perMonth) + '</td></tr>' +
+    '</tbody></table>' +
+    '<p class="note">' + t('Kaltas sa empleyado (hindi gastos mo, pero ikaw ang magre-remit): SSS ' + peso(c.sssEe) + ', PhilHealth ' + peso(c.phEe) + ', Pag-IBIG ' + peso(c.piEe) + '. Hindi kasama ang withholding tax.',
+      'Employee deductions (not your cost, but you remit them): SSS ' + peso(c.sssEe) + ', PhilHealth ' + peso(c.phEe) + ', Pag-IBIG ' + peso(c.piEe) + '. Withholding tax not included.') + '</p>' +
+    '<a class="cta no-print" href="cash-flow.html">' + t('Kaya na bang mag-hire? <b>Gamitin ang Cash Flow Forecast</b> para makita kung kakayanin ng pera mo, o maghanap ng tauhan sa MarketplacePH.', 'Ready to hire? <b>Use the Cash Flow Forecast</b> to check you can afford it, or find staff on MarketplacePH.') + '</a>';
 
-  last = { net: net, name: name };
-  FC.postResult('payroll', { payType: type, monthly: monthlyEquiv, schedule: semi ? 'semi-monthly' : 'monthly', ot: FC.num('ot'), nd: FC.num('nd') }, { gross: gross, totalDeductions: totalDed, net: net, withholdingTax: tax, employerShare: erShare });
+  last = { monthly: monthly, perMonth: perMonth, staff: staff };
+  FC.postResult('employee-cost', { monthly: monthly, staff: staff, days: days, allow: allow }, { perEmployeeMonthly: perMonth, totalMonthly: perMonth * staff, totalYearly: perMonth * 12 * staff, govtMonthly: govt });
 }
 function renderRates() {
-  var t = FC.t;
+  var t = FC.t, p = FC.peso, R = RATES;
   document.getElementById('rates').innerHTML =
-    '<p class="muted">' + t('Batay sa mga rate ng ' + RATES.asOf + '. I-verify bago gamitin sa totoong payroll.', 'Based on ' + RATES.asOf + ' rates. Verify before using for real payroll.') + '</p>' +
+    '<p class="muted">' + t('Batay sa mga rate ng ' + R.asOf + '. I-verify bago gamitin sa payroll.', 'Based on ' + R.asOf + ' rates. Verify before using for payroll.') + '</p>' +
     '<table class="bd"><tbody>' +
-    '<tr><td>' + t('Kada oras', 'Hourly') + '</td><td>' + t('Arawang rate ÷ 8. Arawang rate = buwanang sahod × 12 ÷ 313 (6 na araw) o ÷ 261 (5 araw).', 'Daily rate ÷ 8. Daily rate = monthly salary × 12 ÷ 313 (6-day week) or ÷ 261 (5-day week).') + '</td></tr>' +
-    '<tr><td>Overtime</td><td>' + t('125% ng kada oras sa regular na araw.', '125% of the hourly rate on a regular day.') + '</td></tr>' +
-    '<tr><td>Night diff</td><td>' + t('Dagdag 10% ng kada oras mula 10pm hanggang 6am.', 'Extra 10% of the hourly rate from 10pm to 6am.') + '</td></tr>' +
-    '<tr><td>Holiday</td><td>' + t('Regular holiday na pinasukan: dagdag 100% ng arawang rate (kabuuang 200%). Special day: dagdag 30%.', 'Regular holiday worked: extra 100% of the daily rate (200% in total). Special day worked: extra 30%.') + '</td></tr>' +
-    '<tr><td>SSS, PhilHealth, Pag-IBIG</td><td>' + t('Kaltas ng empleyado: SSS 5% ng MSC, PhilHealth 2.5%, Pag-IBIG 2% (max ₱200). Hinahati sa dalawang cutoff.', 'Employee share: SSS 5% of MSC, PhilHealth 2.5%, Pag-IBIG 2% (max ₱200). Split across the two cutoffs.') + '</td></tr>' +
-    '<tr><td>Withholding tax</td><td>' + t('BIR TRAIN table: walang tax hanggang ₱20,833 kada buwan (₱250,000 kada taon) na taxable na sahod. Minimum wage earners ay exempted.', 'BIR TRAIN table: no tax up to ₱20,833 a month (₱250,000 a year) of taxable pay. Minimum wage earners are exempt.') + '</td></tr>' +
+    '<tr><td>SSS</td><td>' + t('15% ng Monthly Salary Credit (employer 10%, empleyado 5%). MSC ' + p(R.sss.min, 0) + ' hanggang ' + p(R.sss.max, 0) + '. EC: ₱10 kung MSC ay mas mababa sa ₱15,000, kung hindi ₱30.',
+      '15% of Monthly Salary Credit (employer 10%, employee 5%). MSC ' + p(R.sss.min, 0) + ' to ' + p(R.sss.max, 0) + '. EC: ₱10 if MSC is below ₱15,000, otherwise ₱30.') + '</td></tr>' +
+    '<tr><td>PhilHealth</td><td>' + t('5% ng basic na sahod, hati ang employer at empleyado. Minimum base ₱10,000, maximum ₱100,000.', '5% of basic salary, split equally. Salary floor ₱10,000, ceiling ₱100,000.') + '</td></tr>' +
+    '<tr><td>Pag-IBIG</td><td>' + t('2% employer at 2% empleyado, hanggang ₱10,000 na sahod (max ₱200 bawat isa).', '2% employer and 2% employee, on salary up to ₱10,000 (max ₱200 each).') + '</td></tr>' +
+    '<tr><td>13th month</td><td>' + t('Basic na sahod sa isang taon ÷ 12. Bayaran bago mag-Disyembre 24.', 'Total basic salary for the year ÷ 12. Pay by December 24.') + '</td></tr>' +
+    '<tr><td>' + t('Arawang rate', 'Daily rate') + '</td><td>' + t('Buwanang sahod × 12 ÷ 313 (6 na araw) o ÷ 261 (5 araw).', 'Monthly salary × 12 ÷ 313 (6-day week) or ÷ 261 (5-day week).') + '</td></tr>' +
     '</tbody></table>';
 }
 FC.init({
-  page: 'payroll',
+  page: 'employee-cost',
   calc: calc,
-  sample: function () {
-    FC.fill({ ename: 'Juan Dela Cruz', monthly: '18000', daily: '', daysworked: '13', ot: '6', nd: '0', rh: '1', sh: '0', absent: '0', late: '30', allow: '500', otherded: '0', mwe: false });
-    FC.setSeg('paytype', 'monthly'); document.getElementById('freq').value = 'semi'; document.getElementById('days').value = '6';
-  },
-  reset: function () { FC.fill({ ename: '', monthly: '', daily: '', daysworked: '13', ot: '0', nd: '0', rh: '0', sh: '0', absent: '0', late: '0', allow: '0', otherded: '0' }); FC.setSeg('paytype', 'monthly'); },
+  sample: function () { FC.fill({ monthly: '15000', daily: '', staff: '2', minwage: '', allow: '1000', yearly: '3000', sil: true, bmbe: false }); FC.setSeg('paytype', 'monthly'); document.getElementById('days').value = '6'; },
+  reset: function () { FC.fill({ monthly: '', daily: '', staff: '1', minwage: '', allow: '0', yearly: '0' }); FC.setSeg('paytype', 'monthly'); },
   shareText: function () {
-    if (!last) return FC.t('Subukan ang Payroll Calculator ng FLAME PH', 'Try the FLAME PH Payroll Calculator');
-    return FC.t('Net pay ngayong cutoff: ' + FC.peso(last.net) + '. Kinuwenta sa FLAME PH Payroll Calculator.', 'Net pay this cutoff: ' + FC.peso(last.net) + '. Calculated with the FLAME PH Payroll Calculator.');
+    if (!last) return FC.t('Subukan ang Employee Cost Calculator ng FLAME PH', 'Try the FLAME PH Employee Cost Calculator');
+    return FC.t('Ang ' + FC.peso(last.monthly, 0) + ' na sahod ay ' + FC.peso(last.perMonth, 0) + ' kada buwan ang totoong gastos. Kinuwenta sa FLAME PH calculator.',
+      'A ' + FC.peso(last.monthly, 0) + ' salary really costs ' + FC.peso(last.perMonth, 0) + ' a month. Calculated with the FLAME PH calculator.');
   }
 });
 FC.onLang(calc);

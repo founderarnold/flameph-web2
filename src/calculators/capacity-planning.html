@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="fil">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capacity Planning Calculator | FLAME PH</title>
+<meta name="description" content="Hanapin ang bottleneck ng negosyo mo at kailan kailangan ng dagdag na tauhan, makina o espasyo.">
+<style>
+:root{
+  --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
+  --brand:#c2410c; --brand-ink:#ffffff; --brand-soft:#fff1e6;
+  --good:#15803d; --good-soft:#e8f6ec; --warn:#a16207; --warn-soft:#fdf6dc;
+  --bad:#b91c1c; --bad-soft:#fdecec; --field:#ffffff;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+    --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+    --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+    --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171412; --card:#221e1b; --ink:#f5f0eb; --ink2:#b8afa6; --line:#3a332e;
+  --brand:#fb923c; --brand-ink:#1c1917; --brand-soft:#3a2416;
+  --good:#4ade80; --good-soft:#15291c; --warn:#facc15; --warn-soft:#2e2810;
+  --bad:#f87171; --bad-soft:#331919; --field:#2a2521;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 40px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.embedded .brand{visibility:hidden}
+.embedded .wrap{padding-top:8px}
+.brand{flex:1;min-width:0;font-weight:700;color:var(--brand);font-size:14px;letter-spacing:.02em}
+.lang{flex:none;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;background:transparent;color:var(--ink2);padding:6px 12px;font:inherit;font-size:14px;cursor:pointer;min-height:36px}
+.lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);font-weight:600}
+h1{font-size:24px;line-height:1.25;margin:8px 0 4px}
+.lead{color:var(--ink2);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 16px}
+.card h2{font-size:17px;margin:0 0 12px}
+.field{margin:0 0 14px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
+.hint{display:block;color:var(--ink2);font-size:13px;font-weight:400;margin-top:2px}
+.input{position:relative}
+.input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
+.input .pre{left:12px}.input .suf{right:12px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+.input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
+input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{flex:1 1 auto;min-height:44px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;font:inherit;font-size:15px;padding:8px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400}
+.check input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--brand);flex:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.btn{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:15px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.result{border-width:2px}
+.result.good{border-color:var(--good);background:var(--good-soft)}
+.result.warn{border-color:var(--warn);background:var(--warn-soft)}
+.result.bad{border-color:var(--bad);background:var(--bad-soft)}
+.verdict{font-size:18px;font-weight:600;margin:0 0 12px}
+.big{font-size:34px;font-weight:800;line-height:1.1;margin:0}
+.big-label{color:var(--ink2);font-size:14px;margin:0 0 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .k{color:var(--ink2);font-size:13px}
+.stat .v{font-size:20px;font-weight:700}
+table.bd{width:100%;border-collapse:collapse;font-size:15px}
+table.bd.tight{font-size:13.5px}
+table.bd.tight td,table.bd.tight th{padding:7px 2px}
+table.bd td,table.bd th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.bd td.n,table.bd th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.bd tr.tot td{font-weight:700;border-bottom:0}
+.muted{color:var(--ink2);font-size:13px}
+.note{font-size:13px;color:var(--ink2);margin:8px 0 0}
+details{margin:0 0 16px}
+summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.disclaimer{font-size:12.5px;color:var(--ink2);border-top:1px solid var(--line);padding-top:12px;margin-top:8px}
+.cta{display:block;text-decoration:none;color:var(--ink);background:var(--brand-soft);border-radius:10px;padding:12px;margin-top:12px;font-size:15px}
+.cta b{color:var(--brand)}
+.err{color:var(--bad);font-weight:600}
+.print-only{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  .no-print,.btns,.lang,details.inputs-help{display:none!important}
+  .print-only{display:block}
+  .card{break-inside:avoid;border-color:#bbb;background:#fff!important}
+  .wrap{max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <span class="brand">FLAME PH · Negosyo Calculators</span>
+  <div class="lang no-print" role="group" aria-label="Language">
+    <button type="button" data-lang="tl" aria-pressed="true">Taglish</button>
+    <button type="button" data-lang="en" aria-pressed="false">English</button>
+  </div>
+</header>
+<p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
+<h1 data-en="Capacity Planning Calculator">Capacity Planning Calculator</h1>
+<p class="lead" data-en="Find your bottleneck: the staff, equipment or space that will run out first, and how many months you have before you need to add more.">Hanapin ang bottleneck mo: ang tauhan, makina o espasyo na unang mapupuno, at ilang buwan pa bago kailangan magdagdag.</p>
+
+<section class="card">
+  <h2 data-en="1. Demand">1. Demand</h2>
+  <div class="row2">
+    <div class="field"><label for="demand" data-en="Units or orders needed per day now">Piraso o order na kailangan kada araw ngayon</label><input id="demand" type="text" inputmode="decimal" value=""></div>
+    <div class="field"><label for="growth" data-en="Expected growth per month">Inaasahang paglago kada buwan</label><div class="input has-suf"><input id="growth" type="text" inputmode="decimal" value="5"><span class="suf">%</span></div></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2 data-en="2. What limits your output">2. Ano ang naglilimita sa produksyon mo</h2>
+  <p class="muted" style="margin:-6px 0 12px" data-en="For each resource, enter the most units it can handle per day. Staff example: 3 bakers × 8 hours × 25 pieces per hour = 600.">Sa bawat isa, ilagay ang pinakamaraming kaya nito kada araw. Halimbawa sa tauhan: 3 panadero × 8 oras × 25 piraso kada oras = 600.</p>
+  <div id="res"></div>
+  <div class="field"><label for="target" data-en="Comfortable maximum use">Komportableng maximum na paggamit</label><div class="input has-suf"><input id="target" type="text" inputmode="decimal" value="85"><span class="suf">%</span></div>
+    <span class="hint" data-en="Above about 85%, delays, overtime and mistakes rise quickly.">Lampas mga 85%, mabilis dumami ang delay, overtime at pagkakamali.</span></div>
+</section>
+
+<div class="btns no-print">
+  <button type="button" class="btn" id="btn-sample" data-en="Try a sample">Subukan ang halimbawa</button>
+  <button type="button" class="btn" id="btn-reset" data-en="Clear">Burahin</button>
+</div>
+
+<section class="card result" id="result" aria-live="polite"></section>
+<div class="btns no-print">
+  <button type="button" class="btn primary" id="btn-print" data-en="Download PDF / Print">I-download (PDF) / I-print</button>
+  <button type="button" class="btn" id="btn-share" data-en="Share">I-share</button>
+</div>
+<p class="disclaimer" data-en="Estimates only, for planning. Not tax, legal or accounting advice. Check government rates with SSS, PhilHealth, Pag-IBIG, DOLE and BIR, or an accountant from the FLAME professional services directory. Your numbers stay on your device.">Tantiya lang ito para sa pagpaplano. Hindi ito payong pang-buwis, legal o accounting. I-check ang mga rate sa SSS, PhilHealth, Pag-IBIG, DOLE at BIR, o sa accountant sa FLAME professional services directory. Ang mga numero mo ay nananatili sa device mo.</p>
+</div>
+<script>
+/* FLAME PH calculators: shared helpers (language, numbers, save, share, embed). */
+var FC = (function () {
+  var LANG_KEY = 'flamecalc.lang';
+  var state = { lang: 'tl' };
+  var onLang = [];
+
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+
+  // Taglish is written in the HTML; English lives in data-en. t() is for text built in JS.
+  function t(tl, en) { return state.lang === 'en' ? en : tl; }
+  function applyLang() {
+    document.documentElement.lang = state.lang === 'en' ? 'en' : 'fil';
+    document.querySelectorAll('[data-en]').forEach(function (el) {
+      if (el.dataset.tl === undefined) el.dataset.tl = el.innerHTML;
+      el.innerHTML = state.lang === 'en' ? el.dataset.en : el.dataset.tl;
+    });
+    document.querySelectorAll('.lang button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang));
+    });
+    onLang.forEach(function (f) { f(); });
+  }
+  function setLang(l) { state.lang = l; store(LANG_KEY, l); applyLang(); }
+
+  var peso0 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 });
+  var peso2 = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function peso(n, dp) { if (!isFinite(n)) return '—'; return (dp === 0 ? peso0 : peso2).format(n); }
+  function pct(n, dp) { if (!isFinite(n)) return '—'; return n.toFixed(dp === undefined ? 1 : dp) + '%'; }
+  function int(n) { return isFinite(n) ? Math.round(n).toLocaleString('en-PH') : '—'; }
+
+  function num(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    var v = parseFloat(String(el.value).replace(/[,\s₱%]/g, ''));
+    return isFinite(v) ? v : 0;
+  }
+  function blank(id) { var el = document.getElementById(id); return !el || String(el.value).trim() === ''; }
+
+  // Remember a page's inputs on this device so owners don't retype them.
+  function saveInputs(page) {
+    var data = {};
+    document.querySelectorAll('input[id],select[id]').forEach(function (el) {
+      data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    document.querySelectorAll('.seg[id]').forEach(function (s) {
+      var on = s.querySelector('[aria-pressed="true"]'); if (on) data['seg:' + s.id] = on.dataset.v;
+    });
+    store('flamecalc.' + page, JSON.stringify(data));
+  }
+  function loadInputs(page) {
+    var raw = store('flamecalc.' + page); if (!raw) return false;
+    try {
+      var data = JSON.parse(raw);
+      Object.keys(data).forEach(function (k) {
+        if (k.indexOf('seg:') === 0) { setSeg(k.slice(4), data[k]); return; }
+        var el = document.getElementById(k); if (!el) return;
+        if (el.type === 'checkbox') el.checked = !!data[k]; else el.value = data[k];
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  function fill(values) {
+    Object.keys(values).forEach(function (k) {
+      var el = document.getElementById(k); if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!values[k]; else el.value = values[k];
+    });
+  }
+
+  function setSeg(id, v) {
+    var s = document.getElementById(id); if (!s) return;
+    s.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === v)); });
+  }
+  function seg(id) { var on = document.querySelector('#' + id + ' [aria-pressed="true"]'); return on ? on.dataset.v : null; }
+
+  // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
+  function postHeight() {
+    if (window.parent === window) return;
+    // Body height, not the document's: inside an iframe the document is never shorter than the frame, so it could only grow.
+    window.parent.postMessage({ type: 'flame-calc-height', height: Math.ceil(document.body.getBoundingClientRect().height) }, '*');
+  }
+  function postResult(calculator, inputs, outputs) {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type: 'flame-calc-result', calculator: calculator, lang: state.lang, inputs: inputs, outputs: outputs }, '*');
+  }
+
+  function share(title, text) {
+    var url = location.href;
+    if (navigator.share) { navigator.share({ title: title, text: text, url: url }).catch(function () {}); return; }
+    var full = text + '\n' + url;
+    if (navigator.clipboard) navigator.clipboard.writeText(full).then(function () { alert(t('Nakopya na! I-paste sa Messenger o Viber.', 'Copied! Paste it into Messenger or Viber.')); });
+    else prompt(t('Kopyahin ito:', 'Copy this:'), full);
+  }
+
+  function init(opts) {
+    var saved = store(LANG_KEY);
+    var q = new URLSearchParams(location.search);
+    state.lang = q.get('lang') === 'en' || q.get('lang') === 'tl' ? q.get('lang') : (saved === 'en' ? 'en' : 'tl');
+    if (q.get('theme') === 'light' || q.get('theme') === 'dark') document.documentElement.dataset.theme = q.get('theme');
+    if (q.get('embed') === '1') document.documentElement.classList.add('embedded');
+    document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+    document.querySelectorAll('.seg').forEach(function (s) {
+      s.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        setSeg(s.id, b.dataset.v); opts.calc();
+      });
+    });
+    document.addEventListener('input', function () { opts.calc(); });
+    document.addEventListener('change', function () { opts.calc(); });
+    var pr = document.getElementById('btn-print'); if (pr) pr.addEventListener('click', function () { window.print(); });
+    var sh = document.getElementById('btn-share'); if (sh) sh.addEventListener('click', function () { share(document.title, opts.shareText()); });
+    var sm = document.getElementById('btn-sample'); if (sm) sm.addEventListener('click', function () { opts.sample(); opts.calc(); });
+    var rs = document.getElementById('btn-reset'); if (rs) rs.addEventListener('click', function () {
+      document.querySelectorAll('input[id]').forEach(function (el) { if (el.type === 'checkbox') el.checked = el.defaultChecked; else el.value = el.defaultValue; });
+      if (opts.reset) opts.reset();
+      opts.calc();
+    });
+    var pd = document.getElementById('print-date'); if (pd) pd.textContent = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!loadInputs(opts.page) && opts.sample) opts.sample();
+    applyLang();
+    opts.calc();
+    if ('ResizeObserver' in window) new ResizeObserver(postHeight).observe(document.body);
+    window.addEventListener('load', postHeight);
+  }
+
+  return { t: t, peso: peso, pct: pct, int: int, num: num, blank: blank, seg: seg, setSeg: setSeg, fill: fill,
+    saveInputs: saveInputs, postResult: postResult, init: init, onLang: function (f) { onLang.push(f); }, get lang() { return state.lang; } };
+})();
+</script>
+<script>
+var N = 4;
+function buildRes() {
+  var keep = {}; document.querySelectorAll('#res input').forEach(function (el) { keep[el.id] = el.value; });
+  var html = '';
+  for (var i = 0; i < N; i++) html += '<div class="row2"><div class="field"><label for="n' + i + '">' + FC.t('Resource ', 'Resource ') + (i + 1) + '</label><input id="n' + i + '" type="text" placeholder="' + [FC.t('Tauhan', 'Staff'), FC.t('Oven / makina', 'Oven / machine'), FC.t('Espasyo / mesa', 'Space / tables'), FC.t('Delivery', 'Delivery')][i] + '"></div>' +
+    '<div class="field"><label for="c' + i + '">' + FC.t('Kaya kada araw', 'Capacity per day') + '</label><input id="c' + i + '" type="text" inputmode="decimal"></div></div>';
+  document.getElementById('res').innerHTML = html; FC.fill(keep);
+}
+var last = null;
+function calc() {
+  var t = FC.t;
+  FC.saveInputs('capacity-planning');
+  var out = document.getElementById('result'); out.className = 'card result';
+  var demand = FC.num('demand'), g = FC.num('growth') / 100, target = Math.max(0.1, FC.num('target') / 100);
+  var res = [];
+  for (var i = 0; i < N; i++) {
+    var c = FC.num('c' + i);
+    if (c > 0) res.push({ name: document.getElementById('n' + i).value.trim() || document.getElementById('n' + i).placeholder, cap: c });
+  }
+  if (demand <= 0 || !res.length) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang demand kada araw at ang kaya ng kahit isang resource.', 'Enter daily demand and the capacity of at least one resource.') + '</p>'; last = null; return; }
+  var months = function (cap, level) {
+    var need = cap * level;
+    if (demand >= need) return 0;
+    if (g <= 0) return Infinity;
+    return Math.log(need / demand) / Math.log(1 + g);
+  };
+  res.forEach(function (r) { r.use = demand / r.cap * 100; r.toTarget = months(r.cap, target); r.toFull = months(r.cap, 1); });
+  res.sort(function (a, b) { return a.cap - b.cap; });
+  var b = res[0];
+  var cls = b.use >= 100 ? 'bad' : b.use >= target * 100 ? 'bad' : b.toTarget < 6 ? 'warn' : 'good';
+  out.classList.add(cls);
+  var fmtM = function (m) { return m === 0 ? t('ngayon na', 'now') : isFinite(m) ? (m < 1 ? t('wala pang 1 buwan', 'under 1 month') : m < 2 ? t('1 buwan', '1 month') : Math.floor(m) + t(' buwan', ' months')) : t('hindi aabot', 'not reached'); };
+  var verdict = b.use >= 100 ? t('Lampas na sa kaya ang ' + b.name + ': ' + FC.pct(b.use, 0) + ' ang hinihingi. Nawawalan ka na ng benta o puro overtime.', b.name + ' is over capacity at ' + FC.pct(b.use, 0) + '. You are losing sales or running on overtime.')
+    : b.use >= target * 100 ? t('Magdagdag na: ang ' + b.name + ' ay nasa ' + FC.pct(b.use, 0) + ', lampas sa komportableng ' + FC.pct(target * 100, 0) + '.', 'Expand now: ' + b.name + ' is at ' + FC.pct(b.use, 0) + ', above a comfortable ' + FC.pct(target * 100, 0) + '.')
+    : t('Ang bottleneck mo ay ang ' + b.name + '. Aabot ito sa ' + FC.pct(target * 100, 0) + ' sa loob ng ' + fmtM(b.toTarget) + '.', 'Your bottleneck is ' + b.name + '. It reaches ' + FC.pct(target * 100, 0) + ' in ' + fmtM(b.toTarget) + '.');
+  out.innerHTML =
+    '<p class="verdict">' + verdict + '</p>' +
+    '<p class="big">' + FC.pct(b.use, 0) + '</p><p class="big-label">' + t('Gamit ng bottleneck (' + b.name + ') ngayon', 'Bottleneck use (' + b.name + ') today') + '</p>' +
+    '<table class="bd tight"><thead><tr><th>Resource</th><th class="n">' + t('Gamit', 'Use') + '</th><th class="n">' + t('Aabot sa ' + Math.round(target * 100) + '%', 'Hits ' + Math.round(target * 100) + '%') + '</th><th class="n">' + t('Puno', 'Full') + '</th></tr></thead><tbody>' +
+      res.map(function (r) { return '<tr><td>' + r.name + '</td><td class="n"' + (r.use >= target * 100 ? ' style="color:var(--bad);font-weight:700"' : '') + '>' + FC.pct(r.use, 0) + '</td><td class="n">' + fmtM(r.toTarget) + '</td><td class="n">' + fmtM(r.toFull) + '</td></tr>'; }).join('') +
+    '</tbody></table>' +
+    '<p class="note">' + t('Kapag dinagdagan mo ang ' + b.name + ', ang susunod na bottleneck ay ' + (res[1] ? res[1].name + ' (' + FC.pct(res[1].use, 0) + ' ngayon).' : 'wala na sa listahan.') + ' Planuhin ang dalawa nang sabay.', 'Once you add ' + b.name + ', the next bottleneck is ' + (res[1] ? res[1].name + ' (' + FC.pct(res[1].use, 0) + ' today).' : 'not on your list.') + ' Plan for both together.') + '</p>' +
+    (cls !== 'good' ? '<a class="cta no-print" href="expansion-readiness.html">' + t('Kaya ba ng pera mo ang dagdag? <b>Gamitin ang Hiring at Expansion Readiness Calculator.</b>', 'Can your cash afford it? <b>Use the Hiring & Expansion Readiness Calculator.</b>') + '</a>' : '');
+  last = { name: b.name, use: b.use };
+  FC.postResult('capacity-planning', { demandPerDay: demand, growth: g * 100 }, { bottleneck: b.name, utilization: b.use, monthsToTarget: isFinite(b.toTarget) ? b.toTarget : null });
+}
+buildRes();
+FC.onLang(buildRes);
+FC.init({
+  page: 'capacity-planning', calc: calc,
+  sample: function () { FC.fill({ demand: '480', growth: '6', target: '85', n0: 'Panadero (3 tao)', c0: '600', n1: 'Oven', c1: '700', n2: 'Display at counter', c2: '900', n3: '', c3: '' }); },
+  reset: function () { FC.fill({ demand: '', n0: '', c0: '', n1: '', c1: '', n2: '', c2: '', n3: '', c3: '' }); },
+  shareText: function () { return last ? FC.t('Bottleneck: ' + last.name + ' sa ' + FC.pct(last.use, 0) + '. FLAME PH calculator.', 'Bottleneck: ' + last.name + ' at ' + FC.pct(last.use, 0) + '. FLAME PH calculator.') : 'FLAME PH Capacity Planning Calculator'; }
+});
+FC.onLang(calc);
+</script>
+</body>
+</html>

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Customer Acquisition Cost Calculator | FLAME PH</title>
-<meta name="description" content="Magkano ang gastos para makakuha ng isang bagong customer, at sulit ba ito?">
+<title>Hiring & Expansion Readiness Calculator | FLAME PH</title>
+<meta name="description" content="Kaya na ba ng pera mo ang bagong tauhan o bagong branch? Tingnan ang susunod na 12 buwan.">
 <style>
 :root{
   --bg:#fffaf5; --card:#ffffff; --ink:#1c1917; --ink2:#57534e; --line:#e7e0d8;
@@ -49,7 +49,7 @@ label{display:block;font-weight:600;font-size:15px;margin:0 0 4px}
 .input{position:relative}
 .input .pre,.input .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink2);pointer-events:none}
 .input .pre{left:12px}.input .suf{right:12px}
-input[type=text],input[type=number],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);font:inherit;font-size:18px;padding:10px 12px}
 .input.has-pre input{padding-left:30px}.input.has-suf input{padding-right:40px}
 input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,transparent);outline-offset:1px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -107,46 +107,39 @@ summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:
   </div>
 </header>
 <p class="print-only muted"><span data-en="Prepared on">Ginawa noong</span> <span id="print-date"></span> · flameph.org</p>
-<h1 data-en="Customer Acquisition Cost (CAC) Calculator">Customer Acquisition Cost (CAC) Calculator</h1>
-<p class="lead" data-en="How much do you spend to win one new customer, and do they earn it back? Compare Facebook ads, flyers, promos and referrals.">Magkano ang nagagastos mo para makakuha ng isang bagong customer, at nababawi mo ba ito? Ikumpara ang Facebook ads, flyers, promo at referrals.</p>
+<h1 data-en="Hiring &amp; Expansion Readiness Calculator">Hiring at Expansion Readiness Calculator</h1>
+<p class="lead" data-en="Before you hire or open a new branch, test whether your cash can carry it until it starts paying for itself. We model the next 12 months.">Bago mag-hire o magbukas ng bagong branch, subukan kung kakayanin ng pera mo hanggang sa kumita ito. Titingnan natin ang susunod na 12 buwan.</p>
 
 <section class="card">
-  <h2 data-en="1. Spending to get customers (per month)">1. Gastos para makakuha ng customer (kada buwan)</h2>
-  <p class="muted" style="margin:-6px 0 12px" data-en="Up to 3 channels. Count only spending aimed at new customers.">Hanggang 3 channel. Isama lang ang gastos para sa bagong customer.</p>
+  <h2 data-en="1. Your business today">1. Ang negosyo mo ngayon</h2>
   <div class="row2">
-    <div class="field"><label for="c0n" data-en="Channel 1">Channel 1</label><input id="c0n" type="text" value=""></div>
-    <div class="field"><label for="c0s" data-en="Spend">Gastos</label><div class="input has-pre"><span class="pre">₱</span><input id="c0s" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="cash" data-en="Cash on hand">Cash na hawak</label><div class="input has-pre"><span class="pre">₱</span><input id="cash" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="exp" data-en="Monthly expenses now">Buwanang gastos ngayon</label><div class="input has-pre"><span class="pre">₱</span><input id="exp" type="text" inputmode="decimal" value=""></div></div>
   </div>
-  <div class="field"><label for="c0c" data-en="New customers from this channel">Bagong customer mula rito</label><input id="c0c" type="text" inputmode="numeric" value=""></div>
-  <details>
-    <summary data-en="Add more channels">Magdagdag ng channel</summary>
-    <div class="row2">
-      <div class="field"><label for="c1n" data-en="Channel 2">Channel 2</label><input id="c1n" type="text" value=""></div>
-      <div class="field"><label for="c1s" data-en="Spend">Gastos</label><div class="input has-pre"><span class="pre">₱</span><input id="c1s" type="text" inputmode="decimal" value=""></div></div>
-    </div>
-    <div class="field"><label for="c1c" data-en="New customers from this channel">Bagong customer mula rito</label><input id="c1c" type="text" inputmode="numeric" value=""></div>
-    <div class="row2">
-      <div class="field"><label for="c2n" data-en="Channel 3">Channel 3</label><input id="c2n" type="text" value=""></div>
-      <div class="field"><label for="c2s" data-en="Spend">Gastos</label><div class="input has-pre"><span class="pre">₱</span><input id="c2s" type="text" inputmode="decimal" value=""></div></div>
-    </div>
-    <div class="field"><label for="c2c" data-en="New customers from this channel">Bagong customer mula rito</label><input id="c2c" type="text" inputmode="numeric" value=""></div>
-  </details>
-  <div class="field">
-    <label for="extra" data-en="Other acquisition costs (sales staff time, freebies, first-order discounts)">Iba pang gastos (oras ng sales staff, freebies, discount sa unang order)</label>
-    <div class="input has-pre"><span class="pre">₱</span><input id="extra" type="text" inputmode="decimal" value="0"></div>
-    <span class="hint" data-en="Spread across all channels.">Hahatiin sa lahat ng channel.</span>
+  <label data-en="Monthly sales, last 3 months (oldest first)">Benta kada buwan, nakaraang 3 buwan (pinakaluma muna)</label>
+  <div class="row2" style="grid-template-columns:1fr 1fr 1fr;gap:8px">
+    <div class="field"><div class="input has-pre"><span class="pre">₱</span><input id="s1" type="text" inputmode="decimal" value="" aria-label="Month 1" style="font-size:15px;padding:10px 6px 10px 24px"></div></div>
+    <div class="field"><div class="input has-pre"><span class="pre">₱</span><input id="s2" type="text" inputmode="decimal" value="" aria-label="Month 2" style="font-size:15px;padding:10px 6px 10px 24px"></div></div>
+    <div class="field"><div class="input has-pre"><span class="pre">₱</span><input id="s3" type="text" inputmode="decimal" value="" aria-label="Month 3" style="font-size:15px;padding:10px 6px 10px 24px"></div></div>
   </div>
+  <div class="field"><label for="gm" data-en="Gross margin">Gross margin</label><div class="input has-suf"><input id="gm" type="text" inputmode="decimal" value="35"><span class="suf">%</span></div>
+    <span class="hint" data-en="Monthly expenses above should not include the cost of goods; margin covers that.">Huwag isama ang puhunan sa paninda sa buwanang gastos; ang margin na ang bahala roon.</span></div>
 </section>
 
 <section class="card">
-  <h2 data-en="2. What a customer is worth">2. Halaga ng isang customer</h2>
+  <h2 data-en="2. The plan">2. Ang plano</h2>
+  <div class="field"><div class="seg" id="kind">
+    <button type="button" data-v="hire" aria-pressed="true" data-en="New hire">Bagong tauhan</button>
+    <button type="button" data-v="branch" aria-pressed="false" data-en="New branch">Bagong branch</button>
+  </div></div>
   <div class="row2">
-    <div class="field"><label for="aov" data-en="Average order">Average na order</label><div class="input has-pre"><span class="pre">₱</span><input id="aov" type="text" inputmode="decimal" value=""></div></div>
-    <div class="field"><label for="gm" data-en="Gross margin">Gross margin</label><div class="input has-suf"><input id="gm" type="text" inputmode="decimal" value="30"><span class="suf">%</span></div></div>
-    <div class="field"><label for="freq" data-en="Orders per month">Order kada buwan</label><input id="freq" type="text" inputmode="decimal" value="1"></div>
-    <div class="field"><label for="life" data-en="Months a customer stays">Ilang buwan bumibili ang customer</label><input id="life" type="text" inputmode="decimal" value="6"></div>
+    <div class="field"><label for="setup" data-en="One-time cost (hiring, training, fit-out, equipment)">Isang beses na gastos (hiring, training, fit-out, gamit)</label><div class="input has-pre"><span class="pre">₱</span><input id="setup" type="text" inputmode="decimal" value="0"></div></div>
+    <div class="field"><label for="newcost" data-en="New monthly cost (salary, rent, utilities)">Bagong buwanang gastos (sahod, upa, kuryente)</label><div class="input has-pre"><span class="pre">₱</span><input id="newcost" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="extra" data-en="Extra monthly sales once running">Dagdag na benta kada buwan kapag tumatakbo na</label><div class="input has-pre"><span class="pre">₱</span><input id="extra" type="text" inputmode="decimal" value=""></div></div>
+    <div class="field"><label for="ramp" data-en="Months before the extra sales start">Ilang buwan bago dumating ang dagdag na benta</label><input id="ramp" type="text" inputmode="decimal" value="2"></div>
   </div>
-  <span class="hint" data-en="Not sure of your margin? Use the Markup &amp; Margin Calculator.">Hindi sigurado sa margin? Gamitin ang Markup at Margin Calculator.</span>
+  <div class="field"><label for="buffer" data-en="Safety cushion to keep (months of expenses)">Reserbang pera na dapat laging natitira (buwan ng gastos)</label><input id="buffer" type="text" inputmode="decimal" value="2"></div>
+  <span class="hint" data-en="Tip: get the true monthly cost of a hire from the Total Employee Cost Calculator.">Tip: kunin ang totoong buwanang gastos ng tauhan sa Total Employee Cost Calculator.</span>
 </section>
 
 <div class="btns no-print">
@@ -155,16 +148,6 @@ summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:
 </div>
 
 <section class="card result" id="result" aria-live="polite"></section>
-
-<details class="card inputs-help">
-  <summary data-en="How we compute">Paano kinuwenta</summary>
-  <table class="bd"><tbody>
-    <tr><td>CAC</td><td data-en="Total acquisition spend ÷ new customers">Kabuuang gastos ÷ bagong customer</td></tr>
-    <tr><td data-en="Profit per month">Kita kada buwan</td><td data-en="Average order × orders per month × gross margin">Average na order × order kada buwan × gross margin</td></tr>
-    <tr><td data-en="Customer value (LTV)">Halaga ng customer (LTV)</td><td data-en="Profit per month × months the customer stays">Kita kada buwan × ilang buwan bumibili</td></tr>
-    <tr><td>LTV : CAC</td><td data-en="3 or more is healthy. Below 1 means you lose money on each new customer.">3 pataas ay malusog. Mas mababa sa 1, lugi ka sa bawat bagong customer.</td></tr>
-  </tbody></table>
-</details>
 <div class="btns no-print">
   <button type="button" class="btn primary" id="btn-print" data-en="Download PDF / Print">I-download (PDF) / I-print</button>
   <button type="button" class="btn" id="btn-share" data-en="Share">I-share</button>
@@ -248,7 +231,8 @@ var FC = (function () {
   // Tell the host page (flameph.org) our height and latest result, so it can size the iframe and save results for members.
   function postHeight() {
     if (window.parent === window) return;
-    window.parent.postMessage({ type: 'flame-calc-height', height: document.documentElement.scrollHeight }, '*');
+    // Body height, not the document's: inside an iframe the document is never shorter than the frame, so it could only grow.
+    window.parent.postMessage({ type: 'flame-calc-height', height: Math.ceil(document.body.getBoundingClientRect().height) }, '*');
   }
   function postResult(calculator, inputs, outputs) {
     if (window.parent === window) return;
@@ -302,80 +286,55 @@ var FC = (function () {
 var last = null;
 function calc() {
   var t = FC.t, peso = FC.peso;
-  FC.saveInputs('customer-acquisition-cost');
-  var out = document.getElementById('result');
-  out.className = 'card result';
-  var chans = [0, 1, 2].map(function (i) {
-    return { name: document.getElementById('c' + i + 'n').value.trim() || t('Channel ', 'Channel ') + (i + 1), spend: FC.num('c' + i + 's'), cust: FC.num('c' + i + 'c') };
-  }).filter(function (c) { return c.spend > 0 || c.cust > 0; });
-  var extra = FC.num('extra');
-  var spend = chans.reduce(function (s, c) { return s + c.spend; }, 0) + extra;
-  var cust = chans.reduce(function (s, c) { return s + c.cust; }, 0);
-  if (spend <= 0 || cust <= 0) {
-    out.innerHTML = '<p class="verdict">' + t('Ilagay ang gastos at ilang bagong customer ang nakuha mo.', 'Enter your spend and how many new customers you got.') + '</p>';
-    last = null; return;
+  FC.saveInputs('expansion-readiness');
+  var out = document.getElementById('result'); out.className = 'card result';
+  var sales = [FC.num('s1'), FC.num('s2'), FC.num('s3')].filter(function (v) { return v > 0; });
+  var exp = FC.num('exp'), cash = FC.num('cash'), gm = FC.num('gm') / 100;
+  if (!sales.length || exp <= 0 || FC.blank('newcost')) { out.innerHTML = '<p class="verdict">' + t('Ilagay ang cash, gastos, benta at ang bagong buwanang gastos ng plano.', 'Enter your cash, expenses, sales and the plan\'s new monthly cost.') + '</p>'; last = null; return; }
+  var base = sales.reduce(function (s, v) { return s + v; }, 0) / sales.length;
+  var trend = sales.length > 1 ? (sales[sales.length - 1] / sales[0] - 1) * 100 : 0;
+  var baseProfit = base * gm - exp;
+  var setup = FC.num('setup'), newcost = FC.num('newcost'), extra = FC.num('extra'), ramp = Math.round(FC.num('ramp'));
+  var buffer = FC.num('buffer') * exp;
+  var bal = cash - setup, low = bal, lowM = 0, cum = -setup, payback = null, months = [];
+  for (var m = 1; m <= 12; m++) {
+    var inc = (m > ramp ? extra * gm : 0) - newcost;
+    cum += inc;
+    if (payback === null && cum >= 0) payback = m;
+    bal += baseProfit + inc;
+    months.push(bal);
+    if (bal < low) { low = bal; lowM = m; }
   }
-  var cac = spend / cust;
-  var aov = FC.num('aov'), gm = FC.num('gm') / 100, freq = FC.num('freq'), life = FC.num('life');
-  var monthly = aov * freq * gm;
-  var ltv = monthly * life;
-  var hasValue = aov > 0 && gm > 0 && freq > 0 && life > 0;
-  var ratio = hasValue ? ltv / cac : NaN;
-  var payback = monthly > 0 ? cac / monthly : NaN;
-
-  var verdict;
-  if (!hasValue) {
-    out.classList.add('warn');
-    verdict = t('Gumagastos ka ng ' + peso(cac) + ' para sa bawat bagong customer. Ilagay ang halaga ng customer para malaman kung sulit.', 'You spend ' + peso(cac) + ' to win each new customer. Add what a customer is worth to see if it pays off.');
-  } else if (ratio < 1) {
-    out.classList.add('bad');
-    verdict = t('Lugi: ' + peso(cac) + ' ang gastos sa bawat customer pero ' + peso(ltv) + ' lang ang kinikita mo sa kanila.', 'Losing money: each customer costs ' + peso(cac) + ' but only earns you ' + peso(ltv) + '.');
-  } else if (ratio < 3) {
-    out.classList.add('warn');
-    verdict = t('Nababawi mo ang gastos, pero manipis: bawat ₱1 sa marketing ay nagbabalik ng ' + peso(ratio) + ' na kita.', 'You earn it back, but it is thin: every ₱1 in marketing returns ' + peso(ratio) + ' in profit.');
-  } else {
-    out.classList.add('good');
-    verdict = t('Sulit! Bawat ₱1 sa marketing ay nagbabalik ng ' + peso(ratio) + ' na kita. Puwede mong dagdagan ang gastos sa pinakamagandang channel.', 'Worth it! Every ₱1 in marketing returns ' + peso(ratio) + ' in profit. Consider spending more on your best channel.');
-  }
-
-  var best = null;
-  var rows = chans.filter(function (c) { return c.cust > 0; }).map(function (c) {
-    var share = extra * (c.spend / Math.max(1, spend - extra));
-    var cc = (c.spend + (spend - extra > 0 ? share : extra / chans.length)) / c.cust;
-    if (!best || cc < best.cac) best = { name: c.name, cac: cc };
-    return '<tr><td>' + c.name + '</td><td class="n">' + FC.int(c.cust) + '</td><td class="n">' + peso(cc) + '</td></tr>';
-  });
-
+  var steady = extra * gm - newcost;
+  var cls = low < 0 ? 'bad' : low < buffer || steady < 0 ? 'warn' : 'good';
+  out.classList.add(cls);
+  var what = FC.seg('kind') === 'branch' ? t('bagong branch', 'new branch') : t('bagong tauhan', 'new hire');
+  var verdict = cls === 'good' ? t('Handa ka na! Kaya ng pera mo ang ' + what + ' at may reserba pa rin.', 'Go! Your cash can carry the ' + what + ' and you keep your safety cushion.')
+    : low < 0 ? t('Maghintay muna: mauubos ang pera mo sa buwan ' + lowM + ' (kulang ng ' + peso(-low, 0) + ').', 'Wait: you would run out of cash in month ' + lowM + ' (short by ' + peso(-low, 0) + ').')
+    : steady < 0 ? t('Hindi nababawi: mas malaki ang bagong gastos kaysa sa dagdag na kita kahit tumatakbo na.', 'It never pays for itself: the new cost is larger than the extra profit even once running.')
+    : t('Puwede, pero bababa sa reserba mo ang pera sa buwan ' + lowM + '. Maghanda ng backup na pondo.', 'Possible, but cash dips below your cushion in month ' + lowM + '. Line up backup funding.');
   out.innerHTML =
     '<p class="verdict">' + verdict + '</p>' +
-    '<p class="big">' + peso(cac) + '</p>' +
-    '<p class="big-label">' + t('Gastos para makakuha ng isang bagong customer (CAC)', 'Cost to win one new customer (CAC)') + '</p>' +
+    '<p class="big">' + peso(low, 0) + '</p><p class="big-label">' + t('Pinakamababang cash sa susunod na 12 buwan', 'Lowest cash in the next 12 months') + (lowM ? t(' (buwan ' + lowM + ')', ' (month ' + lowM + ')') : '') + '</p>' +
     '<div class="stats">' +
-      '<div class="stat"><div class="k">' + t('Halaga ng customer (LTV)', 'Customer value (LTV)') + '</div><div class="v">' + (hasValue ? peso(ltv, 0) : '—') + '</div></div>' +
-      '<div class="stat"><div class="k">LTV : CAC</div><div class="v">' + (hasValue ? ratio.toFixed(1) + ' : 1' : '—') + '</div></div>' +
-      '<div class="stat"><div class="k">' + t('Mababawi sa loob ng', 'Paid back in') + '</div><div class="v">' + (isFinite(payback) ? payback.toFixed(1) + t(' buwan', ' months') : '—') + '</div></div>' +
-      '<div class="stat"><div class="k">' + t('Kabuuang gastos', 'Total spend') + '</div><div class="v">' + peso(spend, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Mababawi ang gastos sa', 'Pays back in') + '</div><div class="v">' + (payback ? payback + t(' buwan', ' months') : t('lampas 12 buwan', 'over 12 months')) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Dagdag kita kada buwan (tumatakbo na)', 'Extra profit per month (once running)') + '</div><div class="v">' + peso(steady, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Takbo ng benta (3 buwan)', 'Sales trend (3 months)') + '</div><div class="v">' + (trend >= 0 ? '+' : '') + FC.pct(trend, 0) + '</div></div>' +
+      '<div class="stat"><div class="k">' + t('Reserbang target', 'Cushion target') + '</div><div class="v">' + peso(buffer, 0) + '</div></div>' +
     '</div>' +
-    (rows.length > 1 ? '<h2 style="margin:16px 0 4px;font-size:16px">' + t('Kada channel', 'By channel') + '</h2><table class="bd"><thead><tr><th>Channel</th><th class="n">' + t('Customer', 'Customers') + '</th><th class="n">CAC</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>' +
-      '<p class="note">' + t('Pinakamura: ' + best.name + ' sa ' + peso(best.cac) + ' bawat customer.', 'Cheapest: ' + best.name + ' at ' + peso(best.cac) + ' per customer.') + '</p>' : '') +
-    (hasValue && ratio < 3 ? '<p class="note">' + t('Paano pagandahin: itaas ang average na order (bundles), pabalikin ang customer (suki card, loyalty), o ilipat ang budget sa channel na pinakamura.', 'To improve: raise the average order (bundles), bring customers back (loyalty cards), or move budget to your cheapest channel.') + '</p>' +
-      '<a class="cta no-print" href="https://www.flameph.org/academy" target="_top">' + t('Matuto ng mas murang marketing sa <b>FLAME PH Academy</b>, o ilista ang negosyo mo sa libreng directory.', 'Learn lower-cost marketing at <b>FLAME PH Academy</b>, or list your business in the free directory.') + '</a>' : '');
-
-  last = { cac: cac, ratio: ratio };
-  FC.postResult('customer-acquisition-cost', { spend: spend, newCustomers: cust, aov: aov, grossMargin: gm * 100, ordersPerMonth: freq, months: life }, { cac: cac, ltv: hasValue ? ltv : null, ltvToCac: hasValue ? ratio : null, paybackMonths: isFinite(payback) ? payback : null });
+    '<table class="bd tight" style="margin-top:12px"><thead><tr><th>' + t('Buwan', 'Month') + '</th><th class="n">' + t('Cash sa dulo', 'Cash at end') + '</th></tr></thead><tbody>' +
+      months.map(function (b, i) { return '<tr><td>' + (i + 1) + '</td><td class="n"' + (b < 0 ? ' style="color:var(--bad);font-weight:700"' : b < buffer ? ' style="color:var(--warn);font-weight:700"' : '') + '>' + peso(b, 0) + '</td></tr>'; }).join('') +
+    '</tbody></table>' +
+    (trend < 0 ? '<p class="note">' + t('Pababa ang benta mo nitong 3 buwan. Mas ligtas maghintay hanggang tumaas ulit.', 'Your sales fell over the last 3 months. It is safer to wait until they recover.') + '</p>' : '') +
+    (cls !== 'good' ? '<a class="cta no-print" href="https://www.flameph.org/opportunities" target="_top">' + t('Kailangan ng dagdag na puhunan? <b>Tingnan ang grants at loans</b> para sa MSMEs.', 'Need more capital? <b>See grants and loans</b> for MSMEs.') + '</a>' : '');
+  last = { low: low, payback: payback, cls: cls };
+  FC.postResult('expansion-readiness', { cash: cash, monthlyExpenses: exp, setup: setup, newMonthlyCost: newcost, extraSales: extra, rampMonths: ramp }, { lowestCash: low, lowestMonth: lowM, paybackMonth: payback, verdict: cls });
 }
 FC.init({
-  page: 'customer-acquisition-cost',
-  calc: calc,
-  sample: function () {
-    FC.fill({ c0n: 'Facebook ads', c0s: '5000', c0c: '25', c1n: 'Flyers', c1s: '1500', c1c: '5', c2n: 'Referral promo', c2s: '1000', c2c: '10', extra: '1500', aov: '350', gm: '35', freq: '2', life: '6' });
-  },
-  reset: function () { FC.fill({ c0n: '', c0s: '', c0c: '', c1n: '', c1s: '', c1c: '', c2n: '', c2s: '', c2c: '', aov: '' }); },
-  shareText: function () {
-    if (!last) return FC.t('Subukan ang CAC Calculator ng FLAME PH', 'Try the FLAME PH CAC Calculator');
-    return FC.t('CAC: ' + FC.peso(last.cac) + ' bawat bagong customer' + (isFinite(last.ratio) ? ', LTV:CAC ' + last.ratio.toFixed(1) + ':1' : '') + '. Kinuwenta sa FLAME PH calculator.',
-      'CAC: ' + FC.peso(last.cac) + ' per new customer' + (isFinite(last.ratio) ? ', LTV:CAC ' + last.ratio.toFixed(1) + ':1' : '') + '. Calculated with the FLAME PH calculator.');
-  }
+  page: 'expansion-readiness', calc: calc,
+  sample: function () { FC.fill({ cash: '180000', exp: '60000', s1: '210000', s2: '225000', s3: '240000', gm: '35', setup: '15000', newcost: '19000', extra: '70000', ramp: '2', buffer: '2' }); FC.setSeg('kind', 'hire'); },
+  reset: function () { FC.fill({ cash: '', exp: '', s1: '', s2: '', s3: '', newcost: '', extra: '' }); },
+  shareText: function () { return last ? FC.t('Pinakamababang cash sa 12 buwan: ' + FC.peso(last.low, 0) + '. FLAME PH calculator.', 'Lowest cash over 12 months: ' + FC.peso(last.low, 0) + '. FLAME PH calculator.') : 'FLAME PH Expansion Readiness Calculator'; }
 });
 FC.onLang(calc);
 </script>
