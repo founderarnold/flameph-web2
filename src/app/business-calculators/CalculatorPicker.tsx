@@ -3,13 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-export type CalculatorId = "markup-margin" | "employee-cost" | "break-even" | "cash-flow";
+export type CalculatorId = "markup-margin" | "employee-cost" | "payroll" | "break-even" | "cash-flow" | "customer-acquisition-cost";
 
 export const CALCULATORS: { id: CalculatorId; title: string; text: string }[] = [
   { id: "markup-margin", title: "Markup at Margin", text: "Tama ba ang presyo ko? Alamin ang kita bawat piraso." },
   { id: "employee-cost", title: "Total Employee Cost", text: "Magkano talaga ang empleyado, kasama ang SSS, PhilHealth, Pag-IBIG at 13th month?" },
+  { id: "payroll", title: "Payroll", text: "Sahod kada cutoff: overtime, holiday, kaltas at withholding tax, may payslip." },
   { id: "break-even", title: "Break-Even", text: "Ilang piraso kada araw para hindi malugi?" },
   { id: "cash-flow", title: "8-Week Cash Flow", text: "Kukulangin ba ako ng pera sa susunod na 2 buwan?" },
+  { id: "customer-acquisition-cost", title: "Customer Acquisition Cost", text: "Magkano ang gastos sa bawat bagong customer, at sulit ba ang ads ko?" },
 ];
 
 const isCalculator = (v: string | null): v is CalculatorId => CALCULATORS.some((c) => c.id === v);

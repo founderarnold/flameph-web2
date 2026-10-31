@@ -10,7 +10,7 @@ import { CalculatorPicker } from "./CalculatorPicker";
 
 export const metadata = meta(
   "Free Business Calculators for MSMEs",
-  "Libreng calculators para sa MSMEs sa Pilipinas: markup at margin, employee cost (SSS, PhilHealth, Pag-IBIG, 13th month), break-even at cash flow.",
+  "Libreng calculators para sa MSMEs sa Pilipinas: markup at margin, employee cost, payroll (SSS, PhilHealth, Pag-IBIG, withholding tax), break-even, cash flow at customer acquisition cost.",
   "/business-calculators",
 );
 
@@ -48,13 +48,13 @@ export default async function Page() {
         fil="Libre para sa lahat"
         title="Free Business Calculators for MSMEs"
         path="/business-calculators"
-        intro="Tigil-hula na. Alamin ang tamang presyo, totoong gastos sa tauhan, break-even at cash flow ng negosyo mo, libre at sa cellphone mo."
+        intro="Tigil-hula na. Alamin ang tamang presyo, sahod at gastos sa tauhan, break-even, cash flow at gastos sa bawat bagong customer, libre at sa cellphone mo."
       >
         <a href="#calculators" className="btn btn-flame text-base">Simulan ang calculator</a>
         {!signedIn && <Link href="/join" className="btn btn-outline text-base">Join FLAME PH free</Link>}
       </PageHero>
 
-      <Section id="calculators" title="Pumili ng calculator" intro="Apat na calculator na pinakakailangan ng sari-sari store, carinderia, online seller at service business.">
+      <Section id="calculators" title="Pumili ng calculator" intro="Anim na calculator na pinakakailangan ng sari-sari store, carinderia, online seller at service business.">
         <Suspense fallback={<div className="card p-6 text-muted">Naglo-load ang calculator…</div>}>
           <CalculatorPicker lang={lang === "fil" ? "tl" : undefined} />
         </Suspense>
