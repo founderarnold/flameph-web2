@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "FLAME PH",
     short_name: "FLAME PH",
-    description: "Federation of Leaders Advancing MSME Ecosystem in the Philippines",
+    description: "Founders and Leaders Advancing MSME Ecosystem in the Philippines",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

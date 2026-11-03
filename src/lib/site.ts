@@ -1,8 +1,8 @@
 // Verified facts (section 3 of the rebuild brief). Do not embellish.
 export const ORG = {
   shortName: "FLAME PH",
-  name: "FLAME PH — Federation of Leaders Advancing MSME Ecosystem in the Philippines",
-  legalName: "Federation of Leaders Advancing MSME Ecosystem in the Philippines",
+  name: "FLAME PH — Founders and Leaders Advancing MSME Ecosystem in the Philippines",
+  legalName: "Founders and Leaders Advancing MSME Ecosystem in the Philippines",
   formerName: "FAME PH — Founders' Association of MSMEs and Entrepreneurs, Inc.",
   type: "Non-stock, non-profit corporation",
   secNo: "2024050150009-15",

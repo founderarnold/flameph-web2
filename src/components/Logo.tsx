@@ -6,7 +6,7 @@ export function Logo({ className = "", height = 44, priority = false, link = tru
   const img = (
     <Image
       src="/brand/flameph-logo.png"
-      alt="FLAME PH — Federation of Leaders Advancing MSME Ecosystem in the Philippines"
+      alt="FLAME PH — Founders and Leaders Advancing MSME Ecosystem in the Philippines"
       width={width}
       height={height}
       priority={priority}

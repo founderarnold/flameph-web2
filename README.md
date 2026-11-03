@@ -14,7 +14,7 @@ The map is embedded through Google Maps. Its signed-in account depends on the Go
 
 Verified service listings, in-app directions/traffic, dispatch, saved vehicle/trip data and cross-site SSO still require provider agreements, trusted data, identity setup and backend work. Do not represent these as live.
 
-The website and member platform of **FLAME PH — Federation of Leaders Advancing MSME Ecosystem in the Philippines** (SEC Reg. No. 2024050150009-15).
+The website and member platform of **FLAME PH — Founders and Leaders Advancing MSME Ecosystem in the Philippines** (SEC Reg. No. 2024050150009-15).
 
 Next.js (App Router, TypeScript) · Tailwind CSS · Supabase (Postgres, Auth, Storage, Row Level Security) · Anthropic Claude API (Ka-FLAME AI) · Vercel.
 
