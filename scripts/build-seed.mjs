@@ -22,7 +22,7 @@ const tiers = [
 ];
 
 const org = {
-  name: "FLAME PH — Federation of Leaders Advancing MSME Ecosystem in the Philippines",
+  name: "FLAME PH — Founders and Leaders Advancing MSME Ecosystem in the Philippines",
   former_name: "FAME PH — Founders' Association of MSMEs and Entrepreneurs, Inc.",
   type: "Non-stock, non-profit corporation",
   sec_no: "2024050150009-15", sec_registered_on: "2024-05-09",

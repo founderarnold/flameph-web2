@@ -36,7 +36,7 @@ const jsonLd = {
   "@type": "NGO",
   name: "FLAME PH",
   legalName: ORG.legalName,
-  alternateName: ["Federation of Leaders Advancing MSME Ecosystem in the Philippines", "FAME PH"],
+  alternateName: ["Founders and Leaders Advancing MSME Ecosystem in the Philippines", "FAME PH"],
   url: ORG.url,
   logo: `${ORG.url}/brand/flameph-logo.png`,
   slogan: TAGLINES.main,
