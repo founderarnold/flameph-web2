@@ -8,7 +8,8 @@ import { Turnstile } from "@/components/Turnstile";
 /** "1" turns a button on. Tolerates stray whitespace or a byte-order mark in the Vercel value. */
 const flag = (v: string | undefined) => (v ?? "").replace(/^﻿/, "").trim() === "1";
 const GOOGLE_ON = flag(process.env.NEXT_PUBLIC_GOOGLE_AUTH);
-const FACEBOOK_ON = flag(process.env.NEXT_PUBLIC_FACEBOOK_AUTH);
+// Facebook Login is live (Meta app published). On unless NEXT_PUBLIC_FACEBOOK_AUTH is set to "0".
+const FACEBOOK_ON = (process.env.NEXT_PUBLIC_FACEBOOK_AUTH ?? "").replace(/^﻿/, "").trim() !== "0";
 
 type Method = "password" | "code";
 type Props = { mode: "join" | "login"; next?: string; haveCode?: boolean; initialEmail?: string; referral?: string };
