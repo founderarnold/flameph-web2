@@ -40,6 +40,12 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
   const [fbPreview, setFbPreview] = useState(false);
   useEffect(() => { setFbPreview(new URLSearchParams(window.location.search).get("fb") === "1"); }, []);
   const facebookOn = FACEBOOK_ON || fbPreview;
+  // "?auto=facebook" (from another FLAME PH site's Facebook button) goes straight to Facebook instead of this form.
+  useEffect(() => {
+    if (!supabase || mode !== "login" || !FACEBOOK_ON) return;
+    if (new URLSearchParams(window.location.search).get("auto") === "facebook") oauth("facebook");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Remember the email between visits so returning members only type their password or code.
   useEffect(() => { if (!initialEmail) try { setEmail(localStorage.getItem("fl-email") || ""); } catch {} }, [initialEmail]);
