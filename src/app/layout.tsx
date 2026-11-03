@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   openGraph: { type: "website", siteName: "FLAME PH", locale: "en_PH" },
   twitter: { card: "summary_large_image" },
   appleWebApp: { capable: true, title: "FLAME PH", statusBarStyle: "default" },
+  other: { "facebook-domain-verification": "frcnnn2y9v97rkwnrp0hol4i143mk6" },
 };
 
 export const viewport: Viewport = {
