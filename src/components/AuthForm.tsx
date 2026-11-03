@@ -40,10 +40,12 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
   const [fbPreview, setFbPreview] = useState(false);
   useEffect(() => { setFbPreview(new URLSearchParams(window.location.search).get("fb") === "1"); }, []);
   const facebookOn = FACEBOOK_ON || fbPreview;
-  // "?auto=facebook" (from another FLAME PH site's Facebook button) goes straight to Facebook instead of this form.
+  // "?auto=facebook" / "?auto=google" (from another FLAME PH site's buttons) goes straight to that provider.
   useEffect(() => {
-    if (!supabase || mode !== "login" || !FACEBOOK_ON) return;
-    if (new URLSearchParams(window.location.search).get("auto") === "facebook") oauth("facebook");
+    if (!supabase || mode !== "login") return;
+    const auto = new URLSearchParams(window.location.search).get("auto");
+    if (auto === "facebook" && FACEBOOK_ON) oauth("facebook");
+    else if (auto === "google" && GOOGLE_ON) oauth("google");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
