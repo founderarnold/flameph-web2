@@ -69,6 +69,8 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
   async function oauth(provider: "google" | "facebook") {
     if (needConsent) return setTopError("Tick the box above first, then tap the button again.");
     setBusy(true); setTopError("");
+    // Backup copy of "where to go next": if the provider trims the return link, /auth/callback reads this.
+    try { document.cookie = `fl_next=${encodeURIComponent(next)}; path=/; max-age=900; samesite=lax; secure`; } catch {}
     const { error } = await supabase!.auth.signInWithOAuth({
       provider,
       options: {
