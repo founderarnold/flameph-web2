@@ -3,7 +3,10 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const next = url.searchParams.get("next")?.startsWith("/") ? url.searchParams.get("next")! : "/account";
+  const safe = (v: string | null | undefined) => (v && v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\") ? v : null);
+  const cookieNext = safe((() => { try { return decodeURIComponent(/(?:^|;\s*)fl_next=([^;]+)/.exec(req.headers.get("cookie") ?? "")?.[1] ?? ""); } catch { return ""; } })());
+  // The link's own "next" wins; the saved copy covers the case where the provider dropped it.
+  const next = safe(url.searchParams.get("next")) && url.searchParams.get("next") !== "/account" ? url.searchParams.get("next")! : (cookieNext ?? safe(url.searchParams.get("next")) ?? "/account");
   const code = url.searchParams.get("code");
   const supabase = await createClient();
   if (!supabase || !code) return NextResponse.redirect(new URL("/login?error=1", req.url));
@@ -33,5 +36,7 @@ export async function GET(req: Request) {
       }
     }
   }
-  return NextResponse.redirect(new URL(next, req.url));
+  const res = NextResponse.redirect(new URL(next, req.url));
+  res.cookies.set("fl_next", "", { path: "/", maxAge: 0 });
+  return res;
 }
