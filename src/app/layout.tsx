@@ -9,6 +9,9 @@ import { BottomBar } from "@/components/BottomBar";
 import { RegisterSW } from "@/components/RegisterSW";
 import { EmailLinkSignIn } from "@/components/EmailLinkSignIn";
 import { KaFlameFab } from "@/components/KaFlameFab";
+import { MemberTopBar } from "@/components/shell/MemberTopBar";
+import { MemberBottomBar } from "@/components/shell/MemberTabsNav";
+import { latestFeedAt, shellSession, unreadMessages } from "@/lib/member-shell-data";
 import { cookies } from "next/headers";
 import { getDict, getLang } from "@/lib/i18n";
 import { FOUNDERS, ORG, PURPOSE, TAGLINES } from "@/lib/site";
@@ -52,6 +55,9 @@ const jsonLd = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [lang, t, c] = await Promise.all([getLang(), getDict(), cookies()]);
   const signedIn = c.getAll().some((x) => x.name.startsWith("sb-") && x.name.includes("auth-token"));
+  // The fork: a signed-in member gets the member shell (Home top bar + five action tabs). Visitors keep the public header and bar exactly as before.
+  const member = signedIn ? Boolean((await shellSession()).user) : false;
+  const [unread, latest] = member ? await Promise.all([unreadMessages(), latestFeedAt()]) : [0, null];
   return (
     <html
       lang={lang === "fil" ? "fil" : "en-PH"}
@@ -61,11 +67,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       }}
     >
       <body className="min-h-screen font-sans antialiased">
-        <Header />
+        {member ? <MemberTopBar unread={unread} latest={latest} accountLabel={t.account} /> : <Header />}
         <main id="main">{children}</main>
         <PageShareBar />
         <Footer />
-        <BottomBar labels={{ home: t.home, kaflame: t.kaflame, directory: t.directory, account: t.account }} />
+        {member ? <MemberBottomBar /> : <BottomBar labels={{ home: t.home, kaflame: t.kaflame, directory: t.directory, account: t.account }} />}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         {signedIn && <KaFlameFab />}
         <RegisterSW />

@@ -3,6 +3,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { sendEmail, NOTIFY_TO } from "@/lib/email";
+import { feedResult } from "@/lib/member-shell";
 
 const STAGES = ["discover", "start", "build", "grow", "scale"];
 const s = (v: FormDataEntryValue | null, max = 120) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -20,7 +21,7 @@ export async function saveProfile(fd: FormData) {
   }).eq("id", user.id);
   revalidateTag("stats");
   revalidatePath("/account");
-  redirect("/account?saved=1");
+  redirect(feedResult("profile"));
 }
 
 export async function deleteAiConversation(fd: FormData) {
@@ -71,7 +72,10 @@ export async function joinDeal(fd: FormData) {
     : await supabase.from("deal_participants").upsert({ deal_id: deal, user_id: user.id, quantity: qty }, { onConflict: "deal_id,user_id" });
   revalidatePath("/deals");
   revalidatePath("/account");
-  redirect(`/deals?${error ? "error=1" : fd.get("leave") === "1" ? "left=1" : "joined=1"}#deal-${deal}`);
+  revalidatePath("/home");
+  // Back to the feed, scrolled to the group order. If it did not go through, stay on Buy Together with the error.
+  if (error) redirect(`/deals?error=1#deal-${deal}`);
+  redirect(feedResult(fd.get("leave") === "1" ? "group-order-left" : "group-order-joined", `deal-${deal}`));
 }
 
 /** Spend points on a reward FLAME PH posted. The database checks the balance and stock. */

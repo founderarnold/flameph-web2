@@ -117,7 +117,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </section>
       </div>
       <div className="grid gap-8 lg:grid-cols-2">
-        <div>
+        <div id="member-id" className="scroll-mt-24">
           <h2 className="text-xl font-extrabold">Your digital member ID</h2>
           <div className="mt-3">{p && <MemberCard name={p.full_name ?? ""} code={p.member_code} since={p.created_at} tier={p.tier} status={p.status} />}</div>
           {p && <p className="mt-2 text-sm text-muted">Anyone can scan the QR to confirm your membership at <Link className="underline" href={`/verify/${p.member_code}`}>/verify/{p.member_code}</Link>.</p>}

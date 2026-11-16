@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
-import { safeNext } from "@/lib/safe-next";
+import { AFTER_SIGN_IN, safeNext } from "@/lib/safe-next";
 import { choicesFrom } from "@/lib/policy";
 import { getConsents, recordConsents } from "@/lib/consents";
 
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const safe = (v: string | null | undefined) => { const s = safeNext(v, ""); return s || null; };
   const cookieNext = safe((() => { try { return decodeURIComponent(/(?:^|;\s*)fl_next=([^;]+)/.exec(req.headers.get("cookie") ?? "")?.[1] ?? ""); } catch { return ""; } })());
   // The link's own "next" wins; the saved copy covers the case where the provider dropped it.
-  const next = safe(url.searchParams.get("next")) && url.searchParams.get("next") !== "/account" ? url.searchParams.get("next")! : (cookieNext ?? safe(url.searchParams.get("next")) ?? "/account");
+  const next = safe(url.searchParams.get("next")) && url.searchParams.get("next") !== AFTER_SIGN_IN ? url.searchParams.get("next")! : (cookieNext ?? safe(url.searchParams.get("next")) ?? AFTER_SIGN_IN);
   const code = url.searchParams.get("code");
   const supabase = await createClient();
   if (!supabase || !code) return NextResponse.redirect(new URL("/login?error=1", req.url));

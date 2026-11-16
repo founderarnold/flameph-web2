@@ -7,6 +7,7 @@ import { createPublicClient } from "@/lib/supabase/server";
 import { mediaUrl } from "@/lib/content";
 import { dateLabel, notExpired, peso } from "@/lib/growth";
 import { joinDeal } from "@/app/account/actions";
+import { GROUP_ORDER_PAYMENT_NOTE } from "@/lib/legal-text";
 
 export const metadata = meta("Buy Together", "FLAME PH members pool their orders to get wholesale prices on packaging, ingredients and equipment.", "/deals");
 
@@ -92,7 +93,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ j
             })}
           </ul>
         )}
-        <p className="mt-6 text-sm text-muted">Joining reserves your share. No money passes through FLAME PH. Where a downpayment is needed to meet the supplier&apos;s minimum order, it is paid to MarketplacePH Online Store, the operator of the FLAME PH ecosystem, never to FLAME PH, and no payment is taken on this site. Walang pera na dumadaan sa FLAME PH. Kung kailangan ng downpayment para maabot ang minimum order ng supplier, sa MarketplacePH Online Store ito ibinabayad, hindi sa FLAME PH, at walang bayad na kinukuha sa site na ito.</p>
+        <p className="mt-6 text-sm text-muted">{GROUP_ORDER_PAYMENT_NOTE}</p>
       </Section>
     </>
   );

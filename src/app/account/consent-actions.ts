@@ -6,6 +6,7 @@ import { getConsents, recordConsents } from "@/lib/consents";
 import { choicesFrom } from "@/lib/policy";
 import { safeNext } from "@/lib/safe-next";
 import { sendEmail, NOTIFY_TO } from "@/lib/email";
+import { FEED, feedResult } from "@/lib/member-shell";
 
 /** Saves the switches from the sign-in prompt or the Settings page. Only changed switches add a row. */
 export async function saveConsents(fd: FormData) {
@@ -30,7 +31,8 @@ export async function saveConsents(fd: FormData) {
   }
   revalidatePath("/account", "layout");
   // Say so on the page they land on. Member pages show the note; other pages (e.g. signing in to another FLAME PH site) are left untouched.
-  const landing = back === "/" ? "/account" : back; // signed-in members opening "/" land on /account anyway
-  const confirmed = landing.startsWith("/account") ? `${landing}${landing.includes("?") ? "&" : "?"}consents=saved` : landing;
+  // Signed-in members opening "/" land on the Home feed anyway; the feed confirms the save at the top.
+  const landing = back === "/" ? FEED : back;
+  const confirmed = landing === FEED ? feedResult("consents") : landing.startsWith("/account") ? `${landing}${landing.includes("?") ? "&" : "?"}consents=saved` : landing;
   redirect(source === "prompt" ? confirmed : `/account/settings?saved=1${changed.includes("terms") && !choices.terms ? "&closing=1" : ""}`);
 }
