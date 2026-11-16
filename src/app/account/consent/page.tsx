@@ -5,6 +5,7 @@ import { POLICY_EFFECTIVE_LABEL, POLICY_VERSION, type ConsentKey } from "@/lib/p
 import { safeNext } from "@/lib/safe-next";
 import { ConsentSwitches } from "@/components/ConsentSwitches";
 import { Notice } from "@/components/ui";
+import { SubmitButton } from "@/components/SubmitButton";
 import { saveConsents } from "../consent-actions";
 
 export const metadata = { title: "Our updated policies", robots: { index: false } };
@@ -32,7 +33,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
         <input type="hidden" name="next" value={next} />
         <ConsentSwitches on={on} />
         <div className="flex flex-col gap-3 sm:flex-row">
-          <button className="btn btn-primary btn-ds sm:flex-1" disabled={!ready}>Save my choices</button>
+          <SubmitButton className="btn btn-primary btn-ds sm:flex-1" disabled={!ready}>Save my choices</SubmitButton>
           <Link href={next} className="btn btn-ghost sm:flex-1">Not now</Link>
         </div>
         <p className="text-sm text-muted">You can change any of these later in <Link className="text-mph underline" href="/account/settings">Settings</Link>.</p>

@@ -139,3 +139,14 @@ test("settings lets members withdraw every consent and shows their history", asy
   assert.match(actions, /account closure request/);
   assert.match(await read("src/lib/member-nav.ts"), /\{ href: "\/account\/settings", label: "Settings" \}/);
 });
+
+test("saving consents shows that it is working and confirms afterwards", async () => {
+  const btn = await read("src/components/SubmitButton.tsx");
+  assert.match(btn, /useFormStatus/);
+  assert.match(btn, /disabled=\{disabled \|\| pending\}/);
+  assert.match(prompt, /<SubmitButton[^>]*>Save my choices<\/SubmitButton>/);
+  assert.match(settings, /<SubmitButton[^>]*>Save choices<\/SubmitButton>/);
+  assert.match(actions, /consents=saved/);
+  assert.match(actions, /back === "\/" \? "\/account" : back/);
+  assert.match(await read("src/app/account/page.tsx"), /sp\.consents === "saved"/);
+});

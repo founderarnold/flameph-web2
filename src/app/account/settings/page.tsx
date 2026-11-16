@@ -4,6 +4,7 @@ import { getConsents } from "@/lib/consents";
 import { CONSENTS, POLICY_VERSION, type ConsentKey } from "@/lib/policy";
 import { ConsentSwitches } from "@/components/ConsentSwitches";
 import { Notice } from "@/components/ui";
+import { SubmitButton } from "@/components/SubmitButton";
 import { ORG } from "@/lib/site";
 import { saveConsents } from "../consent-actions";
 
@@ -24,7 +25,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-3xl font-extrabold text-primary">Settings</h1>
-      {sp.saved && !sp.closing && <Notice tone="ok">Saved. Your choices apply right away.</Notice>}
+      {sp.saved && !sp.closing && <div role="status"><Notice tone="ok">Saved. Your choices apply right away.</Notice></div>}
       {sp.closing && <Notice tone="danger">You turned off switch 1, so we&apos;ll close your account. A person from FLAME PH will confirm by email within 15 working days. Changed your mind? Turn it back on and save.</Notice>}
       {sp.consent === "error" && <Notice tone="danger">That didn&apos;t save. Please try again.</Notice>}
       {!ready && <Notice>Your consent settings will appear here soon.</Notice>}
@@ -35,7 +36,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
         <form action={saveConsents} className="space-y-4">
           <input type="hidden" name="source" value="settings" />
           <ConsentSwitches on={on} />
-          <button className="btn btn-primary btn-ds w-full sm:w-auto" disabled={!ready}>Save choices</button>
+          <SubmitButton className="btn btn-primary btn-ds w-full sm:w-auto" disabled={!ready}>Save choices</SubmitButton>
         </form>
       </section>
 
