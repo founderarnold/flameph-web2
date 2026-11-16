@@ -11,6 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const Menu = () => (
     <ul className="space-y-0.5 text-[15px]">
       <li><Link className="block rounded-lg px-2 py-2 font-bold hover:bg-bg-soft" href="/admin">Dashboard</Link></li>
+      <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/design-system">Design system</Link></li>
       {isAdmin && <>
         <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/submissions">Form inbox</Link></li>
         <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Real estate</li>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cloneElement, isValidElement } from "react";
 import { StatusBadge, type Status } from "./StatusBadge";
 import { HeroArtwork } from "./HeroArtwork";
 
@@ -77,8 +78,8 @@ export function Initials({ name, size = 72 }: { name: string; size?: number }) {
   );
 }
 
-export function Notice({ children, tone = "warn" }: { children: React.ReactNode; tone?: "warn" | "info" | "ok" }) {
-  const cls = tone === "ok" ? "bg-ok-soft text-ok" : tone === "info" ? "bg-primary-soft text-primary" : "bg-warn-soft text-warn";
+export function Notice({ children, tone = "warn" }: { children: React.ReactNode; tone?: "warn" | "info" | "ok" | "danger" }) {
+  const cls = tone === "ok" ? "bg-ok-soft text-ok" : tone === "info" ? "bg-primary-soft text-primary" : tone === "danger" ? "bg-danger-soft text-danger" : "bg-warn-soft text-warn";
   return <div className={`rounded-xl px-4 py-3 text-[15px] font-medium ${cls}`}>{children}</div>;
 }
 
@@ -91,4 +92,93 @@ export function VerifyWithAgency({ agencies }: { agencies: { name: string; url: 
       ))}
     </Notice>
   );
+}
+
+/* ---------------------------------------------------------------------------
+ * Member layer design system (Phase 1). These build on the existing classes in
+ * globals.css (.btn, .card, .input, .label) so there is one design language.
+ * Documented in docs/DESIGN_SYSTEM.md; previewed at /admin/design-system.
+ * ------------------------------------------------------------------------- */
+
+export type ButtonVariant = "primary" | "flame" | "outline" | "ghost" | "danger";
+export type ButtonSize = "sm" | "md" | "lg";
+
+export function buttonClass({ variant = "primary", size = "md", block = false, className = "" }: { variant?: ButtonVariant; size?: ButtonSize; block?: boolean; className?: string } = {}) {
+  return ["btn", "btn-ds", `btn-${variant}`, size !== "md" && `btn-${size}`, block && "btn-block", className].filter(Boolean).join(" ");
+}
+
+type ButtonProps = { variant?: ButtonVariant; size?: ButtonSize; block?: boolean; loading?: boolean; className?: string; children: React.ReactNode };
+
+/** One button for the member layer. Pass `href` for a link that looks like a button. `loading` keeps the label and marks it busy. */
+export function Button({ variant, size, block, loading = false, className, children, href, external, ...rest }: ButtonProps & { href?: string; external?: boolean } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children">) {
+  const cls = buttonClass({ variant, size, block, className });
+  const inner = <>{loading && <span aria-hidden className="btn-spinner" />}{children}</>;
+  if (href) {
+    return external
+      ? <a href={href} target="_blank" rel="noopener" className={cls}>{inner}<span className="sr-only"> (opens in a new tab)</span></a>
+      : <Link href={href} className={cls}>{inner}</Link>;
+  }
+  return <button type="button" {...rest} className={cls} aria-busy={loading || undefined} disabled={rest.disabled || loading}>{inner}</button>;
+}
+
+/** Label + one control + optional help and error text, wired together for screen readers. */
+export function Field({ id, label, help, error, required, children }: { id: string; label: React.ReactNode; help?: React.ReactNode; error?: React.ReactNode; required?: boolean; children: React.ReactElement<Record<string, unknown>> }) {
+  const helpId = help ? `${id}-help` : undefined;
+  const errorId = error ? `${id}-error` : undefined;
+  const describedBy = [helpId, errorId].filter(Boolean).join(" ") || undefined;
+  const control = isValidElement(children)
+    ? cloneElement(children, { id, "aria-describedby": describedBy, "aria-invalid": error ? true : undefined, required: required || undefined })
+    : children;
+  return (
+    <div className="field">
+      <label className="label" htmlFor={id}>{label}{required && <span aria-hidden className="text-danger"> *</span>}</label>
+      {control}
+      {help && <p id={helpId} className="field-help">{help}</p>}
+      {error && <p id={errorId} className="field-error" role="alert">{error}</p>}
+    </div>
+  );
+}
+
+/** On/off switch built on a native checkbox (keyboard and form friendly). Off unless `defaultChecked` is set, as consent rules require. */
+export function Switch({ name, label, description, defaultChecked = false, disabled, value = "on" }: { name: string; label: React.ReactNode; description?: React.ReactNode; defaultChecked?: boolean; disabled?: boolean; value?: string }) {
+  const id = `switch-${name}`;
+  return (
+    <label htmlFor={id} className="switch-row">
+      <span>
+        <span className="block font-semibold">{label}</span>
+        {description && <span id={`${id}-desc`} className="field-help block">{description}</span>}
+      </span>
+      <input id={id} name={name} value={value} type="checkbox" role="switch" className="switch" defaultChecked={defaultChecked} disabled={disabled} aria-describedby={description ? `${id}-desc` : undefined} />
+    </label>
+  );
+}
+
+/** Unread counter (Messages, notifications). Hidden at zero; shows 99+ above 99; always has a spoken label. */
+export function CountBadge({ count, label }: { count: number; label: string }) {
+  if (!count || count < 1) return null;
+  return <span className="count-badge"><span aria-hidden>{count > 99 ? "99+" : count}</span><span className="sr-only">{count} {label}</span></span>;
+}
+
+/** Small dot for "there is something new", e.g. unseen posts on Home. The label is read aloud; the dot is not the only signal. */
+export function UnseenDot({ label = "New posts" }: { label?: string }) {
+  return <span className="unseen-dot"><span className="sr-only">{label}</span></span>;
+}
+
+/** Member picture, or their initials when there is no photo. Reuses Initials. */
+export function Avatar({ name, src, size = 40 }: { name: string; src?: string | null; size?: number }) {
+  if (!src) return <Initials name={name} size={size} />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <span className="ds-avatar" style={{ width: size, height: size }}><img src={src} alt="" loading="lazy" /></span>;
+}
+
+/** Pill for filters and tags. Pass `pressed` for a toggle filter. */
+export function Chip({ children, pressed, onClickHref }: { children: React.ReactNode; pressed?: boolean; onClickHref?: string }) {
+  return onClickHref
+    ? <Link href={onClickHref} className="chip" aria-current={pressed ? "true" : undefined}>{children}</Link>
+    : <span className="chip">{children}</span>;
+}
+
+/** Loading placeholder that matches the shape of the content it stands in for. */
+export function Skeleton({ className = "h-4 w-full", label }: { className?: string; label?: string }) {
+  return <div className={`skeleton ${className}`} role={label ? "status" : undefined} aria-label={label} aria-hidden={label ? undefined : true} />;
 }
