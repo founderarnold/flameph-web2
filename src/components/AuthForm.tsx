@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient, createEmailLinkClient } from "@/lib/supabase/browser";
 import { Turnstile } from "@/components/Turnstile";
+import { Switch } from "@/components/ui";
+import { CONSENTS, CONSENT_KEYS, POLICY_PAGES, POLICY_VERSION, type ConsentKey } from "@/lib/policy";
+import { safeNext } from "@/lib/safe-next";
 
 /** "1" turns a button on. Tolerates stray whitespace or a byte-order mark in the Vercel value. */
 const flag = (v: string | undefined) => (v ?? "").replace(/^﻿/, "").trim() === "1";
@@ -18,16 +20,18 @@ type Props = { mode: "join" | "login"; next?: string; haveCode?: boolean; initia
  * Join / log in. Default is email + password (no waiting for emails). The email-code option covers members
  * without a password and "forgot password". Codes are typed into one box that submits itself.
  */
-export function AuthForm({ mode, next = "/account", haveCode = false, initialEmail = "", referral }: Props) {
+export function AuthForm({ mode, next: nextRaw = "/account", haveCode = false, initialEmail = "", referral }: Props) {
+  const next = safeNext(nextRaw);
   const supabase = createClient();
-  const router = useRouter();
   const [method, setMethod] = useState<Method>(haveCode ? "code" : "password");
   const [email, setEmail] = useState(initialEmail);
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
-  const [consent, setConsent] = useState(false);
-  const [marketing, setMarketing] = useState(false);
+  // Each consent is its own switch, off until the member turns it on (Legal Pack v1.0, Part D).
+  const [consents, setConsents] = useState<Record<ConsentKey, boolean>>(() => Object.fromEntries(CONSENT_KEYS.map((k) => [k, false])) as Record<ConsentKey, boolean>);
+  const consent = consents.terms;
+  const marketing = consents.marketing;
   const [codeSent, setCodeSent] = useState(haveCode);
   const [resetting, setResetting] = useState(false);
   const [code, setCode] = useState("");
@@ -57,24 +61,26 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
 
   const needConsent = mode === "join" && !consent;
   const callback = (extra = "") => `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}${extra}`;
+  // Sent with a new account so the database records each choice with the policy version.
+  const consentData = { consents, policy_version: POLICY_VERSION };
+  const consentQuery = CONSENT_KEYS.filter((k) => consents[k]).map((k) => `&c_${k}=1`).join("");
 
   function finish(to = next) {
     remember();
-    // Signing in for another FLAME PH site: a full page load lets /sso send them back there.
-    if (to.startsWith("/sso/")) return window.location.assign(to);
-    router.replace(to);
-    router.refresh();
+    // Every sign-in goes through /auth/continue, which asks for any new policy consents once, then carries on to `to`.
+    // A full page load also lets /sso send members back to another FLAME PH site.
+    window.location.assign(`/auth/continue?next=${encodeURIComponent(safeNext(to))}`);
   }
 
   async function oauth(provider: "google" | "facebook") {
-    if (needConsent) return setTopError("Tick the box above first, then tap the button again.");
+    if (needConsent) return setTopError("Turn on switch 1 above first, then tap the button again.");
     setBusy(true); setTopError("");
     // Backup copy of "where to go next": if the provider trims the return link, /auth/callback reads this.
     try { document.cookie = `fl_next=${encodeURIComponent(next)}; path=/; max-age=900; samesite=lax; secure`; } catch {}
     const { error } = await supabase!.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: callback(mode === "join" ? `&consent=1&mkt=${marketing ? 1 : 0}${referral ? `&ref=${encodeURIComponent(referral)}` : ""}` : ""),
+        redirectTo: callback(mode === "join" ? `&consent=1&mkt=${marketing ? 1 : 0}${consentQuery}${referral ? `&ref=${encodeURIComponent(referral)}` : ""}` : ""),
         ...(provider === "facebook" ? { scopes: "email" } : {}),
       },
     });
@@ -84,7 +90,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
 
   async function withPassword(e: React.FormEvent) {
     e.preventDefault();
-    if (needConsent) return setError("Please agree to the Privacy Notice first.");
+    if (needConsent) return setError("Please turn on switch 1 (Terms, Guidelines and Privacy) first.");
     if (!turnstileToken) return setError("Please complete the security check.");
     setBusy(true); setError("");
     if (mode === "join") {
@@ -102,6 +108,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
             consent_privacy: true,
             consent_marketing: marketing,
             email_verification_required: true,
+            ...consentData,
             ...(referral ? { ref: referral } : {}),
           },
         },
@@ -129,7 +136,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
 
   async function sendCode(e?: React.FormEvent) {
     e?.preventDefault();
-    if (needConsent) return setError("Please agree to the Privacy Notice first.");
+    if (needConsent) return setError("Please turn on switch 1 (Terms, Guidelines and Privacy) first.");
     if (!email.trim()) return setError("Type your email first.");
     if (!turnstileToken) return setError("Please complete the security check.");
     setBusy(true); setError("");
@@ -140,7 +147,7 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
         emailRedirectTo: `${window.location.origin}/auth/link?next=${encodeURIComponent(target)}`,
         shouldCreateUser: mode === "join",
         captchaToken: turnstileToken,
-        data: mode === "join" ? { full_name: name, consent_privacy: true, consent_marketing: marketing, ...(referral ? { ref: referral } : {}) } : undefined,
+        data: mode === "join" ? { full_name: name, consent_privacy: true, consent_marketing: marketing, ...consentData, ...(referral ? { ref: referral } : {}) } : undefined,
       },
     });
     setTurnstileToken(""); setAuthBotReset((n) => n + 1);
@@ -171,17 +178,24 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
   );
 
   const consentBox = mode === "join" && (
-        <div className="space-y-3 rounded-xl bg-bg-soft p-4">
-          <label className="flex items-start gap-2">
-            <input type="checkbox" checked={consent} onChange={(e) => { setConsent(e.target.checked); if (e.target.checked) setTopError(""); }} className="mt-1 h-6 w-6 shrink-0" required />
-            <span>I agree to the <Link className="underline" href="/legal/privacy">Privacy Notice</Link>, <Link className="underline" href="/legal/terms">Terms of Use</Link> and <Link className="underline" href="/membership/terms">Membership Terms</Link>, and allow FLAME PH to process my data under the Data Privacy Act of 2012. <span className="text-flame-strong">*</span></span>
-          </label>
-          <label className="flex items-start gap-2">
-            <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} className="mt-1 h-5 w-5 shrink-0" />
-            <span>Send me the MSME Bulletin and event updates (optional).</span>
-          </label>
-        </div>
-      );
+    <fieldset className="space-y-1 rounded-xl bg-bg-soft p-4">
+      <legend className="sr-only">Your consents</legend>
+      <p className="text-sm text-muted">
+        Please read the {Object.values(POLICY_PAGES).map((x, i, a) => <span key={x.href}>{i > 0 && (i === a.length - 1 ? " and " : ", ")}<Link className="text-mph underline" href={x.href} target="_blank">{x.title}<span className="sr-only"> (opens in a new tab)</span></Link></span>)}.
+        Each switch is separate and starts off. Only switch 1 is needed to join. You can change any of them later in Settings.
+      </p>
+      {CONSENTS.map((c) => (
+        <Switch
+          key={c.key}
+          name={`c_${c.key}`}
+          checked={consents[c.key]}
+          onChange={(on) => { setConsents((x) => ({ ...x, [c.key]: on })); if (c.key === "terms" && on) setTopError(""); }}
+          label={<>{c.n}. {c.title}<span className="ml-1 text-sm font-normal text-muted">{c.required ? "(needed to join)" : "(optional)"}</span></>}
+          description={<>{c.en} <i lang="fil">{c.tl}</i></>}
+        />
+      ))}
+    </fieldset>
+  );
 
   const emailField = (
     <div><label htmlFor="em" className="label">Email</label><input id="em" type="email" required autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input" /></div>
@@ -220,10 +234,10 @@ export function AuthForm({ mode, next = "/account", haveCode = false, initialEma
           <div>
             <label htmlFor="pw" className="label">{mode === "join" ? "Create a password" : "Password"}</label>
             <div className="flex gap-2">
-              <input id="pw" type={show ? "text" : "password"} required minLength={mode === "join" ? 8 : 1} autoComplete={mode === "join" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} className="input" />
+              <input id="pw" type={show ? "text" : "password"} required minLength={mode === "join" ? 8 : 1} maxLength={72} autoComplete={mode === "join" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} className="input" />
               <button type="button" className="btn btn-ghost shrink-0" onClick={() => setShow(!show)} aria-label={show ? "Hide password" : "Show password"}>{show ? "Hide" : "Show"}</button>
             </div>
-            {mode === "join" && <p className="mt-1 text-sm text-muted">At least 8 characters.</p>}
+            {mode === "join" && <p className="mt-1 text-sm text-muted">8 to 72 characters.</p>}
           </div>
           <Turnstile action="auth" onToken={setTurnstileToken} resetKey={authBotReset} />
           {error && <p role="alert" className="font-semibold text-red-700 dark:text-red-300">{error}</p>}

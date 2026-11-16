@@ -102,7 +102,7 @@ The existing `FeatureCard`, `EmptyState` and `Notice` components stay as they ar
 - **New text:** `.field-help` for help text, and `.field-error` for error text (red, announced with `role="alert"`).
 - **Component:** `<Field id label help error required>` wraps one control. It links the label, help and error to the control (`htmlFor`, `aria-describedby`, `aria-invalid`), so screen readers read them together.
 - **Checkbox (new):** `.check` makes it 20px with the brand colour. Always put the checkbox and its text inside one `<label>`.
-- **Switch (new):** `<Switch name label description>`. It is a native checkbox with `role="switch"`, so it works with the keyboard and in forms. It is **off unless `defaultChecked`** is set, as the consent rules require: each consent is a separate switch, never bundled.
+- **Switch (new):** `<Switch name label description>`. It is a native checkbox with `role="switch"`, so it works with the keyboard and in forms. It is **off unless `defaultChecked`** is set, as the consent rules require: each consent is a separate switch, never bundled. In a client form, pass `checked` and `onChange` to control it (the Join form does this).
 
 ## 8. Status pieces
 

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { saveProfile } from "../actions";
-import { Notice } from "@/components/ui";
 import { StagePicker } from "@/components/StagePicker";
 import { PROVINCES } from "@/content/ph-provinces";
 
@@ -20,7 +19,6 @@ export default async function Profile({ searchParams }: { searchParams: Promise<
           <StagePicker back="/account/profile?welcome=1" narrow />
         </div>
       )}
-      {sp.error === "consent" && <div className="mt-4"><Notice>Please agree to the Privacy Notice to save your profile.</Notice></div>}
       <form action={saveProfile} className="card mt-6 space-y-4 p-5">
         <div><label className="label" htmlFor="fn">Full name *</label><input id="fn" name="full_name" required defaultValue={p?.full_name ?? ""} autoComplete="name" className="input" /></div>
         <div><label className="label" htmlFor="mb">Mobile number</label><input id="mb" name="mobile" type="tel" inputMode="tel" defaultValue={p?.mobile ?? ""} placeholder="09XX XXX XXXX" className="input" /></div>
@@ -42,8 +40,7 @@ export default async function Profile({ searchParams }: { searchParams: Promise<
             <option value="scale">Scale: lalawak na</option>
           </select>
         </div>
-        <label className="flex items-start gap-2"><input type="checkbox" name="consent_privacy" value="yes" required defaultChecked={p?.consent_privacy} className="mt-1 h-5 w-5 shrink-0" /><span>I agree to the <Link className="underline" href="/legal/privacy">Privacy Notice</Link> and the processing of my data under RA 10173. *</span></label>
-        <label className="flex items-start gap-2"><input type="checkbox" name="consent_marketing" value="yes" defaultChecked={p?.consent_marketing} className="mt-1 h-5 w-5 shrink-0" /><span>Send me the MSME Bulletin and event updates.</span></label>
+        <p className="text-sm text-muted">Newsletter and privacy choices are now in <Link className="text-mph underline" href="/account/settings">Settings</Link>.</p>
         <p className="text-sm text-muted">Signed in as {user.email}</p>
         <button className="btn btn-primary">Save profile</button>
       </form>

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
+import { safeNext } from "@/lib/safe-next";
 
 /**
  * Finishes sign-in from an email link on any page it lands on: Supabase puts the session after the # in the address.
@@ -15,7 +16,7 @@ export function EmailLinkSignIn() {
     const failed = hash.get("error_description") || hash.get("error");
     if (!access_token && !failed) return;
     const next = new URLSearchParams(window.location.search).get("next");
-    const to = next?.startsWith("/") && !next.startsWith("//") ? next : "/account";
+    const to = `/auth/continue?next=${encodeURIComponent(safeNext(next))}`;
     history.replaceState(null, "", window.location.pathname + window.location.search);
     if (failed || !access_token || !refresh_token) { window.location.replace("/login?error=1"); return; }
     setMsg("Signing you in…");

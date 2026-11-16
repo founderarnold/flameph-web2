@@ -8,7 +8,7 @@ export const NAV = nav as NavGroup[];
 export const LEGAL_LINKS: NavItem[] = [
   { label: "Terms of Use", href: "/legal/terms" },
   { label: "Privacy Notice", href: "/legal/privacy" },
-  { label: "Membership Terms", href: "/membership/terms" },
+  { label: "Community Guidelines", href: "/membership/terms" },
   { label: "Contact", href: "/contact" },
   { label: "Impact", href: "/impact" },
 ];
