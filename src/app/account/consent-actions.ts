@@ -29,5 +29,8 @@ export async function saveConsents(fd: FormData) {
     });
   }
   revalidatePath("/account", "layout");
-  redirect(source === "prompt" ? back : `/account/settings?saved=1${changed.includes("terms") && !choices.terms ? "&closing=1" : ""}`);
+  // Say so on the page they land on. Member pages show the note; other pages (e.g. signing in to another FLAME PH site) are left untouched.
+  const landing = back === "/" ? "/account" : back; // signed-in members opening "/" land on /account anyway
+  const confirmed = landing.startsWith("/account") ? `${landing}${landing.includes("?") ? "&" : "?"}consents=saved` : landing;
+  redirect(source === "prompt" ? confirmed : `/account/settings?saved=1${changed.includes("terms") && !choices.terms ? "&closing=1" : ""}`);
 }

@@ -11,7 +11,7 @@ import { OPPORTUNITY_KINDS, STAGES, type Opportunity, type Stage, dateLabel, mat
 import { accountVerificationStatus } from "@/lib/account-verification";
 import { needsConsentPrompt } from "@/lib/consents";
 
-export default async function Dashboard({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ denied?: string; consents?: string }> }) {
   const { supabase, user } = await requireUser();
   const sp = await searchParams;
   const [{ data: p }, { data: biz }, { data: regs }, { count: aiCount }, { data: verificationData }] = await Promise.all([
@@ -60,6 +60,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     <div className="space-y-8">
       {sp.denied && <Notice>That page is for FLAME PH admins only.</Notice>}
       <h1 className="text-3xl font-extrabold text-primary">Kumusta{p?.full_name ? `, ${p.full_name.split(" ")[0]}` : ""}!</h1>
+      {sp.consents === "saved" && <div role="status"><Notice tone="ok">Your choices are saved. You can change them anytime in <Link href="/account/settings" className="font-bold underline">Settings</Link>.</Notice></div>}
       {consentPrompt && <Notice>We updated our Terms, Community Guidelines and Privacy Notice. <Link href="/account/consent?next=/account" className="font-bold underline">Review your choices</Link>. Everything you use keeps working meanwhile.</Notice>}
       {incomplete && <Notice>Your profile isn&apos;t complete yet. <Link href="/account/profile" className="font-bold underline">Finish it</Link> so you count toward your province on our Impact page.</Notice>}
       {!user.email_confirmed_at && <Notice>Please confirm your email address to activate your member ID.</Notice>}
