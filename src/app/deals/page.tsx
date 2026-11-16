@@ -29,7 +29,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ j
     <>
       <MemberNav />
       <PageHero status="live" fil="Sama-samang pagbili" title="Buy Together" path="/deals"
-        intro="Members pool their orders so small businesses get wholesale prices. Join a deal to reserve your share. FLAME PH contacts everyone with payment and pickup details once the target is reached." />
+        intro="Members pool their orders so small businesses get wholesale prices. Join a deal to reserve your share. FLAME PH never collects, holds or transfers money for a group order. To keep each order above the supplier's minimum order quantity, MarketplacePH Online Store, the operator of the FLAME PH ecosystem, collects the orders and a downpayment where needed so orders are not cancelled." />
       <Section>
         {sp.joined && <div className="mb-4"><Notice tone="ok">You&apos;re in! We&apos;ll message you when the deal reaches its target.</Notice></div>}
         {sp.left && <div className="mb-4"><Notice tone="info">You left the deal.</Notice></div>}
@@ -92,7 +92,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ j
             })}
           </ul>
         )}
-        <p className="mt-6 text-sm text-muted">Joining reserves your share; no payment is taken on this site. FLAME PH confirms price, payment and pickup with every member before ordering.</p>
+        <p className="mt-6 text-sm text-muted">Joining reserves your share. No money passes through FLAME PH. Where a downpayment is needed to meet the supplier&apos;s minimum order, it is paid to MarketplacePH Online Store, the operator of the FLAME PH ecosystem, never to FLAME PH, and no payment is taken on this site. Walang pera na dumadaan sa FLAME PH. Kung kailangan ng downpayment para maabot ang minimum order ng supplier, sa MarketplacePH Online Store ito ibinabayad, hindi sa FLAME PH, at walang bayad na kinukuha sa site na ito.</p>
       </Section>
     </>
   );

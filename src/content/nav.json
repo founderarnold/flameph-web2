@@ -10,7 +10,9 @@
     { "label": "Find a Chapter", "href": "/chapters" },
     { "label": "Featured Chapters", "href": "/about/chapters" },
     { "label": "Become a Chapter Leader", "href": "/get-involved/chapter-leader" },
-    { "label": "Chapter Activities & Events", "href": "/news" }
+    { "label": "Chapter Activities & Events", "href": "/news" },
+    { "label": "Negosyo News", "href": "/news" },
+    { "label": "FLAME Talks with MSMEs", "href": "/negosyo-talks" }
   ]},
   { "key": "benefits", "label": "Benefits", "fil": "Mga Benepisyo", "items": [
     { "label": "Free Benefits", "href": "/benefits" },
@@ -20,6 +22,7 @@
     { "label": "Ask FLAME AI", "href": "/bizconsult-ai" },
     { "label": "Free Basic POS for MSMEs", "href": "/pos" },
     { "label": "Free Business Calculators", "href": "/business-calculators" },
+    { "label": "Fulfillment by MSMEs", "href": "/fulfillment" },
     { "label": "RideSafe", "href": "/ridesafe" }
   ]},
   { "key": "opportunities", "label": "Opportunities", "fil": "Mga Oportunidad", "items": [
