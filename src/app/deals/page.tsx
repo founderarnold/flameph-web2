@@ -29,7 +29,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ j
     <>
       <MemberNav />
       <PageHero status="live" fil="Sama-samang pagbili" title="Buy Together" path="/deals"
-        intro="Members pool their orders so small businesses get wholesale prices. Join a deal to reserve your share. FLAME PH contacts everyone with payment and pickup details once the target is reached." />
+        intro="Members pool their orders so small businesses get wholesale prices. Join a deal to reserve your share. When the target is reached, FLAME PH sends everyone who joined the supplier's order details. You pay the supplier directly, and the supplier delivers to you. FLAME PH never collects, holds or transfers money for a group order." />
       <Section>
         {sp.joined && <div className="mb-4"><Notice tone="ok">You&apos;re in! We&apos;ll message you when the deal reaches its target.</Notice></div>}
         {sp.left && <div className="mb-4"><Notice tone="info">You left the deal.</Notice></div>}
@@ -92,7 +92,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ j
             })}
           </ul>
         )}
-        <p className="mt-6 text-sm text-muted">Joining reserves your share; no payment is taken on this site. FLAME PH confirms price, payment and pickup with every member before ordering.</p>
+        <p className="mt-6 text-sm text-muted">Joining reserves your share. No money passes through FLAME PH: you pay the supplier directly, and payment and delivery are between you and the supplier. Hindi dumadaan sa FLAME PH ang bayad. Direkta kang magbabayad sa supplier, at ang bayad at delivery ay sa pagitan ninyo ng supplier.</p>
       </Section>
     </>
   );
