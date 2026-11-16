@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient, createEmailLinkClient } from "@/lib/supabase/browser";
 import { SUPABASE_URL } from "@/lib/env";
 import { EXTRA_FIELDS, SOCIALS } from "@/lib/listing";
+import { regionOf } from "@/content/ph-regions";
 import { businessStatusCopy, publicationStatusOf, type BusinessLifecycleStatus, type BusinessPublicationStatus } from "@/lib/business-lifecycle";
 import { ListingStrength } from "./ListingStrength";
 import type { AccountVerificationStatus } from "@/lib/account-verification";
@@ -102,7 +103,7 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
     const payload: Record<string, unknown> = {
       owner_id: userId,
       name: biz.name, sector: biz.sector || null, description: biz.description || null, products: biz.products || null,
-      city: biz.city, province: biz.province || null,
+      city: biz.city, province: biz.province || null, region: regionOf(String(biz.province ?? "")),
       contact_messenger: biz.contact_messenger || null, contact_viber: biz.contact_viber || null, contact_phone: biz.contact_phone || null,
       contact_email: biz.contact_email || null, marketplaceph_url: biz.marketplaceph_url || null,
       photos: biz.photos ?? [], verification_docs: biz.verification_docs ?? [],

@@ -5,9 +5,10 @@ import { PROVINCES } from "@/content/ph-provinces";
 import { hasExtras } from "@/lib/listing";
 import { ProductsEditor, type ProductRow } from "@/components/listing/ProductsEditor";
 import { accountVerificationStatus } from "@/lib/account-verification";
+import { BusinessDetails } from "@/components/listing/BusinessDetails";
 
-export default async function Business({ searchParams }: { searchParams: Promise<{ ridesafe?: string }> }) {
-  const { ridesafe } = await searchParams;
+export default async function Business({ searchParams }: { searchParams: Promise<{ ridesafe?: string; details?: string }> }) {
+  const { ridesafe, details } = await searchParams;
   const providerType = ridesafe?.trim().slice(0, 80) || "";
   const returnTo = providerType ? `/account/business?ridesafe=${encodeURIComponent(providerType)}` : "/account/business";
   const { supabase, user } = await requireUser(returnTo);
@@ -31,7 +32,8 @@ export default async function Business({ searchParams }: { searchParams: Promise
       {providerType && <div className="mt-5 rounded-xl border border-primary/20 bg-primary-soft p-4"><strong className="text-primary">RideSafe provider signup · {providerType}</strong><p className="mt-1 text-sm text-muted">Use this shared FLAME PH account to add or update your business listing. Add the service and a public landmark so drivers can find you. New listings remain drafts until FLAME PH approves them for publication.</p></div>}
       <BusinessEditor userId={user.id} email={user.email ?? ""} ownerName={profile?.full_name ?? ""} verification={verification} initial={editorInitial} sectors={SECTORS} provinces={PROVINCES} supportsExtras={hasExtras(biz)} />
       {biz?.id && !productsError && <ProductsEditor userId={user.id} businessId={biz.id} initial={(products ?? []) as ProductRow[]} />}
-      {!biz?.id && <p className="mt-4 text-sm text-muted">Save your listing first, then you can add products with prices.</p>}
+      {biz?.id && <BusinessDetails supabase={supabase} biz={biz} status={details} />}
+      {!biz?.id && <p className="mt-4 text-sm text-muted">Save your listing first, then you can add products with prices, your specific industry, chapter and registration numbers.</p>}
     </div>
   );
 }

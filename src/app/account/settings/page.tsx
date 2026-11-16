@@ -8,18 +8,20 @@ import { Notice } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
 import { ORG } from "@/lib/site";
 import { saveConsents } from "../consent-actions";
+import { PrivacyControls } from "@/components/listing/PrivacyControls";
 
 export const metadata = { title: "Settings", robots: { index: false } };
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" });
 const SOURCE = { signup: "at sign-up", prompt: "after sign-in", settings: "in Settings" } as const;
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ saved?: string; closing?: string; consent?: string }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ saved?: string; closing?: string; consent?: string; privacy?: string }> }) {
   const { supabase, user } = await requireUser("/account/settings");
   const sp = await searchParams;
-  const [{ ready, state }, { data: history }] = await Promise.all([
+  const [{ ready, state }, { data: history }, { data: biz }] = await Promise.all([
     getConsents(supabase, user.id),
     supabase.from("member_consents").select("id, consent_key, granted, policy_version, source, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
+    supabase.from("businesses").select("*").eq("owner_id", user.id).limit(1).maybeSingle(),
   ]);
   const on: Partial<Record<ConsentKey, boolean>> = Object.fromEntries(Object.entries(state).map(([k, v]) => [k, v.granted && (k !== "terms" || v.version === POLICY_VERSION)]));
   const title = (k: string) => CONSENTS.find((c) => c.key === k)?.title ?? k;
@@ -56,6 +58,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
           ) : <p className="mt-2 text-sm text-muted">No choices saved yet.</p>}
         </section>
       )}
+
+      <PrivacyControls biz={biz} status={sp.privacy} />
 
       <section aria-labelledby="more" className="card p-5">
         <h2 id="more" className="text-xl font-extrabold">More</h2>

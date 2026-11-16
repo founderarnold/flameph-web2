@@ -5,6 +5,7 @@
       "items": [
         { "label": "Home feed", "href": "/home" },
         { "label": "New Post", "href": "/new-post" },
+        { "label": "Find members", "href": "/members" },
         { "label": "Negosyo News", "href": "/news" },
         { "label": "FLAME Talks with MSMEs", "href": "/negosyo-talks" },
         { "label": "Start here", "href": "/start" },
@@ -130,6 +131,7 @@
     {
       "key": "settings", "title": "Settings",
       "items": [
+        { "label": "Set up your profile", "href": "/welcome" },
         { "label": "Settings and privacy", "href": "/account/settings" },
         { "label": "Edit profile", "href": "/account/profile" },
         { "label": "Change password", "href": "/account/password" }

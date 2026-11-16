@@ -1,8 +1,11 @@
+import { INDUSTRY_NAMES } from "@/lib/industries";
+
 /** How complete a business listing is, and what to add next. Shared by the dashboard, the editor and the listing page. */
 
 export type Listing = Record<string, unknown> & { photos?: string[] | null };
 
-export const SECTORS = ["Food & beverage", "Retail / sari-sari", "Agriculture", "Manufacturing", "Services", "Beauty & wellness", "Crafts & fashion", "Technology", "Tourism", "Other"];
+/** Business sectors: the top level of the FLAME PH industry taxonomy (src/lib/industries.ts). */
+export const SECTORS = INDUSTRY_NAMES;
 
 export const EXTRA_FIELDS = ["logo_url", "cover_url", "hours", "map_landmark", "facebook_url", "google_business_url", "tiktok_url", "instagram_url", "shopee_url", "lazada_url", "website_url"] as const;
 export const SOCIALS: { key: (typeof EXTRA_FIELDS)[number]; label: string }[] = [

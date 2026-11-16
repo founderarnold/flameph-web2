@@ -4,7 +4,10 @@ import test from "node:test";
 
 const migration = await readFile(new URL("../supabase/migrations/0006_enforce_public_business_visibility.sql", import.meta.url), "utf8");
 const directory = await readFile(new URL("../src/app/directory/page.tsx", import.meta.url), "utf8");
-const detail = await readFile(new URL("../src/app/directory/[slug]/page.tsx", import.meta.url), "utf8");
+// The detail page's body moved to a shared component in Phase 3A (used by /directory/[slug] and /members/[slug]).
+const detail = await readFile(new URL("../src/app/directory/[slug]/page.tsx", import.meta.url), "utf8")
+  + await readFile(new URL("../src/components/listing/BusinessProfile.tsx", import.meta.url), "utf8");
+const memberProfile = await readFile(new URL("../src/app/members/[slug]/page.tsx", import.meta.url), "utf8");
 const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8");
 const config = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
 const inquiry = await readFile(new URL("../src/app/api/inquiry/route.ts", import.meta.url), "utf8");
@@ -38,7 +41,8 @@ test("public statistics and tracking use publication eligibility", () => {
 
 test("legacy queries stay strict while public directory traffic moves to FlamePH Pages", () => {
   assert.match(sharedFilter, /published: true[\s\S]*publication_status: "published"[\s\S]*lifecycle_status: "approved"/i);
-  assert.equal(detail.match(/PUBLIC_BUSINESS_FILTERS/g)?.length, 3);
+  assert.equal(detail.match(/PUBLIC_BUSINESS_FILTERS/g)?.length, 4);
+  assert.match(memberProfile, /filters: \{ slug, \.\.\.PUBLIC_BUSINESS_FILTERS \}/);
   assert.match(config, /source: "\/directory"[\s\S]*pages\.flameph\.org\/directory/);
   assert.match(config, /source: "\/directory\/:path\*"[\s\S]*pages\.flameph\.org\/directory/);
   assert.doesNotMatch(sitemap, /\/directory\/\$\{/i);
