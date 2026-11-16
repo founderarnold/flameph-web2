@@ -5,7 +5,9 @@ import { meta } from "@/lib/meta";
 
 export const metadata = { ...meta("Confirm your email", "Finish signing in to FLAME PH.", "/auth/confirm"), robots: { index: false } };
 
-const safeNext = (n?: string | null) => (n?.startsWith("/") && !n.startsWith("//") ? n : "/account");
+import { safeNext } from "@/lib/safe-next";
+
+const after = (next: string) => `/auth/continue?next=${encodeURIComponent(next)}`;
 
 // Signs the visitor in from the link in our email. It works in any browser or app (Gmail, Facebook, another phone),
 // unlike the old code link, which only worked in the browser that asked for it. Verifying happens on the button tap,
@@ -21,9 +23,9 @@ async function confirm(form: FormData) {
   if (error) {
     // Already signed in (for example, they typed the code first): just carry on.
     const { data } = await supabase.auth.getUser();
-    redirect(data.user ? next : "/login?error=1");
+    redirect(data.user ? after(next) : "/login?error=1");
   }
-  redirect(next);
+  redirect(after(next));
 }
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ token_hash?: string; type?: string; next?: string }> }) {

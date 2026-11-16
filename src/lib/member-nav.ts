@@ -11,6 +11,7 @@ export const MEMBER_LINKS: NavItem[] = [
   { href: "/account/rewards", label: "Rewards" },
   { href: "/account/profile", label: "Profile" },
   { href: "/account/ai", label: "FLAME AI history" },
+  { href: "/account/settings", label: "Settings" },
 ];
 
 export const isActive = (pathname: string, href: string) =>

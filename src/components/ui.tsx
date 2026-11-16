@@ -140,15 +140,17 @@ export function Field({ id, label, help, error, required, children }: { id: stri
 }
 
 /** On/off switch built on a native checkbox (keyboard and form friendly). Off unless `defaultChecked` is set, as consent rules require. */
-export function Switch({ name, label, description, defaultChecked = false, disabled, value = "on" }: { name: string; label: React.ReactNode; description?: React.ReactNode; defaultChecked?: boolean; disabled?: boolean; value?: string }) {
+export function Switch({ name, label, description, defaultChecked = false, disabled, value = "on", checked, onChange }: { name: string; label: React.ReactNode; description?: React.ReactNode; defaultChecked?: boolean; disabled?: boolean; value?: string; checked?: boolean; onChange?: (on: boolean) => void }) {
   const id = `switch-${name}`;
+  // Controlled when `checked` is given (client forms); otherwise a plain form field that starts off.
+  const state = checked === undefined ? { defaultChecked } : { checked, onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.checked) };
   return (
     <label htmlFor={id} className="switch-row">
       <span>
         <span className="block font-semibold">{label}</span>
         {description && <span id={`${id}-desc`} className="field-help block">{description}</span>}
       </span>
-      <input id={id} name={name} value={value} type="checkbox" role="switch" className="switch" defaultChecked={defaultChecked} disabled={disabled} aria-describedby={description ? `${id}-desc` : undefined} />
+      <input id={id} name={name} value={value} type="checkbox" role="switch" className="switch" {...state} disabled={disabled} aria-describedby={description ? `${id}-desc` : undefined} />
     </label>
   );
 }

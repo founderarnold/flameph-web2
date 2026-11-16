@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { safeNext } from "@/lib/safe-next";
+import { choicesFrom } from "@/lib/policy";
+import { getConsents, recordConsents } from "@/lib/consents";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const safe = (v: string | null | undefined) => (v && v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\") ? v : null);
+  const safe = (v: string | null | undefined) => { const s = safeNext(v, ""); return s || null; };
   const cookieNext = safe((() => { try { return decodeURIComponent(/(?:^|;\s*)fl_next=([^;]+)/.exec(req.headers.get("cookie") ?? "")?.[1] ?? ""); } catch { return ""; } })());
   // The link's own "next" wins; the saved copy covers the case where the provider dropped it.
   const next = safe(url.searchParams.get("next")) && url.searchParams.get("next") !== "/account" ? url.searchParams.get("next")! : (cookieNext ?? safe(url.searchParams.get("next")) ?? "/account");
@@ -15,7 +18,7 @@ export async function GET(req: Request) {
     // Older emails link here. That link only works in the browser that asked for it, so if the visitor is
     // already signed in (they typed the code), carry on; otherwise let them type the code from the email.
     const { data: me } = await supabase.auth.getUser();
-    return NextResponse.redirect(new URL(me.user ? next : `/login?error=1&next=${encodeURIComponent(next)}`, req.url));
+    return NextResponse.redirect(new URL(me.user ? `/auth/continue?next=${encodeURIComponent(next)}` : `/login?error=1&next=${encodeURIComponent(next)}`, req.url));
   }
 
   // Google sign-up: record the consent given on the Join page.
@@ -29,6 +32,12 @@ export async function GET(req: Request) {
     const ref = url.searchParams.get("ref")?.toUpperCase();
     const admin = createAdminClient();
     const isNew = Date.now() - new Date(data.user.created_at).getTime() < 15 * 60 * 1000;
+    // Google / Facebook sign-up: record each switch from the Join page, for a brand-new account only.
+    // (An existing member who used the Join button keeps their saved choices.)
+    if (isNew) {
+      const { ready, state } = await getConsents(supabase, data.user.id);
+      if (ready && !state.terms) await recordConsents(supabase, data.user.id, choicesFrom((n) => url.searchParams.get(n)), "signup", state);
+    }
     if (admin && ref && /^FP-\d{1,10}$/.test(ref) && isNew) {
       const { data: inviter } = await admin.from("profiles").select("id").eq("member_code", ref).maybeSingle();
       if (inviter && inviter.id !== data.user.id) {
@@ -36,7 +45,7 @@ export async function GET(req: Request) {
       }
     }
   }
-  const res = NextResponse.redirect(new URL(next, req.url));
+  const res = NextResponse.redirect(new URL(`/auth/continue?next=${encodeURIComponent(next)}`, req.url));
   res.cookies.set("fl_next", "", { path: "/", maxAge: 0 });
   return res;
 }

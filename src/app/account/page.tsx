@@ -9,6 +9,7 @@ import { hasExtras, type Listing } from "@/lib/listing";
 import { list } from "@/lib/content";
 import { OPPORTUNITY_KINDS, STAGES, type Opportunity, type Stage, dateLabel, matches, notExpired } from "@/lib/growth";
 import { accountVerificationStatus } from "@/lib/account-verification";
+import { needsConsentPrompt } from "@/lib/consents";
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
   const { supabase, user } = await requireUser();
@@ -21,6 +22,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     supabase.rpc("account_verification_status"),
   ]);
   const verification = accountVerificationStatus(verificationData, user);
+  const consentPrompt = await needsConsentPrompt(supabase, user.id);
   // Growth features (0003 database update). Each query is empty, not an error page, until that update is run.
   const since30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [{ data: productRows }, { data: stats }, { count: newInquiries }, { data: opps }, { data: deals }, events] = await Promise.all([
@@ -41,7 +43,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     ...upcoming.map((e) => ({ key: e.id, title: e.title, sub: `${new Date(e.starts_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" })}${e.city ? ` · ${e.city}` : ""}`, href: e.type === "webinar" || e.type === "training" ? "/trainings-webinars" : "/workshops" })),
   ];
   const stage = p?.business_stage as Stage | null;
-  const incomplete = !p?.full_name || !p?.province || !p?.city || !p?.consent_privacy;
+  const incomplete = !p?.full_name || !p?.province || !p?.city;
   const listing = biz ? ({ ...biz, product_count: productCount } as Listing) : null;
   const photos = listing?.photos?.length ?? 0;
   const steps = [
@@ -58,6 +60,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     <div className="space-y-8">
       {sp.denied && <Notice>That page is for FLAME PH admins only.</Notice>}
       <h1 className="text-3xl font-extrabold text-primary">Kumusta{p?.full_name ? `, ${p.full_name.split(" ")[0]}` : ""}!</h1>
+      {consentPrompt && <Notice>We updated our Terms, Community Guidelines and Privacy Notice. <Link href="/account/consent?next=/account" className="font-bold underline">Review your choices</Link>. Everything you use keeps working meanwhile.</Notice>}
       {incomplete && <Notice>Your profile isn&apos;t complete yet. <Link href="/account/profile" className="font-bold underline">Finish it</Link> so you count toward your province on our Impact page.</Notice>}
       {!user.email_confirmed_at && <Notice>Please confirm your email address to activate your member ID.</Notice>}
       {doneCount < steps.length && (

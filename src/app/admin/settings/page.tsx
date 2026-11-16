@@ -1,3 +1,4 @@
+import { POLICY_VERSION } from "@/lib/policy";
 import { adminContext } from "@/lib/admin/guard";
 import { saveSettings } from "../actions";
 import { DEFAULT_SETTINGS, type Settings } from "@/lib/settings";
@@ -31,10 +32,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           <p className="text-sm text-muted">Only enter official accounts in FLAME PH&apos;s registered name. Leave empty to show “not accepting online donations yet”.</p>
           {t("Bank", "don_bank", s.donation_details?.bank)}{t("Account name", "don_account_name", s.donation_details?.account_name)}{t("Account number", "don_account_no", s.donation_details?.account_no)}{t("GCash number", "don_gcash", s.donation_details?.gcash)}{t("Receipts process note", "don_receipts", s.donation_details?.receipts_note)}
         </fieldset>
-        <fieldset className="card space-y-2 p-5"><legend className="px-1 font-bold">Legal documents approved by a founder</legend>
-          {(["terms", "privacy", "membership"] as const).map((k) => (
-            <label key={k} className="flex items-center gap-2"><input type="checkbox" name={`legal_${k}`} defaultChecked={s.legal_status?.[k] === "approved"} className="h-5 w-5" />{k === "terms" ? "Terms of Use" : k === "privacy" ? "Privacy Notice" : "Membership Terms"} approved (removes the “Draft” banner)</label>
-          ))}
+        <fieldset className="card space-y-2 p-5"><legend className="px-1 font-bold">Legal documents</legend>
+          <p className="text-sm text-muted">The Terms of Use, Community Guidelines and Privacy Notice are live as version {POLICY_VERSION}. A new version is published through a code change (src/lib/policy.ts), and members are asked to accept it on their next sign-in.</p>
+          {(["terms", "privacy", "membership"] as const).map((k) => <input key={k} type="hidden" name={`legal_${k}`} value="on" />)}
         </fieldset>
         <button className="btn btn-primary">Save settings</button>
       </form>

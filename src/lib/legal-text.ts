@@ -1,0 +1,9 @@
+// Fixed wording supplied by the owner. Use exactly as written; never shorten, hide or paraphrase.
+
+/** No-money reminder, shown on every confirmed transaction record (Terms, section 6). */
+export const NO_MONEY_EN = "FLAME PH only records that this deal happened. No money passes through FLAME PH. Payment and delivery are between you and the other member.";
+export const NO_MONEY_TL = "Ang FLAME PH ay nagtatala lang na nangyari ang deal na ito. Walang pera na dumadaan sa FLAME PH. Ang bayad at delivery ay sa pagitan ninyo ng kabilang member.";
+
+/** Investor / funder warning, shown on every investor or funder post and every reply (Community Guidelines, section 5). */
+export const INVESTOR_WARNING_EN = "INVESTOR / FUNDER POST. Offers to raise or invest money may count as the sale of securities, which is regulated in the Philippines (Securities Regulation Code, RA 8799, and SEC rules). Anyone posting or responding must comply with the SEC and all applicable laws. FLAME PH, its ecosystem sites, founders, admins and moderators do not endorse this post or any offer, do not check it, and are not liable for any deal arising from it. FLAME PH is only a platform for communication. No transaction is made within FLAME PH.";
+export const INVESTOR_WARNING_TL = "POST NG INVESTOR / FUNDER. Ang pag-aalok na mag-invest o mangalap ng pera ay maaaring ituring na pagbebenta ng securities, na regulated sa Pilipinas (Securities Regulation Code, RA 8799, at mga patakaran ng SEC). Dapat sumunod sa SEC at sa lahat ng batas ang sinumang nagpo-post o sumasagot. Hindi ine-endorse, hindi sinusuri at hindi mananagot ang FLAME PH, ang mga kaugnay nitong site, mga founder, admin at moderator sa anumang deal na magmumula rito. Plataporma lang ng komunikasyon ang FLAME PH. Walang transaksyon na ginagawa sa loob ng FLAME PH.";
