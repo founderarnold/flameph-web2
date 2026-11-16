@@ -177,6 +177,9 @@ a { text-underline-offset: 3px; }
   .chip[aria-pressed="true"], .chip[aria-current] { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
   .count-badge { display: inline-grid; place-items: center; min-width: 1.25rem; height: 1.25rem; padding-inline: .3rem; border-radius: var(--radius-pill); background: var(--flame-strong); color: var(--on-flame); font-size: .75rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
   .unseen-dot { display: inline-block; width: .625rem; height: .625rem; border: 2px solid var(--bg); border-radius: 50%; background: var(--flame-strong); }
+  /* The result of a finished action, highlighted on the Home feed (FeedFocus). */
+  .feed-focus { outline: 3px solid var(--flame); outline-offset: 3px; transition: outline-color .6s; }
+  @media (prefers-reduced-motion: reduce) { .feed-focus { transition: none; } }
   .ds-avatar { display: inline-grid; place-items: center; flex-shrink: 0; overflow: hidden; border-radius: 50%; background: var(--primary); color: var(--primary-fg); font-weight: 800; }
   .ds-avatar img { width: 100%; height: 100%; object-fit: cover; }
 

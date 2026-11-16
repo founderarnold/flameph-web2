@@ -1,0 +1,173 @@
+{
+  "groups": [
+    {
+      "key": "community", "title": "Community",
+      "items": [
+        { "label": "Home feed", "href": "/home" },
+        { "label": "New Post", "href": "/new-post" },
+        { "label": "Negosyo News", "href": "/news" },
+        { "label": "FLAME Talks with MSMEs", "href": "/negosyo-talks" },
+        { "label": "Start here", "href": "/start" },
+        { "label": "Explore FLAME PH", "href": "/explore" },
+        { "label": "Advocacy", "href": "/advocacy" },
+        { "label": "Awards", "href": "/awards" },
+        { "label": "Impact", "href": "/impact" },
+        { "label": "Signature Brands", "href": "/signature-brands" },
+        { "label": "Personalized products", "href": "/personalized" },
+        { "label": "Merch", "href": "/merch" },
+        { "label": "Search the site", "href": "/search" }
+      ]
+    },
+    {
+      "key": "workspace", "title": "Workspace",
+      "items": [
+        { "label": "Workspace", "href": "/workspace" },
+        { "label": "My account", "href": "/account" },
+        { "label": "My business", "href": "/account/business" },
+        { "label": "Messages and inquiries", "href": "/account/inquiries" },
+        { "label": "Opportunities", "href": "/opportunities" },
+        { "label": "Group Order", "href": "/group-order" },
+        { "label": "Buy together deals", "href": "/deals" },
+        { "label": "Fulfillment", "href": "/fulfillment" },
+        { "label": "Growth path", "href": "/account/growth" },
+        { "label": "Rewards", "href": "/account/rewards" },
+        { "label": "Real Estate for MSMEs", "href": "/real-estate-for-msmes" },
+        { "label": "Find a property", "href": "/real-estate-for-msmes/find-property" },
+        { "label": "Real estate referral partners", "href": "/real-estate-for-msmes/referral-partner" },
+        { "label": "Real estate careers", "href": "/real-estate-for-msmes/careers" }
+      ]
+    },
+    {
+      "key": "academy", "title": "Academy",
+      "items": [
+        { "label": "FLAME Academy", "href": "/academy" },
+        { "label": "Resources and guides", "href": "/resources" },
+        { "label": "Programs and ecosystem", "href": "/programs-ecosystem" }
+      ]
+    },
+    {
+      "key": "directory", "title": "Directory and mini-sites",
+      "items": [
+        { "label": "Business directory", "href": "https://pages.flameph.org/directory", "external": true },
+        { "label": "FLAME POS", "href": "/pos" },
+        { "label": "NegosyoDepot", "href": "https://www.negosyodepot.com", "external": true },
+        { "label": "MarketplacePH", "href": "https://www.marketplaceph.com", "external": true },
+        { "label": "Manager's Pizza", "href": "https://www.managerspizza.com", "external": true }
+      ]
+    },
+    {
+      "key": "calculators", "title": "Calculators",
+      "items": [{ "label": "Business calculators", "href": "/business-calculators" }]
+    },
+    {
+      "key": "ridesafe", "title": "RideSafe",
+      "items": [
+        { "label": "RideSafe", "href": "/ridesafe" },
+        { "label": "Become a RideSafe provider", "href": "/ridesafe/providers/apply" }
+      ]
+    },
+    {
+      "key": "ai", "title": "Ka-FLAME AI",
+      "items": [
+        { "label": "Ask Ka-FLAME AI", "href": "/bizconsult-ai" },
+        { "label": "My AI history", "href": "/account/ai" }
+      ]
+    },
+    {
+      "key": "member-id", "title": "Member ID and benefits",
+      "items": [
+        { "label": "My member ID", "href": "/account#member-id" },
+        { "label": "Member benefits", "href": "/benefits" },
+        { "label": "Free MSME benefits", "href": "/membership/free-benefits" },
+        { "label": "More benefits", "href": "/membership/more-benefits" }
+      ]
+    },
+    {
+      "key": "chapters", "title": "Chapters",
+      "items": [
+        { "label": "Find a chapter", "href": "/chapters" },
+        { "label": "About our chapters", "href": "/about/chapters" },
+        { "label": "Become a chapter leader", "href": "/get-involved/chapter-leader" }
+      ]
+    },
+    {
+      "key": "events", "title": "Events",
+      "items": [
+        { "label": "Workshops", "href": "/workshops" },
+        { "label": "Trainings and webinars", "href": "/trainings-webinars" },
+        { "label": "Expos and summits", "href": "/expos-summits" }
+      ]
+    },
+    {
+      "key": "volunteer", "title": "Volunteer services",
+      "items": [
+        { "label": "Get involved", "href": "/get-involved" },
+        { "label": "Volunteering", "href": "/volunteering" },
+        { "label": "Be a mentor", "href": "/get-involved/mentor" },
+        { "label": "Be a resource speaker", "href": "/get-involved/resource-speaker" },
+        { "label": "Offer professional services", "href": "/get-involved/professional-services" },
+        { "label": "Become an affiliate", "href": "/get-involved/affiliate" },
+        { "label": "Nominate an MSME", "href": "/get-involved/nominate" },
+        { "label": "Partner with us", "href": "/get-involved/partner" },
+        { "label": "Sponsor an event", "href": "/get-involved/sponsor-event" },
+        { "label": "Sponsor a community", "href": "/get-involved/sponsor-community" },
+        { "label": "Poverty alleviation", "href": "/get-involved/poverty-alleviation" }
+      ]
+    },
+    {
+      "key": "about", "title": "About FLAME PH",
+      "items": [
+        { "label": "Public home page", "href": "/?view=public" },
+        { "label": "About us", "href": "/about" },
+        { "label": "Founders", "href": "/about/founders" },
+        { "label": "Team", "href": "/about/team" },
+        { "label": "Mentors", "href": "/about/mentors" },
+        { "label": "Our partners", "href": "/about/partners" },
+        { "label": "Partners", "href": "/partners" },
+        { "label": "Contact us", "href": "/contact" }
+      ]
+    },
+    {
+      "key": "settings", "title": "Settings",
+      "items": [
+        { "label": "Settings and privacy", "href": "/account/settings" },
+        { "label": "Edit profile", "href": "/account/profile" },
+        { "label": "Change password", "href": "/account/password" }
+      ]
+    },
+    {
+      "key": "legal", "title": "Legal pages",
+      "items": [
+        { "label": "Terms of Use", "href": "/legal/terms" },
+        { "label": "Community Guidelines", "href": "/membership/terms" },
+        { "label": "Privacy Notice", "href": "/legal/privacy" }
+      ]
+    },
+    {
+      "key": "admin", "title": "Admin", "staffOnly": true,
+      "items": [{ "label": "Admin console", "href": "/admin" }]
+    }
+  ],
+  "notListed": {
+    "/more": "This page itself (the More tab).",
+    "/login": "Sign-in page. Members are already signed in.",
+    "/join": "Sign-up page. Members are already signed in.",
+    "/directory": "Redirects to pages.flameph.org/directory, which is listed.",
+    "/directory/[slug]": "Old business detail address; business pages now live at /business/<name> on FlamePH Pages (Business directory).",
+    "/verify/[memberId]": "Opened by scanning a member ID's QR code.",
+    "/offline": "Shown by the app only when the phone has no connection.",
+    "/auth/confirm": "Part of signing in from an email.",
+    "/auth/link": "Part of signing in from an email.",
+    "/account/consent": "Shown once after sign-in when policies change; also reachable from Settings.",
+    "/account/business/preview": "Opened from My business.",
+    "/m/fulfillment": "Member version of /fulfillment (same address for members).",
+    "/m/pos": "Member version of /pos (same address for members)."
+  },
+  "notListedPrefixes": {
+    "/admin/": "Admin sub-pages are inside the Admin console.",
+    "/api/": "Behind-the-scenes endpoints, not pages.",
+    "/sso/": "Behind-the-scenes sign-in for other FLAME PH sites.",
+    "/auth/": "Behind-the-scenes sign-in steps.",
+    "/calculators/": "Individual calculators open from Business calculators."
+  }
+}

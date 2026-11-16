@@ -28,12 +28,12 @@ const legalText = await load("src/lib/legal-text.ts");
 
 // ---- 1. hardening ------------------------------------------------------------
 test("after sign-in, only same-site paths are followed (no open redirects)", async () => {
-  for (const bad of ["//evil.com", "/\\evil.com", "https://evil.com", "evil.com", "", null, undefined]) assert.equal(safeNext(bad), "/account", String(bad));
+  for (const bad of ["//evil.com", "/\\evil.com", "https://evil.com", "evil.com", "", null, undefined]) assert.equal(safeNext(bad), "/home", String(bad)); // Phase 3: members land on the Home feed
   assert.equal(safeNext("/account/settings?x=1"), "/account/settings?x=1");
   assert.equal(safeNext("/sso/authorize?client=flamepos"), "/sso/authorize?client=flamepos");
   for (const f of [callback, confirm, emailLink, authForm]) assert.match(f, /safeNext/);
   assert.match(await read("src/app/login/page.tsx"), /next=\{safeNext\(next\)\}/);
-  assert.match(await read("src/app/join/page.tsx"), /safeNext\(next, "\/account\/profile\?welcome=1"\)/);
+  assert.match(await read("src/app/join/page.tsx"), /next=\{safeNext\(next\)\}/); // Phase 3: new members also land on the feed, which asks them to finish their profile
 });
 
 test("passwords are 8 to 72 characters everywhere", async () => {
@@ -53,7 +53,8 @@ test("every sign-in route passes through the consent check once", async () => {
 
 // ---- 2/3. guests unchanged, members forked -------------------------------------
 test("visitors without a sign-in cookie skip all auth work on the home page", async () => {
-  assert.match(middleware, /matcher: \["\/", "\/account\/:path\*"/);
+  assert.match(middleware, /matcher: \["\/", "\/home",/);
+  assert.match(middleware, /"\/account\/:path\*"/);
   const cookieCheck = middleware.indexOf("signedInCookie");
   const getUser = middleware.indexOf("auth.getUser()");
   assert.ok(cookieCheck > 0 && cookieCheck < getUser, "cookie check must come before any Supabase call");
@@ -147,6 +148,6 @@ test("saving consents shows that it is working and confirms afterwards", async (
   assert.match(prompt, /<SubmitButton[^>]*>Save my choices<\/SubmitButton>/);
   assert.match(settings, /<SubmitButton[^>]*>Save choices<\/SubmitButton>/);
   assert.match(actions, /consents=saved/);
-  assert.match(actions, /back === "\/" \? "\/account" : back/);
+  assert.match(actions, /back === "\/" \? FEED : back/); // Phase 3: "/" means the Home feed for members
   assert.match(await read("src/app/account/page.tsx"), /sp\.consents === "saved"/);
 });

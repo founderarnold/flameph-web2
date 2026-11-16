@@ -5,7 +5,7 @@ import type { FormDef } from "@/lib/forms";
 import { Turnstile } from "@/components/Turnstile";
 
 /** Renders any form from lib/forms. Drafts are saved locally so a dropped connection doesn't lose typing. */
-export function SubmissionForm({ def, context, title, compact = false }: { def: FormDef; context?: Record<string, string>; title?: string; compact?: boolean }) {
+export function SubmissionForm({ def, context, title, compact = false, doneHref }: { def: FormDef; context?: Record<string, string>; title?: string; compact?: boolean; doneHref?: string }) {
   const key = `flameph-draft:${def.type}:${context?.event_id ?? ""}`;
   const formRef = useRef<HTMLFormElement>(null);
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
@@ -62,6 +62,7 @@ export function SubmissionForm({ def, context, title, compact = false }: { def: 
         <p className="text-lg font-bold text-ok">Natanggap na namin! ✓</p>
         <p className="mt-1">{def.success}</p>
         <p className="mt-2 text-sm text-muted">A confirmation has been sent to your email.</p>
+        {doneHref && <Link href={doneHref} className="btn btn-primary mt-4 w-full">Back to feed</Link>}
       </div>
     );
   }

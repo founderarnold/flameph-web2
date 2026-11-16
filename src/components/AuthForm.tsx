@@ -5,7 +5,7 @@ import { createClient, createEmailLinkClient } from "@/lib/supabase/browser";
 import { Turnstile } from "@/components/Turnstile";
 import { Switch } from "@/components/ui";
 import { CONSENTS, CONSENT_KEYS, POLICY_PAGES, POLICY_VERSION, type ConsentKey } from "@/lib/policy";
-import { safeNext } from "@/lib/safe-next";
+import { AFTER_SIGN_IN, safeNext } from "@/lib/safe-next";
 
 /** "1" turns a button on. Tolerates stray whitespace or a byte-order mark in the Vercel value. */
 const flag = (v: string | undefined) => (v ?? "").replace(/^﻿/, "").trim() === "1";
@@ -20,7 +20,7 @@ type Props = { mode: "join" | "login"; next?: string; haveCode?: boolean; initia
  * Join / log in. Default is email + password (no waiting for emails). The email-code option covers members
  * without a password and "forgot password". Codes are typed into one box that submits itself.
  */
-export function AuthForm({ mode, next: nextRaw = "/account", haveCode = false, initialEmail = "", referral }: Props) {
+export function AuthForm({ mode, next: nextRaw = AFTER_SIGN_IN, haveCode = false, initialEmail = "", referral }: Props) {
   const next = safeNext(nextRaw);
   const supabase = createClient();
   const [method, setMethod] = useState<Method>(haveCode ? "code" : "password");

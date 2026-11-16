@@ -1,3 +1,4 @@
+import { BackToFeed } from "@/components/shell/TabShell";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getConsents } from "@/lib/consents";
@@ -25,7 +26,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-3xl font-extrabold text-primary">Settings</h1>
-      {sp.saved && !sp.closing && <div role="status"><Notice tone="ok">Saved. Your choices apply right away.</Notice></div>}
+      {sp.saved && !sp.closing && <div role="status" className="space-y-3"><Notice tone="ok">Saved. Your choices apply right away.</Notice><BackToFeed /></div>}
       {sp.closing && <Notice tone="danger">You turned off switch 1, so we&apos;ll close your account. A person from FLAME PH will confirm by email within 15 working days. Changed your mind? Turn it back on and save.</Notice>}
       {sp.consent === "error" && <Notice tone="danger">That didn&apos;t save. Please try again.</Notice>}
       {!ready && <Notice>Your consent settings will appear here soon.</Notice>}
