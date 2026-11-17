@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import RideSafeMap, { loadMaps } from "./RideSafeMap";
+import { forViewer } from "@/lib/privacy";
 
 const categories = [
   { title: "Hospitals & clinics", query: "hospital clinic", icon: "+", tone: "rose", provider: "Hospital or clinic" },
@@ -107,10 +108,15 @@ export default function RideSafeHome() {
     const supabase = createClient();
     if (!supabase) return;
     let active = true;
-    void supabase.from("businesses").select("id,name,products,city,province,contact_phone")
-      .eq("published", true).eq("publication_status", "published").eq("lifecycle_status", "approved").eq("risk_level", "low")
-      .ilike("products", "%RideSafe provider service:%").limit(100)
-      .then(({ data }) => { if (active) setProviders((data ?? []) as RideSafeProvider[]); });
+    // "*" so the owner's privacy choice (field_visibility) comes too: a members-only phone is hidden from visitors.
+    void Promise.all([
+      supabase.from("businesses").select("*")
+        .eq("published", true).eq("publication_status", "published").eq("lifecycle_status", "approved").eq("risk_level", "low")
+        .ilike("products", "%RideSafe provider service:%").limit(100),
+      supabase.auth.getSession(),
+    ]).then(([{ data }, { data: auth }]) => {
+      if (active) setProviders(((data ?? []) as Record<string, unknown>[]).map((b) => forViewer(b, Boolean(auth.session)) as unknown as RideSafeProvider));
+    });
     return () => { active = false; };
   }, []);
 

@@ -33,7 +33,7 @@ test("after sign-in, only same-site paths are followed (no open redirects)", asy
   assert.equal(safeNext("/sso/authorize?client=flamepos"), "/sso/authorize?client=flamepos");
   for (const f of [callback, confirm, emailLink, authForm]) assert.match(f, /safeNext/);
   assert.match(await read("src/app/login/page.tsx"), /next=\{safeNext\(next\)\}/);
-  assert.match(await read("src/app/join/page.tsx"), /next=\{safeNext\(next\)\}/); // Phase 3: new members also land on the feed, which asks them to finish their profile
+  assert.match(await read("src/app/join/page.tsx"), /next=\{safeNext\(next, "\/welcome"\)\}/); // Phase 3A: new members start with first-run onboarding
 });
 
 test("passwords are 8 to 72 characters everywhere", async () => {

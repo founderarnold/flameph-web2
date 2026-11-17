@@ -24,7 +24,7 @@ export const activeTab = (pathname: string) => {
 };
 
 /** Kinds of finished action the feed can scroll to and confirm. */
-export type FeedDone = "posted" | "group-order-started" | "group-order-joined" | "group-order-left" | "deal-confirmed" | "profile" | "consents";
+export type FeedDone = "posted" | "group-order-started" | "group-order-joined" | "group-order-left" | "deal-confirmed" | "profile" | "consents" | "onboarded";
 
 /** Where a finished action sends the member: the feed, scrolled to the result (an element id on the feed). */
 export function feedResult(done: FeedDone, focusId?: string) {
@@ -41,4 +41,5 @@ export const DONE_TEXT: Record<FeedDone, string> = {
   "deal-confirmed": "Deal confirmed. Here is the record in your feed.",
   profile: "Profile saved.",
   consents: "Your choices are saved. You can change them anytime in Settings.",
+  onboarded: "You're all set. Welcome to FLAME PH!",
 };

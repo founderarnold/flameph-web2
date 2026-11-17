@@ -1,17 +1,18 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { list, mediaUrl } from "@/lib/content";
-import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
+import { list } from "@/lib/content";
 import { OPPORTUNITY_KINDS, type Opportunity, dateLabel, matches, notExpired } from "@/lib/growth";
 import { accountVerificationStatus } from "@/lib/account-verification";
 import { DONE_TEXT, type FeedDone } from "@/lib/member-shell";
 import { latestFeedAt } from "@/lib/member-shell-data";
-import { Avatar, Notice, buttonClass } from "@/components/ui";
+import { Notice, buttonClass } from "@/components/ui";
+import { SuggestedMemberCard } from "@/components/shell/MemberCard";
+import { followingIds, suggestedMembers } from "@/lib/suggestions";
+import { memberCompletion } from "@/lib/profile-completion";
 import { FeedFocus } from "@/components/shell/FeedFocus";
 
 export const metadata = { title: "Home" };
 
-type Biz = { id: string; name: string; slug: string; sector: string | null; city: string | null; province: string | null; logo_url: string | null; owner_id?: string | null };
 type Deal = { id: string; title: string; supplier: string | null; deadline: string | null; status: string; target_members: number; created_at: string };
 type EventRow = { id: string; title: string; slug: string | null; starts_at: string; city: string | null; type: string; status: string; created_at?: string };
 type Post = { id: string; title: string; slug: string; excerpt: string | null; published_at: string | null };
@@ -25,31 +26,27 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
   const sp = await searchParams;
   const done = sp.done && sp.done in DONE_TEXT ? (sp.done as FeedDone) : null;
 
-  const [{ data: p }, { data: biz }, { data: verificationData }, { data: opps }, { data: deals }, { data: mine }, events, posts, businesses, latest] = await Promise.all([
-    supabase.from("profiles").select("full_name, province, city, business_stage").eq("id", user.id).single(),
-    supabase.from("businesses").select("id, sector, province").eq("owner_id", user.id).limit(1).maybeSingle(),
+  const [{ data: p }, { data: biz }, { data: verificationData }, { data: opps }, { data: deals }, { data: mine }, events, posts, following, latest] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase.from("businesses").select("*").eq("owner_id", user.id).limit(1).maybeSingle(),
     supabase.rpc("account_verification_status"),
     supabase.from("opportunities").select("*").eq("published", true).order("created_at", { ascending: false }).limit(50),
     supabase.from("deals").select("id, title, supplier, deadline, status, target_members, created_at").eq("published", true).neq("status", "closed").order("created_at", { ascending: false }).limit(10),
     supabase.from("deal_participants").select("deal_id, quantity").eq("user_id", user.id),
     list<EventRow>({ table: "events", select: "id,title,slug,starts_at,city,type,status,created_at", order: "starts_at", ascending: true }),
     list<Post>({ table: "posts", select: "id,title,slug,excerpt,published_at", order: "published_at", limit: 5 }),
-    list<Biz>({ table: "businesses", select: "id,name,slug,sector,city,province,logo_url", filters: PUBLIC_BUSINESS_FILTERS, order: "created_at", limit: 60 }),
+    followingIds(supabase, user.id),
     latestFeedAt(),
   ]);
 
-  // 1. Profile completion prompts (only what is still missing).
+  // 1. Profile completion meter with the exact next steps. Shown until everything is done.
   const verification = accountVerificationStatus(verificationData, user);
-  const prompts = [
-    !verification.email_verified && { href: "/account/business", label: "Confirm your email", why: "So members and buyers can trust your listing." },
-    (!p?.full_name || !p?.province || !p?.city || !p?.business_stage) && { href: "/account/profile?welcome=1", label: "Complete your profile", why: "Add your name, where you are and your business stage, so we can match you with nearby MSMEs and the right opportunities." },
-    !biz && { href: "/account/business", label: "List your business (free)", why: "Get your own page in the FLAME PH directory." },
-  ].filter(Boolean) as { href: string; label: string; why: string }[];
+  const meter = memberCompletion({ profile: p, business: biz, follows: following.size, emailVerified: verification.email_verified });
+  const firstRun = p && "onboarded_at" in p && !p.onboarded_at; // false until the 0016 database update is run
 
-  // 2. Suggested MSMEs: same province or sector first, never the member's own business.
-  const where = { province: (biz?.province ?? p?.province ?? "").toLowerCase(), sector: (biz?.sector ?? "").toLowerCase() };
-  const score = (b: Biz) => (where.province && b.province?.toLowerCase() === where.province ? 2 : 0) + (where.sector && b.sector?.toLowerCase() === where.sector ? 1 : 0);
-  const suggested = businesses.filter((b) => b.id !== biz?.id).sort((a, b) => score(b) - score(a)).slice(0, 6);
+  // 2. Suggested MSMEs to follow: same chapter, then the member's industries, then same province.
+  const suggested = (await suggestedMembers(user.id, { industries: p?.industries, chapter_id: p?.chapter_id, province: biz?.province ?? p?.province, sector: biz?.sector }, 10))
+    .filter((b) => !following.has(b.owner_id)).slice(0, 6);
 
   // 3. The post stream. Newest first. Every item has an id so a finished action can scroll to it.
   const joined = new Map(((mine ?? []) as { deal_id: string; quantity: number }[]).map((m) => [m.deal_id, m.quantity]));
@@ -86,19 +83,35 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
         <div role="status" className="sticky top-16 z-30 rounded-xl shadow-md"><Notice tone="ok">{DONE_TEXT[done]}</Notice></div>
       )}
 
-      {prompts.length > 0 && (
-        <section aria-labelledby="feed-prompts" className="card p-4 sm:p-5">
-          <h2 id="feed-prompts" className="text-lg font-bold">{first ? `Hi ${first}! ` : ""}Finish setting up</h2>
-          <ul className="mt-2 divide-y divide-line">
-            {prompts.slice(0, 3).map((x) => (
-              <li key={x.href + x.label}>
+      {firstRun && (
+        <section aria-labelledby="feed-welcome" className="card border-primary/30 bg-primary-soft p-4 sm:p-5">
+          <h2 id="feed-welcome" className="text-lg font-bold">{first ? `Welcome, ${first}!` : "Welcome to FLAME PH!"} Let&apos;s set you up</h2>
+          <p className="mt-1 text-sm">Four quick steps: your industries, your chapter, members to follow, and your profile.</p>
+          <Link href="/welcome" className={`${buttonClass({ variant: "primary" })} mt-3`}>Start setup</Link>
+        </section>
+      )}
+
+      {!meter.complete && (
+        <section aria-labelledby="feed-meter" data-feed="completion" className="card p-4 sm:p-5">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 id="feed-meter" className="text-lg font-bold">{first && !firstRun ? `${first}, your profile is ` : "Your profile is "}{meter.percent}% complete</h2>
+            <span className="text-sm text-muted">{meter.done} of {meter.total}</span>
+          </div>
+          <div role="progressbar" aria-label="Profile completion" aria-valuenow={meter.percent} aria-valuemin={0} aria-valuemax={100} className="mt-2 h-2.5 overflow-hidden rounded-full bg-line">
+            <div className="h-full rounded-full bg-flame" style={{ width: `${Math.max(4, meter.percent)}%` }} />
+          </div>
+          <p className="mt-3 text-sm font-semibold">Next steps</p>
+          <ul className="mt-1 divide-y divide-line">
+            {meter.next.slice(0, 3).map((x) => (
+              <li key={x.key}>
                 <Link href={x.href} className="flex min-h-11 items-center justify-between gap-3 py-2.5">
-                  <span><span className="block font-semibold">{x.label}</span><span className="block text-sm text-muted">{x.why}</span></span>
+                  <span><span className="block font-semibold">{x.label}</span><span className="block text-sm text-muted">{x.help}</span></span>
                   <span aria-hidden className="text-primary">→</span>
                 </Link>
               </li>
             ))}
           </ul>
+          {meter.next.length > 3 && <p className="mt-1 text-sm text-muted">{meter.next.length - 3} more after these.</p>}
         </section>
       )}
 
@@ -106,18 +119,11 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
         <section aria-labelledby="feed-suggested">
           <div className="flex items-baseline justify-between gap-2">
             <h2 id="feed-suggested" className="text-lg font-bold">MSMEs to connect with</h2>
-            <a href="https://pages.flameph.org/directory" className="text-sm font-semibold text-primary underline">See all</a>
+            <Link href="/members" className="text-sm font-semibold text-primary underline">See all</Link>
           </div>
           <ul className="-mx-4 mt-3 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
             {suggested.map((b) => (
-              <li key={b.id} className="w-40 shrink-0 snap-start">
-                <a href={`/business/${b.slug}`} className="card flex h-full flex-col items-center gap-2 p-3 text-center">
-                  <Avatar name={b.name} src={mediaUrl(b.logo_url)} size={48} />
-                  <span className="line-clamp-2 text-sm font-semibold">{b.name}</span>
-                  <span className="text-xs text-muted">{[b.sector, b.city].filter(Boolean).join(" · ")}</span>
-                  <span className="mt-auto text-xs font-semibold text-primary">View and message</span>
-                </a>
-              </li>
+              <li key={b.id} className="w-40 shrink-0 snap-start"><SuggestedMemberCard b={b} following={false} back="/home" /></li>
             ))}
           </ul>
         </section>
