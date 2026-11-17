@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { safeNext } from "@/lib/safe-next";
 import { isGroupSlug } from "@/lib/groups";
 import { postErrorCode } from "@/lib/feed-rules";
+import { notify } from "@/lib/notify";
+import { memberCards } from "@/lib/people";
 
 // Friend, mute, block and groups. Every rule (both must accept, no requests across a block, Friend-only posts) is
 // enforced by the database (0018); these actions only ask for the change and send the member back where they were.
@@ -31,6 +33,13 @@ export async function sendFriendRequest(fd: FormData) {
   if (error && postErrorCode(error.message) === "request_exists") {
     await supabase.from("friendships").update({ status: "accepted" }).eq("requester_id", other).eq("addressee_id", user.id);
     refresh(); back(fd, "friends");
+  }
+  if (!error) {
+    const name = (await memberCards(supabase, [user.id])).get(user.id)?.name ?? "A FLAME PH member";
+    await notify(other!, "requests", {
+      title: `${name} wants to be your Friend`, url: "/friends#requests",
+      email: { subject: `${name} wants to be your Friend on FLAME PH`, text: `${name} sent you a Friend request on FLAME PH. Accept or decline it on your Friends page.` },
+    });
   }
   refresh();
   back(fd, error ? postErrorCode(error.message) : "request-sent");

@@ -6,12 +6,26 @@ import { list } from "@/lib/content";
 /** The signed-in member for the shell, once per request (the layout and the page share it). */
 export const shellSession = cache(getSession);
 
-/** Unread messages: new inquiries on the member's business page (same count as the Inquiries tab). */
+/**
+ * Unread member-to-member messages (top-bar Messages icon). Before the 0021 database update there are no messages yet,
+ * so this is 0 and leads keep their own count on the Inbox icon.
+ */
 export async function unreadMessages(): Promise<number> {
   const { supabase, user } = await shellSession();
   if (!supabase || !user) return 0;
-  const { count } = await supabase.from("business_inquiries").select("id", { count: "exact", head: true }).eq("owner_id", user.id).eq("status", "new");
-  return count ?? 0;
+  const { data, error } = await supabase.rpc("unread_direct_messages");
+  return error ? 0 : Number(data) || 0;
+}
+
+/** Business inbox count (top-bar Inbox icon): new leads and quote requests, plus Friend requests waiting for an answer. */
+export async function inboxCount(): Promise<number> {
+  const { supabase, user } = await shellSession();
+  if (!supabase || !user) return 0;
+  const [leads, requests] = await Promise.all([
+    supabase.from("business_inquiries").select("id", { count: "exact", head: true }).eq("owner_id", user.id).eq("status", "new"),
+    supabase.from("friendships").select("requester_id", { count: "exact", head: true }).eq("addressee_id", user.id).eq("status", "pending"),
+  ]);
+  return (leads.count ?? 0) + (requests.error ? 0 : requests.count ?? 0);
 }
 
 type Stamp = { created_at?: string | null; published_at?: string | null };

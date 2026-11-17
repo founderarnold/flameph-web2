@@ -627,3 +627,38 @@ body:has([data-ridesafe-root="true"]) > main#main {
   .ridesafe-app .driving-speed { bottom:16px; left:14px; }
   .ridesafe-app .map-panel:has(~ .side-panel.trip-driving) .map-status { display:none; }
 }
+
+/* Members: Messages button with the unread count (the member top bar is hidden on RideSafe). 44px to tap. */
+.ridesafe-app .ridesafe-messages {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: 18px;
+  text-decoration: none;
+}
+.ridesafe-app .ridesafe-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #e2462f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+}
+/* Small phones: with the members' Messages button there is no room for the "Auto" label; the theme button stays. */
+@media (max-width: 400px) {
+  .ridesafe-app .header-tools:has(.ridesafe-messages) .theme-mode { display: none; }
+}

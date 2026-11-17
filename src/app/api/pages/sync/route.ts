@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { verifySiteMessage } from "@/lib/sso";
 import { PAGES_CLIENT, parseLeadMessage, parseSitesMessage } from "@/lib/minisites";
-import { sendPush } from "@/lib/push";
+import { notify } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +53,7 @@ export async function POST(req: Request) {
     source: "minisite", external_id: `pages:${lead.leadId}`, minisite_slug: lead.slug,
   });
   if (insErr && insErr.code !== "23505") return json({ error: "failed" }, 500); // 23505: already saved, fine
-  if (!insErr) await sendPush(ownerId as string, { title: "New lead from your mini-website", body: `${lead.name}: ${lead.message.slice(0, 120)}`, url: "/account/inquiries" }).catch(() => {});
+  // In the app and by push, as the owner chose in Settings. No email from here, the same as before.
+  if (!insErr) await notify(ownerId as string, "leads", { title: "New lead from your mini-website", body: `${lead.name}: ${lead.message.slice(0, 120)}`, url: "/account/inquiries" });
   return json({ ok: true, matched: true });
 }

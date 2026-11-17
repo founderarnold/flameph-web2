@@ -11,7 +11,7 @@ export const metadata = { title: "Report", robots: { index: false } };
 
 type SP = { type?: string; id?: string; back?: string; sent?: string; error?: string };
 
-/** Report a post, comment, member or business listing to the FLAME PH moderators. */
+/** Report a post, comment, member, business listing or message to the FLAME PH moderators. */
 export default async function ReportPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const back = safeNext(sp.back ?? "", "/home");
@@ -36,6 +36,8 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
     if (type === "comment") what = (await supabase.from("feed_comments").select("body").eq("id", id).maybeSingle()).data?.body ?? null;
     if (type === "listing") what = (await supabase.from("businesses").select("name").eq("id", id).maybeSingle()).data?.name ?? null;
     if (type === "member") what = (await memberCards(supabase, [id])).get(id)?.name ?? null;
+    // Only the two members in a conversation can read its messages, so only they can report one.
+    if (type === "message") what = (await supabase.from("direct_messages").select("body").eq("id", id).maybeSingle()).data?.body ?? null;
   }
   if (!type || !id || !what) {
     return (
@@ -70,6 +72,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
           <label htmlFor="report-details" className="label">Anything moderators should know? (optional)</label>
           <textarea id="report-details" name="details" rows={3} maxLength={1000} className="input w-full text-[16px]" />
         </div>
+        {type === "message" && <p className="text-sm text-muted">Moderators see only this one message, not the rest of your conversation. To stop all messages from this member, use Block in the conversation.</p>}
         <p className="text-sm text-muted">Moderators look at reports within 24 hours. The member isn&apos;t told who reported them. If someone is in danger, call 911.</p>
         {error && <p id="report-error" role="alert" className="rounded-xl bg-danger-soft p-3 text-sm font-semibold text-danger">{error}</p>}
         <SubmitButton className="btn btn-primary min-h-11 w-full" pendingText="Sending…">Send report</SubmitButton>

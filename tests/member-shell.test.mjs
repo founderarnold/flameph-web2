@@ -99,7 +99,8 @@ test("Home is never more than one tap away", () => {
 
 test("top bar: Home, search and Messages with an unread count; Home dot for unseen posts", () => {
   assert.match(topBar, /<SiteSearch \/>/);
-  assert.match(topBar, /href="\/account\/inquiries"/);
+  assert.match(topBar, /href="\/messages"/);
+  assert.match(topBar, /href="\/workspace\/inbox"/);
   assert.match(topBar, /CountBadge count=\{unread\}/);
   assert.match(topBar, /sticky top-0/);
   assert.match(homeButton, /UnseenDot/);

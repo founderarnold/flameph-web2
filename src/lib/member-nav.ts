@@ -5,6 +5,7 @@ export const MEMBER_LINKS: NavItem[] = [
   { href: "/account", label: "My account" },
   { href: "/account/business", label: "My business" },
   { href: "/account/inquiries", label: "Inquiries" },
+  { href: "/messages", label: "Messages" },
   { href: "/opportunities", label: "Opportunities" },
   { href: "/deals", label: "Buy together" },
   { href: "/account/growth", label: "Growth path" },

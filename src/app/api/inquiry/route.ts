@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/auth";
-import { sendEmail } from "@/lib/email";
-import { sendPush } from "@/lib/push";
+import { notify } from "@/lib/notify";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { checkRateLimit, retryAfterHeaders } from "@/lib/rate-limit";
 
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
-/** A buyer sends an inquiry from a public listing. Saved to the owner's inbox; emailed to them when email is set up. */
+/**
+ * A buyer sends an inquiry (or a quote request) from a public listing. Saved to the owner's inbox, then the owner is told
+ * in the app, by push and by email, as they chose in Settings (every email has a working unsubscribe).
+ */
 export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}));
   if (str(b.website, 100)) return NextResponse.json({ ok: true }); // honeypot
@@ -20,6 +22,7 @@ export async function POST(req: Request) {
   const mobile = str(b.mobile, 20);
   const message = str(b.message, 1500);
   const product = str(b.product, 120);
+  const quote = b.kind === "quote";
   if (!/^[0-9a-f-]{36}$/i.test(bizId) || !name || message.length < 5) return NextResponse.json({ error: "Please add your name and a message." }, { status: 400 });
   if (!email && !mobile) return NextResponse.json({ error: "Add an email or mobile number so they can reply." }, { status: 400 });
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return NextResponse.json({ error: "Please check your email address." }, { status: 400 });
@@ -38,21 +41,23 @@ export async function POST(req: Request) {
   if (!limit.allowed) return NextResponse.json({ error: `You've already sent several messages to ${biz.name} today. Please wait for their reply.` }, { status: 429, headers: retryAfterHeaders(limit.retryAfter) });
 
   const { user } = await getSession();
-  const { error } = await admin.from("business_inquiries").insert({
+  const row: Record<string, unknown> = {
     business_id: biz.id, owner_id: biz.owner_id, from_user_id: user?.id ?? null,
     name, email: email || null, mobile: mobile || null, message, product_name: product || null,
-  });
+  };
+  let { error } = await admin.from("business_inquiries").insert(quote ? { ...row, kind: "quote" } : row);
+  // Before the 0021 database update there is no "kind" column: save the quote request as an inquiry, marked in the text.
+  if (error && quote && /kind/.test(error.message)) ({ error } = await admin.from("business_inquiries").insert({ ...row, message: `[Quote request] ${message}` }));
   if (error) return NextResponse.json({ error: "Hindi na-send. Please try again." }, { status: 500 });
 
-  const { data: owner } = await admin.auth.admin.getUserById(biz.owner_id);
-  const to = [...new Set([owner.user?.email, biz.contact_email].filter(Boolean) as string[])];
-  if (to.length) {
-    await sendEmail({
-      to, replyTo: email || undefined,
-      subject: `New inquiry for ${biz.name}${product ? `: ${product}` : ""}`,
-      text: `${name} sent an inquiry through your FLAME PH listing.\n\n${product ? `Interested in: ${product}\n` : ""}Message:\n${message}\n\nReply to: ${[email, mobile].filter(Boolean).join(" / ")}\n\nSee all inquiries: https://flameph.org/account/inquiries`,
-    });
-  }
-  await sendPush(biz.owner_id, { title: `New inquiry for ${biz.name}`, body: `${name}: ${message.slice(0, 120)}`, url: "/account/inquiries" });
+  const what = quote ? "quote request" : "inquiry";
+  await notify(biz.owner_id, quote ? "quotes" : "leads", {
+    title: `New ${what} for ${biz.name}`, body: `${name}: ${message.slice(0, 120)}`, url: `/account/inquiries${quote ? "?kind=quote" : ""}`,
+    email: {
+      to: biz.contact_email ? [biz.contact_email] : [], replyTo: email || undefined,
+      subject: `New ${what} for ${biz.name}${product ? `: ${product}` : ""}`,
+      text: `${name} sent a ${what} through your FLAME PH listing.\n\n${product ? `Interested in: ${product}\n` : ""}Message:\n${message}\n\nReply to: ${[email, mobile].filter(Boolean).join(" / ")}`,
+    },
+  });
   return NextResponse.json({ ok: true });
 }

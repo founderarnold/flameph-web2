@@ -1,5 +1,6 @@
 import { FollowButton } from "@/components/shell/FollowButton";
 import { acceptFriend, removeFriend, sendFriendRequest, setBlock, setMute } from "@/app/account/people-actions";
+import { startConversation } from "@/app/account/message-actions";
 import Link from "next/link";
 import type { Relationship } from "@/lib/people";
 import { reportHref } from "@/components/feed/PostCard";
@@ -61,6 +62,10 @@ export function RelationshipActions({ memberId, name, rel, back }: { memberId: s
           </details>
         )}
       </div>
+      <form action={startConversation}>
+        <Hidden memberId={memberId} back={back} />
+        <button className={`${btn} btn-outline`} aria-label={`Send ${name} a message`}>Message</button>
+      </form>
       {rel.friend === "received" && (
         <form action={removeFriend}>
           <Hidden memberId={memberId} back={back} extra={{ what: "declined" }} />
@@ -81,7 +86,7 @@ export function RelationshipActions({ memberId, name, rel, back }: { memberId: s
             <summary className={`${btn} btn-outline list-none cursor-pointer`}>Block {name}</summary>
             <form action={setBlock} className="mt-2 grid gap-2">
               <Hidden memberId={memberId} back={back} extra={{ on: "1" }} />
-              <p className="text-sm text-muted">Blocking ends any friendship and follow between you, and hides your posts and comments from each other. They aren&apos;t told.</p>
+              <p className="text-sm text-muted">Blocking ends any friendship and follow between you, stops messages both ways, and hides your posts and comments from each other. They aren&apos;t told.</p>
               <button className={`${btn} btn-primary`} aria-label={`Yes, block ${name}`}>Yes, block</button>
             </form>
           </details>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
+import { unsubscribeHeaders, unsubscribeUrl } from "@/lib/unsubscribe";
 import { sendPush } from "@/lib/push";
 import { ORG } from "@/lib/site";
 import { OPPORTUNITY_KINDS, type Opportunity, dateLabel, matches, notExpired } from "@/lib/growth";
@@ -64,9 +65,11 @@ export async function GET(req: Request) {
       ...((events ?? []).length ? ["Coming up:", ...(events ?? []).map((e) => `- ${e.title}, ${new Date(e.starts_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" })}${e.city ? `, ${e.city}` : ""}`), ""] : []),
       `Your growth path: ${ORG.url}/account/growth`,
       "",
-      `You get this because you said yes to FLAME PH updates. To stop, untick it in your profile: ${ORG.url}/account/profile`,
+      `You get this because you said yes to FLAME PH updates (News and offers).`,
+      `Stop this weekly email with one click: ${unsubscribeUrl(p.id, "digest") ?? `${ORG.url}/account/settings`}`,
+      `Choose what we send you: ${ORG.url}/account/settings#notifications`,
     ];
-    const ok = await sendEmail({ to: email, subject: newInq ? `${newInq} new inquir${newInq === 1 ? "y" : "ies"} + your FLAME PH week` : "Your FLAME PH week: opportunities and events", text: lines.join("\n") });
+    const ok = await sendEmail({ to: email, subject: newInq ? `${newInq} new inquir${newInq === 1 ? "y" : "ies"} + your FLAME PH week` : "Your FLAME PH week: opportunities and events", text: lines.join("\n"), headers: unsubscribeHeaders(p.id, "digest") });
     if (ok) sent++; else skipped++;
     if (mine.length || newInq) {
       await sendPush(p.id, { title: "Your FLAME PH week", body: newInq ? `${newInq} new inquiries and ${mine.length} opportunities for you` : `${mine.length} new opportunities for you`, url: newInq ? "/account/inquiries" : "/opportunities?mine=1" });

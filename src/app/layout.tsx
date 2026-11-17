@@ -11,7 +11,7 @@ import { EmailLinkSignIn } from "@/components/EmailLinkSignIn";
 import { KaFlameFab } from "@/components/KaFlameFab";
 import { MemberTopBar } from "@/components/shell/MemberTopBar";
 import { MemberBottomBar } from "@/components/shell/MemberTabsNav";
-import { latestFeedAt, shellSession, unreadMessages } from "@/lib/member-shell-data";
+import { inboxCount, latestFeedAt, shellSession, unreadMessages } from "@/lib/member-shell-data";
 import { cookies } from "next/headers";
 import { getDict, getLang } from "@/lib/i18n";
 import { FOUNDERS, ORG, PURPOSE, TAGLINES } from "@/lib/site";
@@ -57,7 +57,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const signedIn = c.getAll().some((x) => x.name.startsWith("sb-") && x.name.includes("auth-token"));
   // The fork: a signed-in member gets the member shell (Home top bar + five action tabs). Visitors keep the public header and bar exactly as before.
   const member = signedIn ? Boolean((await shellSession()).user) : false;
-  const [unread, latest] = member ? await Promise.all([unreadMessages(), latestFeedAt()]) : [0, null];
+  const [unread, inbox, latest] = member ? await Promise.all([unreadMessages(), inboxCount(), latestFeedAt()]) : [0, 0, null];
   return (
     <html
       lang={lang === "fil" ? "fil" : "en-PH"}
@@ -67,7 +67,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       }}
     >
       <body className="min-h-screen font-sans antialiased">
-        {member ? <MemberTopBar unread={unread} latest={latest} accountLabel={t.account} /> : <Header />}
+        {member ? <MemberTopBar unread={unread} inbox={inbox} latest={latest} accountLabel={t.account} /> : <Header />}
         <main id="main">{children}</main>
         <PageShareBar />
         <Footer />
