@@ -27,6 +27,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <fieldset className="card grid gap-3 p-5 sm:grid-cols-2"><legend className="px-1 font-bold">Ka-FLAME AI daily question limits</legend>
           {(["guest", "free", "starter", "micro", "neo", "pro", "champion"] as const).map((k) => n(k[0].toUpperCase() + k.slice(1), `ai_${k}`, s.ai_limits?.[k]))}
           <div className="sm:col-span-2">{n("Monthly spend cap in USD (0 = no cap)", "ai_cap", s.ai_monthly_cap_usd)}</div>
+          <div className="sm:col-span-2">{n("Most one member can use per month, in USD (0 = no per-member limit)", "ai_member_cap", s.ai_member_monthly_cap_usd ?? 2)}</div>
         </fieldset>
         <fieldset className="card space-y-3 p-5"><legend className="px-1 font-bold">Verified donation details (shown on Poverty Alleviation page)</legend>
           <p className="text-sm text-muted">Only enter official accounts in FLAME PH&apos;s registered name. Leave empty to show “not accepting online donations yet”.</p>

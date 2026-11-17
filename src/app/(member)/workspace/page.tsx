@@ -18,6 +18,7 @@ const TOOLS = [
   { href: "/fulfillment", title: "Fulfillment", text: "Produce, pack or deliver orders." },
   { href: "/workspace/calculators", title: "Business calculators", text: "15 free calculators: pricing, cash flow, payroll." },
   { href: "/bizconsult-ai", title: "Ka-FLAME AI", text: "Ask a business question anytime." },
+  { href: "/ridesafe", title: "RideSafe", text: "Roadside help, safer trips and deliveries." },
   { href: "/account/growth", title: "Growth path", text: "Your stage and next milestones." },
   { href: "/account/rewards", title: "Rewards", text: "Points and what you can claim." },
   { href: "/account#member-id", title: "Member ID", text: "Your digital FLAME PH ID." },

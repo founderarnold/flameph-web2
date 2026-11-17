@@ -3,6 +3,7 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { checkGate, getAnonId } from "@/lib/ai/guard";
 import { RESTING, runAi, type AiInput } from "@/lib/ai/run";
 import { clientIpHash } from "@/lib/request";
+import { checkRateLimit, retryAfterHeaders } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
 
@@ -33,9 +34,14 @@ export async function POST(req: Request) {
   if (!userId) return NextResponse.json({ error: "Please log in or join free to use FLAME AI.", guest: true, limit: true }, { status: 401 });
   const who = { userId, anonId: await getAnonId(), ipHash: await clientIpHash() };
 
+  // At most 5 questions a minute per member. If the limiter itself is unavailable the daily and monthly limits below still apply.
+  const burst = await checkRateLimit(req, "ai_chat", { identifier: userId });
+  if (burst && !burst.allowed) return NextResponse.json({ error: "Dahan-dahan lang po. Please wait a minute before asking again." }, { status: 429, headers: retryAfterHeaders(burst.retryAfter) });
+
   const gate = await checkGate(admin, who);
   if (!gate.ok) {
     if (gate.reason === "resting") return NextResponse.json({ error: RESTING, resting: true }, { status: 429 });
+    if (gate.reason === "member_cap") return NextResponse.json({ error: "Naabot mo na ang Ka-FLAME AI allowance mo para ngayong buwan. Balik ka sa unang araw ng susunod na buwan!", limit: true }, { status: 429 });
     return NextResponse.json({
       error: userId
         ? `Naabot mo na ang ${gate.limit} na tanong para ngayong araw. Balik ka bukas!`

@@ -255,6 +255,7 @@ export async function saveSettings(fd: FormData) {
     stat_thresholds: { founding_members: num("founding_members", 50), ai_helpful_min_ratings: num("ai_helpful_min_ratings", 20) },
     ai_limits: { guest: num("ai_guest", 3), free: num("ai_free", 10), starter: num("ai_starter", 20), micro: num("ai_micro", 30), neo: num("ai_neo", 40), pro: num("ai_pro", 60), champion: num("ai_champion", 100) },
     ai_monthly_cap_usd: num("ai_cap", 0),
+    ai_member_monthly_cap_usd: num("ai_member_cap", 2),
     launch_date: str("launch_date") || null,
     donation_details: donation.account_no || donation.gcash ? donation : null,
     legal_status: { terms: fd.get("legal_terms") === "on" ? "approved" : "draft", privacy: fd.get("legal_privacy") === "on" ? "approved" : "draft", membership: fd.get("legal_membership") === "on" ? "approved" : "draft" },

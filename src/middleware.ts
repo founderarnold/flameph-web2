@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isHome = path === "/";
   const memberTab = MEMBER_REWRITES[path];
-  // "?view=public" also opens the public page of a tab (/fulfillment, /pos) for members.
+  // "?view=public" also opens the public page of a tab (/fulfillment, /pos, /bizconsult-ai) for members.
   if (isHome || memberTab) {
     const signedInCookie = request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
     if (!signedInCookie || request.nextUrl.searchParams.get("view") === "public") return response;
@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
     to.headers.set("cache-control", "private, no-store");
     return to;
   }
-  // Same address, member version: /fulfillment and /pos show the member tab to signed-in members.
+  // Same address, member version: /fulfillment, /pos and /bizconsult-ai show the member version to signed-in members.
   if (memberTab && data.user) {
     const to = NextResponse.rewrite(new URL(memberTab + request.nextUrl.search, request.url), { request });
     response.cookies.getAll().forEach((c) => to.cookies.set(c));

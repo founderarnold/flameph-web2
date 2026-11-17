@@ -31,7 +31,9 @@ body:has([data-ridesafe-root="true"]) {
 body:has([data-ridesafe-root="true"][data-theme="night"]) { background: #0d1114; }
 body:has([data-ridesafe-root="true"]) > header,
 body:has([data-ridesafe-root="true"]) > footer,
-body:has([data-ridesafe-root="true"]) > nav[aria-label="Quick links"] {
+body:has([data-ridesafe-root="true"]) > nav[aria-label="Quick links"],
+/* Members: RideSafe keeps its own dock (with "I need help"), so the member tab bar steps aside here like the visitor bar. */
+body:has([data-ridesafe-root="true"]) > nav[data-shell="bottom-bar"] {
   display: none !important;
 }
 body:has([data-ridesafe-root="true"]) > main#main {
