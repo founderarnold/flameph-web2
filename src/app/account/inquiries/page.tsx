@@ -3,8 +3,10 @@ import { requireUser } from "@/lib/auth";
 import { EmptyState } from "@/components/ui";
 import { setInquiryStatus } from "../actions";
 import { builderHref, sourceLabel } from "@/lib/minisites";
+import { inquiryKind, KIND_LABEL } from "@/lib/inbox";
+import { startConversation } from "../message-actions";
 
-type Inquiry = { id: string; name: string; email: string | null; mobile: string | null; message: string; product_name: string | null; status: string; created_at: string; source?: string | null; minisite_slug?: string | null };
+type Inquiry = { id: string; name: string; email: string | null; mobile: string | null; message: string; product_name: string | null; status: string; created_at: string; source?: string | null; minisite_slug?: string | null; kind?: string | null; from_user_id?: string | null };
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   new: { label: "New", cls: "bg-flame-soft text-flame-strong" },
@@ -13,10 +15,11 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   archived: { label: "Archived", cls: "bg-bg-soft text-muted" },
 };
 
-export default async function Inquiries({ searchParams }: { searchParams: Promise<{ show?: string }> }) {
+export default async function Inquiries({ searchParams }: { searchParams: Promise<{ show?: string; kind?: string }> }) {
   const { supabase, user } = await requireUser("/account/inquiries");
   const sp = await searchParams;
   const showArchived = sp.show === "archived";
+  const kind = sp.kind === "quote" || sp.kind === "inquiry" ? sp.kind : null;
   const [{ data: biz }, { data, error }] = await Promise.all([
     supabase.from("businesses").select("id, name, slug, published").eq("owner_id", user.id).limit(1).maybeSingle(),
     supabase.from("business_inquiries").select("*").eq("owner_id", user.id).order("created_at", { ascending: false }).limit(200),
@@ -25,7 +28,11 @@ export default async function Inquiries({ searchParams }: { searchParams: Promis
     ? await supabase.from("business_stats").select("views, clicks").eq("business_id", biz.id).gte("day", new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10))
     : { data: [] };
   const all = (data ?? []) as Inquiry[];
-  const rows = all.filter((x) => (showArchived ? x.status === "archived" : x.status !== "archived"));
+  const rows = all.filter((x) => (showArchived ? x.status === "archived" : x.status !== "archived") && (!kind || inquiryKind(x) === kind));
+  const tab = (k: string | null, label: string) => {
+    const q = new URLSearchParams({ ...(showArchived ? { show: "archived" } : {}), ...(k ? { kind: k } : {}) }).toString();
+    return <Link key={label} href={`/account/inquiries${q ? `?${q}` : ""}`} aria-current={kind === k ? "page" : undefined} className={`btn min-h-11 px-3 text-sm ${kind === k ? "btn-primary" : "btn-outline"}`}>{label}</Link>;
+  };
   const views = (stats ?? []).reduce((n, x) => n + (x.views ?? 0), 0);
   const clicks = (stats ?? []).reduce((n, x) => n + (x.clicks ?? 0), 0);
   const last30 = all.filter((x) => Date.now() - new Date(x.created_at).getTime() < 30 * 86400000).length;
@@ -34,7 +41,7 @@ export default async function Inquiries({ searchParams }: { searchParams: Promis
     <div className="max-w-3xl space-y-6">
       <div>
         <h1 className="text-3xl font-extrabold text-primary">Leads and inquiries</h1>
-        <p className="mt-2 text-muted">Messages buyers send from your listing&apos;s inquiry form and from your <a href={builderHref()} className="font-semibold text-mph underline">mini-website</a>. We also email them to you when email is set up.</p>
+        <p className="mt-2 text-muted">Inquiries and quote requests buyers send from your listing&apos;s inquiry form and from your <a href={builderHref()} className="font-semibold text-mph underline">mini-website</a>. We also email them to you when email is set up.</p>
       </div>
       <dl className="grid grid-cols-3 gap-3">
         {[{ k: "Listing views", v: views }, { k: "Contact taps", v: clicks }, { k: "Inquiries", v: last30 }].map((x) => (
@@ -51,6 +58,7 @@ export default async function Inquiries({ searchParams }: { searchParams: Promis
             <p className="text-sm text-muted">{!biz ? <>Add a <Link className="font-semibold text-mph underline" href="/account/business">free listing</Link> so members can find you too.</> : biz.published ? <>Buyers can find businesses in the <Link className="font-semibold text-mph underline" href="https://pages.flameph.org/directory">Pages directory</Link>.</> : <>Your listing is hidden. <Link className="font-semibold text-mph underline" href="/account/business">Publish it</Link> so buyers can reach you.</>}</p>
             <Link href={showArchived ? "/account/inquiries" : "/account/inquiries?show=archived"} className="text-sm font-semibold text-mph underline">{showArchived ? "Back to inbox" : "See archived"}</Link>
           </div>
+          <nav aria-label="Show" className="flex flex-wrap gap-2">{tab(null, "All")}{tab("inquiry", "Inquiries")}{tab("quote", "Quote requests")}</nav>
           {rows.length === 0 ? (
             <EmptyState title={showArchived ? "Nothing archived." : "No inquiries yet."} text={showArchived ? undefined : "Add photos and products with prices so buyers have a reason to ask. Share your listing on Facebook and Viber."} cta={showArchived ? undefined : { href: "/account/business", label: "Improve my listing" }} />
           ) : (
@@ -59,10 +67,11 @@ export default async function Inquiries({ searchParams }: { searchParams: Promis
                 const st = STATUS[q.status] ?? STATUS.new;
                 const phone = q.mobile?.replace(/\s/g, "");
                 return (
-                  <li key={q.id} className={`card p-4 ${q.status === "new" ? "border-flame" : ""}`}>
+                  <li key={q.id} id={`inq-${q.id}`} className={`card scroll-mt-24 p-4 ${q.status === "new" ? "border-flame" : ""}`}>
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-bold">{q.name}</p>
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${st.cls}`}>{st.label}</span>
+                      {inquiryKind(q) === "quote" && <span className="rounded-full bg-gold/20 px-2.5 py-0.5 text-xs font-bold">{KIND_LABEL.quote}</span>}
                       <span className="text-sm text-muted">{new Date(q.created_at).toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" })}</span>
                     </div>
                     <p className="mt-1 text-xs font-semibold text-muted">{sourceLabel(q)}</p>
@@ -70,6 +79,12 @@ export default async function Inquiries({ searchParams }: { searchParams: Promis
                     <p className="mt-2 whitespace-pre-line">{q.message}</p>
                     <p className="mt-2 text-sm text-muted">{[q.email, q.mobile].filter(Boolean).join(" · ")}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
+                      {q.from_user_id && q.from_user_id !== user.id && (
+                        <form action={startConversation}>
+                          <input type="hidden" name="member_id" value={q.from_user_id} /><input type="hidden" name="back" value="/account/inquiries" />
+                          <button className="btn btn-primary min-h-11 px-3 text-sm" aria-label={`Message ${q.name} in FLAME PH`}>Message in FLAME PH</button>
+                        </form>
+                      )}
                       {q.email && <a className="btn btn-primary min-h-11 px-3 text-sm" href={`mailto:${q.email}?subject=${encodeURIComponent(`Re: your inquiry to ${biz?.name ?? "us"}`)}`}>Reply by email</a>}
                       {phone && <a className="btn btn-outline min-h-11 px-3 text-sm" href={`viber://chat?number=${encodeURIComponent(phone.replace(/^0/, "+63"))}`}>Viber</a>}
                       {phone && <a className="btn btn-outline min-h-11 px-3 text-sm" href={`sms:${phone}`}>Text</a>}

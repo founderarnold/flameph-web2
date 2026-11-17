@@ -60,6 +60,8 @@ export default function RideSafeHome() {
   const [saveNextAs, setSaveNextAs] = useState<"home" | "work" | null>(null);
   // Signed-in FLAME PH members get their account and the member app here instead of "Sign in" (visitors see the same page as before).
   const [member, setMember] = useState(false);
+  // Unread member messages: RideSafe hides the member top bar, so it shows its own Messages button with the count.
+  const [unread, setUnread] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const pendingRoute = useRef<{ destination: string; point?: [number, number] } | null>(null);
   const [providerCategory, setProviderCategory] = useState(categories[0].provider);
@@ -111,7 +113,13 @@ export default function RideSafeHome() {
     if (!supabase) return;
     let active = true;
     // On its own, so a failed provider lookup never hides the member's account links.
-    void supabase.auth.getSession().then(({ data }) => { if (active) setMember(Boolean(data.session)); });
+    void supabase.auth.getSession().then(async ({ data }) => {
+      if (!active) return;
+      setMember(Boolean(data.session));
+      if (!data.session) return;
+      const { data: n, error } = await supabase.rpc("unread_direct_messages");
+      if (active && !error) setUnread(Number(n) || 0);
+    });
     // "*" so the owner's privacy choice (field_visibility) comes too: a members-only phone is hidden from visitors.
     void Promise.all([
       supabase.from("businesses").select("*")
@@ -253,6 +261,7 @@ export default function RideSafeHome() {
           <div className="header-tools">
             <span className="theme-mode"><span aria-hidden>{theme === "night" ? "☾" : "☼"}</span>{manualTheme ? (theme === "night" ? "Night" : "Day") : "Auto"}</span>
             <button className="theme-toggle" type="button" onClick={() => setManualTheme((current) => current ? null : theme === "night" ? "day" : "night")} aria-label={manualTheme ? "Return to automatic day and night theme" : "Temporarily change map theme"} title={manualTheme ? "Return to automatic theme" : "Change theme temporarily"}>{theme === "night" ? "☾" : "☼"}</button>
+            {member && <Link className="ridesafe-messages" href="/messages" aria-label={unread ? `Messages, ${unread} unread` : "Messages"}><span aria-hidden>✉</span>{unread > 0 && <span aria-hidden className="ridesafe-badge">{unread > 99 ? "99+" : unread}</span>}</Link>}
             <Link className="account-link" href={member ? "/account" : "/login?next=%2Fridesafe"}><span className="account-avatar">M</span><span className="account-link-label">{member ? "Account" : "Sign in"}</span></Link>
           </div>
         </header>

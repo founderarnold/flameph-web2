@@ -16,6 +16,7 @@ export const TARGETS = {
   comment: "comment",
   member: "member",
   listing: "business listing",
+  message: "message",
 } as const;
 export type ReportTarget = keyof typeof TARGETS;
 export const isReportTarget = (v: unknown): v is ReportTarget => typeof v === "string" && v in TARGETS;
@@ -36,9 +37,9 @@ export const ACTIONS = {
   dismiss: { label: "No action needed", help: "Close the report; nothing breaks the rules.", level: 1, needs: [] as string[] },
   hide_in_group: { label: "Hide in group", help: "Removes the post or comment from its group.", level: 1, needs: ["post", "comment"] },
   warn: { label: "Warn", help: "The member sees your note in their Notices.", level: 1, needs: [] },
-  mute_7d: { label: "Mute 7 days", help: "The member can't post or comment for 7 days.", level: 1, needs: [] },
-  hide: { label: "Hide", help: "Hides the post or comment everywhere.", level: 2, needs: ["post", "comment"] },
-  mute: { label: "Mute (choose days)", help: "1 to 30 days without posting or commenting.", level: 2, needs: [] },
+  mute_7d: { label: "Mute 7 days", help: "The member can't post, comment or send messages for 7 days.", level: 1, needs: [] },
+  hide: { label: "Hide", help: "Hides the post, comment or message everywhere.", level: 2, needs: ["post", "comment", "message"] },
+  mute: { label: "Mute (choose days)", help: "1 to 30 days without posting, commenting or messaging.", level: 2, needs: [] },
   suspend: { label: "Suspend", help: "The account and its listings are switched off until reactivated.", level: 2, needs: [] },
   verify: { label: "Verify", help: "Checked and genuine. A listing gets the verified mark.", level: 2, needs: [] },
   remove_listing: { label: "Remove listing", help: "Takes the business listing down.", level: 2, needs: ["listing"] },
@@ -65,10 +66,10 @@ export const LOG_LABELS: Record<string, string> = {
 export const NOTICE_TEXT: Record<string, string> = {
   warn: "A moderator sent you a warning.",
   hide_in_group: "A moderator removed your post or comment from its group.",
-  hide: "A moderator hid your post or comment.",
+  hide: "A moderator hid your post, comment or message.",
   auto_hold: "Your post or comment is waiting for a moderator to check it.",
-  mute_7d: "You can't post or comment for 7 days.",
-  mute: "You can't post or comment for a while.",
+  mute_7d: "You can't post, comment or send messages for 7 days.",
+  mute: "You can't post, comment or send messages for a while.",
   suspend: "Your account is suspended.",
   ban: "Your account is banned.",
   remove_listing: "Your business listing was taken down.",

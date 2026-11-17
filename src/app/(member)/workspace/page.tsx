@@ -12,6 +12,8 @@ export const metadata = { title: "Workspace" };
 const TOOLS = [
   { href: "/account/business", title: "My business page", text: "Edit your listing, photos and products." },
   { href: builderHref(), title: "My mini-website", text: "Your free business website." },
+  { href: "/workspace/inbox", title: "Business inbox", text: "Leads, quote requests, Friend requests and notifications.", unread: true },
+  { href: "/messages", title: "Messages", text: "Private conversations with other members." },
   { href: "/account/inquiries", title: "Leads and inquiries", text: "From your listing and your mini-website.", unread: true },
   { href: "/pos", title: "Flame POS", text: "Sales, receipts and stock." },
   { href: "/group-order", title: "Group Order", text: "Buy in bulk with other members." },

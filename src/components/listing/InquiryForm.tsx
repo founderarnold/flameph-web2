@@ -2,9 +2,10 @@
 import { useEffect, useState } from "react";
 import { Turnstile } from "@/components/Turnstile";
 
-/** Sends an inquiry to the business owner's FLAME PH inbox (and email when set up). */
+/** Sends an inquiry or a quote request to the business owner's FLAME PH inbox (and email when set up). */
 export function InquiryForm({ bizId, bizName, products, defaults }: { bizId: string; bizName: string; products: string[]; defaults: { name?: string; email?: string; mobile?: string } }) {
   const [product, setProduct] = useState("");
+  const [kind, setKind] = useState<"inquiry" | "quote">("inquiry");
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState("");
@@ -29,7 +30,7 @@ export function InquiryForm({ bizId, bizName, products, defaults }: { bizId: str
     setState("sending"); setError(null);
     const res = await fetch("/api/inquiry", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ bizId, product, name: fd.get("name"), email: fd.get("email"), mobile: fd.get("mobile"), message: fd.get("message"), website: fd.get("website"), turnstileToken }),
+      body: JSON.stringify({ bizId, product, kind, name: fd.get("name"), email: fd.get("email"), mobile: fd.get("mobile"), message: fd.get("message"), website: fd.get("website"), turnstileToken }),
     }).catch(() => null);
     const data = await res?.json().catch(() => ({}));
     setTurnstileReset((n) => n + 1);
@@ -39,12 +40,22 @@ export function InquiryForm({ bizId, bizName, products, defaults }: { bizId: str
 
   if (state === "sent") return (
     <div className="rounded-xl bg-ok-soft p-4 font-semibold text-ok" role="status">
-      Sent! {bizName} will get back to you by email or mobile. Salamat!
+      Sent! {bizName} will get back to you {kind === "quote" ? "with a quote " : ""}by email or mobile. Salamat!
     </div>
   );
 
   return (
     <form onSubmit={submit} className="space-y-3">
+      <fieldset>
+        <legend className="label">What do you need?</legend>
+        <div className="mt-1 grid grid-cols-2 gap-2">
+          {([["inquiry", "Ask a question"], ["quote", "Request a quote"]] as const).map(([k, label]) => (
+            <label key={k} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-line px-3 py-2 text-sm font-semibold has-[:checked]:border-primary has-[:checked]:bg-primary-soft">
+              <input type="radio" name="kind" value={k} checked={kind === k} onChange={() => setKind(k)} className="size-4" />{label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
       {products.length > 0 && (
         <div>
           <label className="label" htmlFor="iq-product">Interested in</label>
@@ -58,12 +69,12 @@ export function InquiryForm({ bizId, bizName, products, defaults }: { bizId: str
         <div><label className="label" htmlFor="iq-email">Email</label><input id="iq-email" name="email" type="email" maxLength={200} defaultValue={defaults.email} autoComplete="email" className="input" /></div>
         <div><label className="label" htmlFor="iq-mobile">Mobile</label><input id="iq-mobile" name="mobile" type="tel" inputMode="tel" maxLength={20} defaultValue={defaults.mobile} placeholder="09XX XXX XXXX" autoComplete="tel" className="input" /></div>
       </div>
-      <div><label className="label" htmlFor="iq-msg">Message *</label><textarea id="iq-msg" name="message" required rows={4} maxLength={1500} className="input" placeholder="Hi! I'd like to ask about price, minimum order and delivery to my area." /></div>
+      <div><label className="label" htmlFor="iq-msg">Message *</label><textarea id="iq-msg" name="message" required rows={4} maxLength={1500} className="input" placeholder={kind === "quote" ? "What you need, how many, and when. E.g. 200 pcs packed snacks, delivered to San Fernando by Dec 10." : "Hi! I'd like to ask about price, minimum order and delivery to my area."} /></div>
       <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
       <p className="text-sm text-muted">Give an email or mobile number so they can reply. Only {bizName} sees your details.</p>
       <Turnstile action="inquiry" onToken={setTurnstileToken} resetKey={turnstileReset} />
       {error && <p role="alert" className="rounded-lg bg-warn-soft p-3 font-semibold text-warn">{error}</p>}
-      <button className="btn btn-primary w-full sm:w-auto" disabled={state === "sending" || !turnstileToken}>{state === "sending" ? "Sending…" : "Send inquiry"}</button>
+      <button className="btn btn-primary w-full sm:w-auto" disabled={state === "sending" || !turnstileToken}>{state === "sending" ? "Sending…" : kind === "quote" ? "Send quote request" : "Send inquiry"}</button>
     </form>
   );
 }
