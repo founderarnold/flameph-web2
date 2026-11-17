@@ -6,6 +6,7 @@ import { hasExtras } from "@/lib/listing";
 import { ProductsEditor, type ProductRow } from "@/components/listing/ProductsEditor";
 import { accountVerificationStatus } from "@/lib/account-verification";
 import { BusinessDetails } from "@/components/listing/BusinessDetails";
+import { MinisiteCard } from "@/components/listing/MinisiteCard";
 
 export default async function Business({ searchParams }: { searchParams: Promise<{ ridesafe?: string; details?: string }> }) {
   const { ridesafe, details } = await searchParams;
@@ -34,6 +35,7 @@ export default async function Business({ searchParams }: { searchParams: Promise
       {biz?.id && !productsError && <ProductsEditor userId={user.id} businessId={biz.id} initial={(products ?? []) as ProductRow[]} />}
       {biz?.id && <BusinessDetails supabase={supabase} biz={biz} status={details} />}
       {!biz?.id && <p className="mt-4 text-sm text-muted">Save your listing first, then you can add products with prices, your specific industry, chapter and registration numbers.</p>}
+      <MinisiteCard supabase={supabase} userId={user.id} />
     </div>
   );
 }

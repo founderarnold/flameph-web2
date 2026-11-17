@@ -218,7 +218,7 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       </fieldset>
       {supportsExtras && <>
         <fieldset className="space-y-4 rounded-xl border border-line p-4"><legend className="px-1 font-bold">Logo & cover photo</legend>
-          <div className="flex flex-wrap gap-6">
+          <div className="grid grid-cols-1 gap-6 sm:flex sm:flex-wrap">
             <ImagePick label="Logo" hint="Square works best." path={biz.logo_url as string | undefined} round onPick={(e) => onSingle(e, "logo_url")} onClear={() => set("logo_url", null)} />
             <ImagePick label="Cover photo" hint="Wide photo of your shop or products." path={biz.cover_url as string | undefined} onPick={(e) => onSingle(e, "cover_url")} onClear={() => set("cover_url", null)} />
           </div>
