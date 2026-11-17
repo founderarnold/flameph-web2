@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "crypto";
 import { createAdminClient } from "@/lib/supabase/server";
 
-export type RateLimitAction = "business_submit" | "inquiry" | "newsletter" | "otp_request" | "otp_verify_failure" | "public_form" | "signup";
+export type RateLimitAction = "ai_chat" | "ai_embed" | "business_submit" | "inquiry" | "newsletter" | "otp_request" | "otp_verify_failure" | "public_form" | "signup";
 
 type LimitConfig = { limit: number; windowSeconds: number; blockSeconds: number };
 type RateLimitResult = { allowed: boolean; remaining: number; retryAfter: number; keyHash: string };
@@ -25,6 +25,10 @@ export const RATE_LIMITS: Record<RateLimitAction, LimitConfig> = {
   },
   public_form: { limit: positiveInt("RATE_LIMIT_PUBLIC_FORM_MAX", 10, 200), windowSeconds: positiveInt("RATE_LIMIT_PUBLIC_FORM_WINDOW_SECONDS", 3600, 86400), blockSeconds: 0 },
   inquiry: { limit: positiveInt("RATE_LIMIT_INQUIRY_MAX", 5, 100), windowSeconds: positiveInt("RATE_LIMIT_INQUIRY_WINDOW_SECONDS", 86400, 604800), blockSeconds: 0 },
+  // Ka-FLAME AI: at most 5 questions a minute per member (stops runaway clicking or scripts; the daily limit still applies).
+  ai_chat: { limit: positiveInt("RATE_LIMIT_AI_CHAT_MAX", 5, 60), windowSeconds: positiveInt("RATE_LIMIT_AI_CHAT_WINDOW_SECONDS", 60, 3600), blockSeconds: 0 },
+  // Partner sites using Ka-FLAME (server key): at most 300 questions a day in total, across all their users.
+  ai_embed: { limit: positiveInt("RATE_LIMIT_AI_EMBED_MAX", 300, 5000), windowSeconds: positiveInt("RATE_LIMIT_AI_EMBED_WINDOW_SECONDS", 86400, 604800), blockSeconds: 0 },
   newsletter: { limit: positiveInt("RATE_LIMIT_NEWSLETTER_MAX", 5, 100), windowSeconds: positiveInt("RATE_LIMIT_NEWSLETTER_WINDOW_SECONDS", 3600, 86400), blockSeconds: 0 },
 };
 

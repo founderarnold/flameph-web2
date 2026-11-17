@@ -14,8 +14,8 @@ export const TABS: Tab[] = [
   { key: "more", href: "/more", label: "More" },
 ];
 
-/** For signed-in members these public addresses show the member version of the tab (same URL; visitors keep the public page). */
-export const MEMBER_REWRITES: Record<string, string> = { "/fulfillment": "/m/fulfillment", "/pos": "/m/pos" };
+/** For signed-in members these public addresses show the member version (same URL; visitors keep the public page). */
+export const MEMBER_REWRITES: Record<string, string> = { "/fulfillment": "/m/fulfillment", "/pos": "/m/pos", "/bizconsult-ai": "/m/ai" };
 
 /** The tab a page belongs to. The member pages behind /fulfillment and /pos (/m/...) count as those tabs. */
 export const activeTab = (pathname: string) => {

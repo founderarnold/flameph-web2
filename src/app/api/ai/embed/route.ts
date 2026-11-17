@@ -3,6 +3,7 @@ import { timingSafeEqual } from "crypto";
 import { createAdminClient } from "@/lib/supabase/server";
 import { runAi, type AiInput } from "@/lib/ai/run";
 import { checkGate } from "@/lib/ai/guard";
+import { checkRateLimit, retryAfterHeaders } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
 
@@ -22,6 +23,10 @@ export async function POST(req: Request) {
   if (!input.question) return NextResponse.json({ error: "question required" }, { status: 400 });
   const admin = createAdminClient();
   if (!admin || !process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: "Unavailable" }, { status: 503 });
+  // All partner traffic together: at most 300 questions a day (fails closed: no limiter, no answer).
+  const daily = await checkRateLimit(req, "ai_embed", { identifier: "partner-embed" });
+  if (!daily) return NextResponse.json({ error: "Unavailable" }, { status: 503 });
+  if (!daily.allowed) return NextResponse.json({ error: "limit" }, { status: 429, headers: retryAfterHeaders(daily.retryAfter) });
   const who = { userId: null, anonId: `embed-${endUser}`.slice(0, 40).padEnd(20, "x"), ipHash: `embed-${endUser}` };
   const gate = await checkGate(admin, who);
   if (!gate.ok) return NextResponse.json({ error: gate.reason }, { status: 429 });

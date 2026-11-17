@@ -187,6 +187,7 @@
     "/account/business/preview": "Opened from My business.",
     "/m/fulfillment": "Member version of /fulfillment (same address for members).",
     "/m/pos": "Member version of /pos (same address for members).",
+    "/m/ai": "Member version of /bizconsult-ai (same address for members; listed as Ask Ka-FLAME AI).",
     "/posts/[id]": "One member post with its comments, opened from the feed, the forum or a shared link.",
     "/groups/[slug]": "One group's page, opened from Groups.",
     "/report": "The report form, opened from the Report button on a post, comment, member or listing."

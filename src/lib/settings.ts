@@ -9,6 +9,8 @@ export type Settings = {
   donation_details?: { bank?: string; account_name?: string; account_no?: string; gcash?: string; receipts_note?: string } | null;
   ai_limits?: Record<string, number>;
   ai_monthly_cap_usd?: number;
+  /** Most that one member's Ka-FLAME AI questions may cost in a month, in USD (0 = no per-member limit). */
+  ai_member_monthly_cap_usd?: number;
   legal_status?: Record<string, "draft" | "approved">;
   hero_image?: string | null;
 };
@@ -19,6 +21,7 @@ export const DEFAULT_SETTINGS: Settings = {
   launch_date: null,
   donation_details: null,
   ai_limits: { guest: 3, free: 10 },
+  ai_member_monthly_cap_usd: 2,
   legal_status: { terms: "draft", privacy: "draft", membership: "draft" },
 };
 

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSettings } from "@/lib/settings";
+import { DEFAULT_MEMBER_MONTHLY_CAP_USD } from "./budget";
 
 export async function getAnonId(): Promise<string> {
   const c = await cookies();
@@ -14,20 +15,20 @@ export async function getAnonId(): Promise<string> {
   return id;
 }
 
-function startOfManilaDay() {
+export function startOfManilaDay() {
   const now = new Date();
   const manila = new Date(now.getTime() + 8 * 3600_000);
   manila.setUTCHours(0, 0, 0, 0);
   return new Date(manila.getTime() - 8 * 3600_000).toISOString();
 }
-function startOfManilaMonth() {
+export function startOfManilaMonth() {
   const now = new Date(Date.now() + 8 * 3600_000);
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1) - 8 * 3600_000).toISOString();
 }
 
-export type Gate = { ok: true; limit: number; used: number } | { ok: false; reason: "limit" | "resting"; limit?: number };
+export type Gate = { ok: true; limit: number; used: number } | { ok: false; reason: "limit" | "resting" | "member_cap"; limit?: number };
 
-/** Daily per-user/IP limits and the monthly spend cap. */
+/** Daily per-user/IP limits, each member's monthly AI allowance (USD) and the overall monthly spend cap. */
 export async function checkGate(admin: SupabaseClient, who: { userId: string | null; anonId: string; ipHash: string }): Promise<Gate> {
   const settings = await getSettings();
   const limits = settings.ai_limits ?? { guest: 3, free: 10 };
@@ -43,6 +44,14 @@ export async function checkGate(admin: SupabaseClient, who: { userId: string | n
     const { data } = await admin.from("ai_messages").select("cost_usd").gte("created_at", startOfManilaMonth());
     const spent = (data ?? []).reduce((s, r) => s + Number(r.cost_usd ?? 0), 0);
     if (spent >= cap) return { ok: false, reason: "resting" };
+  }
+
+  // Each member's own monthly allowance, so one account can never cost more than this in a month (0 = off).
+  const memberCap = Number(settings.ai_member_monthly_cap_usd ?? DEFAULT_MEMBER_MONTHLY_CAP_USD);
+  if (who.userId && memberCap > 0) {
+    const { data } = await admin.from("ai_messages").select("cost_usd").eq("user_id", who.userId).gte("created_at", startOfManilaMonth());
+    const spent = (data ?? []).reduce((s, r) => s + Number(r.cost_usd ?? 0), 0);
+    if (spent >= memberCap) return { ok: false, reason: "member_cap" };
   }
 
   const since = startOfManilaDay();
