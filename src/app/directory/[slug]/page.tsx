@@ -12,8 +12,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 // Kept as it was; the address forwards to the FlamePH Pages directory (next.config.ts). The same profile is shown at /members/[slug].
-export default async function Page({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ review?: string }> }) {
+export default async function Page({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ review?: string; note?: string }> }) {
   const b = await get((await params).slug);
   if (!b) notFound();
-  return <BusinessProfile business={b} review={(await searchParams).review} basePath="/directory" />;
+  return <BusinessProfile business={b} review={(await searchParams).review} note={(await searchParams).note} basePath="/directory" />;
 }

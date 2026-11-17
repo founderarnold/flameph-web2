@@ -5,11 +5,12 @@ import { DONE_TEXT, type FeedDone } from "@/lib/member-shell";
 import { latestFeedAt } from "@/lib/member-shell-data";
 import { Notice, buttonClass } from "@/components/ui";
 import { SuggestedMemberCard } from "@/components/shell/MemberCard";
-import { followingIds, suggestedMembers } from "@/lib/suggestions";
+import { followingIds, mutualCounts, suggestedMembers } from "@/lib/suggestions";
+import { blockedIds, friendLists, mutedIds } from "@/lib/people";
 import { memberCompletion } from "@/lib/profile-completion";
 import { FeedFocus } from "@/components/shell/FeedFocus";
 import { decodeCursor, feedFilters } from "@/lib/feed-rules";
-import { activityCards, feedPosts, mergeFeed, pageWindow, postExtras, statsOf } from "@/lib/feed-data";
+import { activityCards, feedPosts, groupTags, mergeFeed, pageWindow, postExtras, statsOf } from "@/lib/feed-data";
 import { PostCard } from "@/components/feed/PostCard";
 import { ActivityCard } from "@/components/feed/ActivityCard";
 import { FeedFilters } from "@/components/feed/FeedFilters";
@@ -33,6 +34,11 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
     followingIds(supabase, user.id),
     latestFeedAt(),
   ]);
+  const [muted, blocked, friends, notices] = await Promise.all([
+    mutedIds(supabase, user.id), blockedIds(supabase, user.id), friendLists(supabase, user.id),
+    supabase.rpc("my_moderation_notices").then((r) => (r.error ? [] : (r.data ?? []) as { created_at: string }[])),
+  ]);
+  const recentNotices = notices.filter((n) => Date.now() - new Date(n.created_at).getTime() < 14 * 86400000).length;
   const chapters = (chapterRows ?? []) as { id: string; name: string }[];
   const filters = feedFilters(sp, chapters.map((c) => c.id));
   const firstPage = !cursor;
@@ -42,19 +48,22 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
   const meter = memberCompletion({ profile: p, business: biz, follows: following.size, emailVerified: verification.email_verified });
   const firstRun = p && "onboarded_at" in p && !p.onboarded_at; // false until the 0016 database update is run
 
-  // 2. Suggested MSMEs to follow: same chapter, then the member's industries, then same province.
+  // 2. Suggested MSMEs to connect with: same chapter, the member's industries, mutual connections, then same province.
+  //    Never someone already followed, a Friend, a pending request, muted or blocked.
+  const exclude = new Set([...following, ...muted, ...blocked, ...friends.friends, ...friends.sent, ...friends.received]);
   const suggested = firstPage && !filters.industry && !filters.chapter && !filters.following
-    ? (await suggestedMembers(user.id, { industries: p?.industries, chapter_id: p?.chapter_id, province: biz?.province ?? p?.province, sector: biz?.sector }, 10)).filter((b) => !following.has(b.owner_id)).slice(0, 6)
+    ? await suggestedMembers(user.id, { industries: p?.industries, chapter_id: p?.chapter_id, province: biz?.province ?? p?.province, sector: biz?.sector }, 6, { mutual: await mutualCounts(supabase), exclude })
     : [];
 
   // 3. The feed: one page of member posts (PAGE_SIZE), with the ecosystem activity from the same stretch of time.
-  const q = { cursor, ...filters, followIds: following };
+  const q = { cursor, ...filters, followIds: following, muted };
   const viewer = { id: user.id, province: biz?.province ?? p?.province, sector: biz?.sector, stage: p?.business_stage, chapter_id: p?.chapter_id, industries: p?.industries };
   const page = await feedPosts(supabase, q);
   const [cards, extras] = await Promise.all([
     activityCards(supabase, viewer, q, pageWindow(cursor?.at ?? null, page.posts, Boolean(page.next))),
     postExtras(supabase, page.posts.map((x) => x.id)),
   ]);
+  const groups = await groupTags(supabase, page.posts);
   const entries = mergeFeed(page.posts, cards);
 
   const keep = new URLSearchParams();
@@ -108,6 +117,20 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
         </section>
       )}
 
+      {firstPage && recentNotices > 0 && (
+        <Link href="/account/notices" data-feed="moderation-notice" className="card flex min-h-14 items-center justify-between gap-3 border-warn/40 bg-warn-soft p-4">
+          <span><span className="block font-bold">You have a notice from FLAME PH moderators</span><span className="block text-sm text-muted">See what happened and appeal if you disagree</span></span>
+          <span aria-hidden className="text-primary">→</span>
+        </Link>
+      )}
+
+      {firstPage && friends.received.length > 0 && (
+        <Link href="/friends#requests" data-feed="friend-requests" className="card flex min-h-14 items-center justify-between gap-3 border-primary/30 bg-primary-soft p-4">
+          <span><span className="block font-bold">{friends.received.length} Friend request{friends.received.length === 1 ? "" : "s"}</span><span className="block text-sm text-muted">Accept or decline in Friends</span></span>
+          <span aria-hidden className="text-primary">→</span>
+        </Link>
+      )}
+
       {suggested.length > 0 && (
         <section aria-labelledby="feed-suggested">
           <div className="flex items-baseline justify-between gap-2">
@@ -149,7 +172,7 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
             {entries.map((e) => (
               <li key={e.type === "post" ? e.post.id : e.card.id}>
                 {e.type === "post"
-                  ? <PostCard post={e.post} stats={statsOf(extras.stats, e.post.id)} comments={extras.comments.get(e.post.id) ?? []} viewerId={user.id} back={here} />
+                  ? <PostCard post={e.post} stats={statsOf(extras.stats, e.post.id)} comments={extras.comments.get(e.post.id) ?? []} viewerId={user.id} back={here} group={e.post.group_id ? groups.get(e.post.group_id) : null} />
                   : <ActivityCard card={e.card} back={`${here}${here.includes("?") ? "&" : "?"}focus=${e.card.id}`} />}
               </li>
             ))}

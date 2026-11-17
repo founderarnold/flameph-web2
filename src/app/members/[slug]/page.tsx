@@ -13,8 +13,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: b ? b.name : "Business not found", description: b?.description?.slice(0, 160) ?? undefined, robots: { index: false } };
 }
 
-export default async function MemberProfile({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ review?: string }> }) {
+export default async function MemberProfile({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ review?: string; note?: string }> }) {
   const b = await get((await params).slug);
   if (!b) notFound();
-  return <BusinessProfile business={b} review={(await searchParams).review} basePath="/members" />;
+  return <BusinessProfile business={b} review={(await searchParams).review} note={(await searchParams).note} basePath="/members" />;
 }

@@ -7,6 +7,7 @@ import { PAGE_SIZE, encodeCursor, type PostKind, type ReactionKind } from "@/lib
 export type FeedPost = {
   id: string; author_id: string; kind: PostKind; category: string; subcategory: string | null; body: string; chapter_id: string | null;
   author_name: string | null; author_slug: string | null; status: "published" | "held" | "hidden"; held_reason: string | null; created_at: string;
+  audience?: "members" | "friends"; group_id?: string | null;
 };
 export type PostStats = { likes: number; loves: number; helpful: number; comments: number; mine: ReactionKind | null };
 export type FeedComment = { id: string; post_id: string; author_id: string; body: string; author_name: string | null; author_slug: string | null; created_at: string };
@@ -18,13 +19,20 @@ export type ActivityCard = {
 };
 export type FeedEntry = { type: "post"; at: string; post: FeedPost } | { type: "activity"; at: string; card: ActivityCard };
 
-export const POST_COLUMNS = "id, author_id, kind, category, subcategory, body, chapter_id, author_name, author_slug, status, held_reason, created_at";
+const BASE_COLUMNS = "id, author_id, kind, category, subcategory, body, chapter_id, author_name, author_slug, status, held_reason, created_at";
+/** With the audience (all members or friends only) and group from the 0018 update. */
+export const POST_COLUMNS = `${BASE_COLUMNS}, audience, group_id`;
+/** True when a query failed only because the 0018 columns are not in the database yet. */
+export const missing0018 = (e: { message?: string } | null) => Boolean(e && /audience|group_id/.test(e.message ?? ""));
 const EMPTY: PostStats = { likes: 0, loves: 0, helpful: 0, comments: 0, mine: null };
 const SOURCE_LIMIT = 6; // each activity source adds at most this many cards to one page
 const DAY = 86400000;
 
 export type Viewer = { id: string; province?: string | null; sector?: string | null; stage?: string | null; chapter_id?: string | null; industries?: string[] | null };
-export type FeedQuery = { cursor: { at: string; id: string } | null; industry: string | null; chapter: string | null; following: boolean; followIds: Set<string> };
+export type FeedQuery = {
+  cursor: { at: string; id: string } | null; industry: string | null; chapter: string | null; following: boolean; followIds: Set<string>;
+  group?: string | null; muted?: Set<string>;
+};
 
 /** Counts, the viewer's own reaction and the newest comments for one page of posts. Two bounded calls, whatever the page holds. */
 export async function postExtras(supabase: SupabaseClient, ids: string[], perPost = 2) {
@@ -43,15 +51,28 @@ export const statsOf = (m: Map<string, PostStats>, id: string) => m.get(id) ?? E
 /** One page of member posts, newest first, PAGE_SIZE at a time. available is false until the 0017 database update is run. */
 export async function feedPosts(supabase: SupabaseClient, q: FeedQuery, pageSize = PAGE_SIZE) {
   if (q.following && q.followIds.size === 0) return { posts: [] as FeedPost[], next: null as string | null, available: true };
-  let req = supabase.from("feed_posts").select(POST_COLUMNS).neq("status", "hidden")
-    .order("created_at", { ascending: false }).order("id", { ascending: false }).limit(pageSize + 1);
-  if (q.cursor) req = req.or(`created_at.lt.${q.cursor.at},and(created_at.eq.${q.cursor.at},id.lt.${q.cursor.id})`);
-  if (q.industry) req = req.eq("category", q.industry);
-  if (q.chapter) req = req.eq("chapter_id", q.chapter);
-  if (q.following) req = req.in("author_id", [...q.followIds].slice(0, 500));
-  const { data, error } = await req;
+  let hideInGroup = Boolean(q.group); // posts a moderator hid in the group (0019) stay out of the group page
+  const build = (cols: string) => {
+    let req = supabase.from("feed_posts").select(cols).neq("status", "hidden")
+      .order("created_at", { ascending: false }).order("id", { ascending: false }).limit(pageSize + 1);
+    if (q.cursor) req = req.or(`created_at.lt.${q.cursor.at},and(created_at.eq.${q.cursor.at},id.lt.${q.cursor.id})`);
+    if (q.industry) req = req.eq("category", q.industry);
+    if (q.chapter) req = req.eq("chapter_id", q.chapter);
+    if (q.group) req = req.eq("group_id", q.group);
+    if (hideInGroup) req = req.eq("group_hidden", false);
+    if (q.following) req = req.in("author_id", [...q.followIds].slice(0, 500));
+    // Muted members' posts stay out of this member's feed (they can still be opened directly).
+    if (q.muted?.size) req = req.not("author_id", "in", `(${[...q.muted].slice(0, 500).join(",")})`);
+    return req;
+  };
+  let { data, error } = await build(POST_COLUMNS);
+  if (hideInGroup && error && /group_hidden/.test(error.message)) { hideInGroup = false; ({ data, error } = await build(POST_COLUMNS)); }
+  if (missing0018(error)) {
+    if (q.group) return { posts: [] as FeedPost[], next: null, available: false };
+    ({ data, error } = await build(BASE_COLUMNS));
+  }
   if (error) return { posts: [] as FeedPost[], next: null, available: false };
-  const rows = (data ?? []) as FeedPost[];
+  const rows = (data ?? []) as unknown as FeedPost[];
   const posts = rows.slice(0, pageSize);
   const last = posts[posts.length - 1];
   return { posts, next: rows.length > pageSize && last ? encodeCursor(last.created_at, last.id) : null, available: true };
@@ -139,7 +160,7 @@ export async function activityCards(supabase: SupabaseClient, viewer: Viewer, q:
   }
   const seen = new Set<string>();
   for (const b of (members?.data ?? []) as { id: string; owner_id: string; name: string; slug: string; sector: string | null; city: string | null; province: string | null; chapter_id: string | null; created_at: string }[]) {
-    if (seen.has(b.owner_id)) continue;
+    if (seen.has(b.owner_id) || q.muted?.has(b.owner_id)) continue;
     seen.add(b.owner_id);
     const sameChapter = Boolean(chapter && b.chapter_id === chapter);
     cards.push({
@@ -165,4 +186,21 @@ export function pageWindow(cursorAt: string | null, posts: FeedPost[], hasMore: 
   const top = cursorAt ? new Date(cursorAt).getTime() : now;
   const from = hasMore && posts.length ? posts[posts.length - 1].created_at : new Date(top - 60 * DAY).toISOString();
   return { from, to };
+}
+
+/** One post by id (null when it doesn't exist or the viewer may not see it, e.g. a Friend-only post of a non-friend). */
+export async function getPost(supabase: SupabaseClient, id: string): Promise<FeedPost | null> {
+  const one = (cols: string) => supabase.from("feed_posts").select(cols).eq("id", id).neq("status", "hidden").maybeSingle();
+  let { data, error } = await one(POST_COLUMNS);
+  if (missing0018(error)) ({ data, error } = await one(BASE_COLUMNS));
+  return error ? null : ((data as unknown as FeedPost | null) ?? null);
+}
+
+export type GroupTag = { slug: string; name: string };
+/** Names of the groups the given posts were posted in (for the group tag on each post). */
+export async function groupTags(supabase: SupabaseClient, posts: FeedPost[]): Promise<Map<string, GroupTag>> {
+  const ids = [...new Set(posts.map((p) => p.group_id).filter((g): g is string => Boolean(g)))].slice(0, 50);
+  if (!ids.length) return new Map();
+  const { data, error } = await supabase.from("community_groups").select("id, slug, name").in("id", ids);
+  return new Map((error ? [] : data ?? []).map((g) => [g.id as string, { slug: g.slug as string, name: g.name as string }]));
 }
