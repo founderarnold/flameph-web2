@@ -31,6 +31,9 @@
         { "label": "Messages", "href": "/messages" },
         { "label": "Business inbox", "href": "/workspace/inbox" },
         { "label": "Leads and inquiries", "href": "/account/inquiries" },
+        { "label": "Requests and quotes", "href": "/requests" },
+        { "label": "Transaction records", "href": "/records" },
+        { "label": "Business vetting", "href": "/account/vetting" },
         { "label": "Flame POS", "href": "/pos" },
         { "label": "Business calculators", "href": "/workspace/calculators" },
         { "label": "Opportunities", "href": "/opportunities" },
@@ -176,6 +179,7 @@
     }
   ],
   "notListed": {
+    "/requests/new": "Opens from Requests and quotes, and from Send a request on a member's page.",
     "/more": "This page itself (the More tab).",
     "/login": "Sign-in page. Members are already signed in.",
     "/join": "Sign-up page. Members are already signed in.",

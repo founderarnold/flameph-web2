@@ -7,6 +7,7 @@ import { noteText } from "@/lib/people-rules";
 import { inquiryKind, KIND_LABEL } from "@/lib/inbox";
 import { shortTime } from "@/lib/messages";
 import { sourceLabel } from "@/lib/minisites";
+import { recordsWaiting } from "@/lib/records-server";
 
 export const metadata = { title: "Business inbox", robots: { index: false } };
 
@@ -31,11 +32,12 @@ function Section({ id, title, count, all, children }: { id: string; title: strin
 export default async function InboxPage({ searchParams }: { searchParams: Promise<{ note?: string }> }) {
   const { supabase, user } = await requireUser(BACK);
   const sp = await searchParams;
-  const [{ data: inq, error: inqErr }, lists, { data: notes, error: notesErr }, { data: unreadMsgs }] = await Promise.all([
+  const [{ data: inq, error: inqErr }, lists, { data: notes, error: notesErr }, { data: unreadMsgs }, waitingRecords] = await Promise.all([
     supabase.from("business_inquiries").select("*").eq("owner_id", user.id).neq("status", "archived").order("created_at", { ascending: false }).limit(100),
     friendLists(supabase, user.id),
     supabase.from("member_notifications").select("id, kind, title, body, url, created_at, read_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
     supabase.rpc("unread_direct_messages"),
+    recordsWaiting(supabase, user.id),
   ]);
   const rows = (inq ?? []) as Inquiry[];
   const leads = rows.filter((q) => inquiryKind(q) === "inquiry");
@@ -67,7 +69,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
     <div className="mx-auto max-w-2xl space-y-4">
       <Link href="/workspace" className="inline-flex min-h-11 items-center gap-1 font-semibold text-primary"><span aria-hidden>←</span> Workspace</Link>
       <h1 className="text-2xl font-extrabold sm:text-3xl">Business inbox</h1>
-      <p className="text-muted">Leads, quote requests, Friend requests and notifications in one place. Choose how we tell you in <Link href="/account/settings#notifications" className="font-semibold text-primary underline">Settings</Link>.</p>
+      <p className="text-muted">Leads, quote requests, member requests, records, Friend requests and notifications in one place. Choose how we tell you in <Link href="/account/settings#notifications" className="font-semibold text-primary underline">Settings</Link>.</p>
       {note && <div role="status"><Notice tone="ok">{note}</Notice></div>}
 
       <nav aria-label="Inbox sections" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -80,6 +82,15 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
         <span>Messages from members</span>
         <span className="flex items-center gap-2 text-sm text-primary">{msgCount ? <CountBadge count={msgCount} label="unread messages" /> : null}Open Messages</span>
       </Link>
+
+      <div id="records" className="card scroll-mt-24 p-4">
+        <p className="flex items-center gap-2 font-semibold">Requests, quotes and records<CountBadge count={waitingRecords} label="waiting for you" /></p>
+        <p className="text-sm text-muted">Requests sent to you, and deals waiting for you to confirm.</p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Link href="/requests" className="btn btn-outline min-h-11 px-3 text-sm">Requests and quotes</Link>
+          <Link href="/records" className="btn btn-outline min-h-11 px-3 text-sm">Transaction records</Link>
+        </div>
+      </div>
 
       {inqErr && <Notice tone="info">Leads are almost ready. FLAME PH is finishing a database update.</Notice>}
 

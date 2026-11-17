@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { getSession } from "@/lib/auth";
 import { list } from "@/lib/content";
+import { recordsWaiting } from "@/lib/records-server";
 
 /** The signed-in member for the shell, once per request (the layout and the page share it). */
 export const shellSession = cache(getSession);
@@ -17,15 +18,19 @@ export async function unreadMessages(): Promise<number> {
   return error ? 0 : Number(data) || 0;
 }
 
-/** Business inbox count (top-bar Inbox icon): new leads and quote requests, plus Friend requests waiting for an answer. */
+/**
+ * Business inbox count (top-bar Inbox icon): new leads and quote requests, Friend requests waiting for an answer, and
+ * member requests and transaction records waiting for this member (0 before the 0022 update).
+ */
 export async function inboxCount(): Promise<number> {
   const { supabase, user } = await shellSession();
   if (!supabase || !user) return 0;
-  const [leads, requests] = await Promise.all([
+  const [leads, requests, records] = await Promise.all([
     supabase.from("business_inquiries").select("id", { count: "exact", head: true }).eq("owner_id", user.id).eq("status", "new"),
     supabase.from("friendships").select("requester_id", { count: "exact", head: true }).eq("addressee_id", user.id).eq("status", "pending"),
+    recordsWaiting(supabase, user.id),
   ]);
-  return (leads.count ?? 0) + (requests.error ? 0 : requests.count ?? 0);
+  return (leads.count ?? 0) + (requests.error ? 0 : requests.count ?? 0) + records;
 }
 
 type Stamp = { created_at?: string | null; published_at?: string | null };

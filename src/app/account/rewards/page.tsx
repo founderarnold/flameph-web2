@@ -6,6 +6,7 @@ import { POINTS } from "@/lib/growth";
 import { mediaUrl } from "@/lib/content";
 import { Notice } from "@/components/ui";
 import { redeemReward } from "../actions";
+import { reputation } from "@/lib/records-server";
 
 export default async function Rewards({ searchParams }: { searchParams: Promise<{ redeem?: string }> }) {
   const sp = await searchParams;
@@ -18,13 +19,14 @@ export default async function Rewards({ searchParams }: { searchParams: Promise<
     supabase.from("member_milestones").select("key", { count: "exact", head: true }).eq("user_id", user.id),
     supabase.from("deal_participants").select("deal_id", { count: "exact", head: true }).eq("user_id", user.id),
   ]);
-  const [{ data: pts }, { data: items }, { data: claims }] = await Promise.all([
+  const [{ data: pts }, { data: items }, { data: claims }, rep] = await Promise.all([
     supabase.rpc("member_points"),
     supabase.from("reward_items").select("*").eq("published", true).order("points_cost"),
     supabase.from("reward_redemptions").select("id, item_title, points, status, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
+    reputation(supabase, user.id),
   ]);
   const n = {
-    referral: Number(refs.data ?? 0), review: reviews.count ?? 0, event: regs.count ?? 0, milestone: ms.count ?? 0, deal: deals.count ?? 0,
+    referral: Number(refs.data ?? 0), review: reviews.count ?? 0, event: regs.count ?? 0, milestone: ms.count ?? 0, deal: deals.count ?? 0, record: rep?.counted ?? 0,
   };
   const rows = [
     { key: "referral" as const, label: "Members you invited", hint: "They join with your link and confirm their email." },
@@ -32,6 +34,7 @@ export default async function Rewards({ searchParams }: { searchParams: Promise<
     { key: "milestone" as const, label: "Growth milestones reached", hint: "Tick them on your Growth path." },
     { key: "review" as const, label: "Reviews written for other members", hint: "Help other buyers decide." },
     { key: "deal" as const, label: "Buy-together deals joined", hint: "Save money with other members." },
+    { key: "record" as const, label: "Transaction records counted", hint: "Deals both members confirmed. A voided record no longer counts." },
   ];
   const total = rows.reduce((s, r) => s + n[r.key] * POINTS[r.key], 0);
   const balance = Number((Array.isArray(pts) ? pts[0] : pts)?.balance ?? total);

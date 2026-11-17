@@ -10,7 +10,7 @@ import { unsubscribeHeaders, unsubscribeUrl } from "@/lib/unsubscribe";
 // and an email. Push and email follow the member's choices in Settings; every email has a working unsubscribe.
 // Never throws. Runs on the server only (the in-app list can only be written with the server key).
 
-const KIND: Record<NotifyType, "message" | "lead" | "quote" | "request"> = { messages: "message", leads: "lead", quotes: "quote", requests: "request" };
+const KIND: Record<NotifyType, "message" | "lead" | "quote" | "request" | "record"> = { messages: "message", leads: "lead", quotes: "quote", requests: "request", records: "record" };
 
 export type Note = {
   title: string;

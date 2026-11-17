@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/cron/digest", "schedule": "0 0 * * 1" }
+    { "path": "/api/cron/digest", "schedule": "0 0 * * 1" },
+    { "path": "/api/cron/vetting-retention", "schedule": "30 18 * * *" }
   ]
 }

@@ -17,6 +17,7 @@ export const TARGETS = {
   member: "member",
   listing: "business listing",
   message: "message",
+  record: "transaction record",
 } as const;
 export type ReportTarget = keyof typeof TARGETS;
 export const isReportTarget = (v: unknown): v is ReportTarget => typeof v === "string" && v in TARGETS;
@@ -44,6 +45,8 @@ export const ACTIONS = {
   verify: { label: "Verify", help: "Checked and genuine. A listing gets the verified mark.", level: 2, needs: [] },
   remove_listing: { label: "Remove listing", help: "Takes the business listing down.", level: 2, needs: ["listing"] },
   ban: { label: "Ban", help: "Permanent. Account suspended and muted until a founder lifts it.", level: 3, needs: [] },
+  keep_record: { label: "Keep record", help: "The dispute is closed and the record counts again as before.", level: 2, needs: ["record"] },
+  void_record: { label: "Void record", help: "The record stops counting; the badge level, reputation and points it earned are taken back.", level: 2, needs: ["record"] },
 } as const;
 export type ModAction = keyof typeof ACTIONS;
 export const isModAction = (v: unknown): v is ModAction => typeof v === "string" && v in ACTIONS;
@@ -73,6 +76,7 @@ export const NOTICE_TEXT: Record<string, string> = {
   suspend: "Your account is suspended.",
   ban: "Your account is banned.",
   remove_listing: "Your business listing was taken down.",
+  void_record: "A moderator voided one of your transaction records. It no longer counts.",
 };
 
 export const MOD_ERRORS: Record<string, string> = {
@@ -84,6 +88,8 @@ export const MOD_ERRORS: Record<string, string> = {
   not_in_a_group: "That post isn't in a group. Use Warn or Mute, or leave it for an admin.",
   not_a_post: "That action is for posts and comments.",
   not_a_listing: "That action is for business listings.",
+  not_a_record: "That action is for transaction records.",
+  record_locked: "This record can't be disputed now (it is already on hold, voided or cancelled).",
   report_rate_limit: "You've sent a lot of reports today. Please try again tomorrow.",
   duplicate: "You already reported this. A moderator will look at it.",
   not_found: "We couldn't find that. It may have been removed.",
