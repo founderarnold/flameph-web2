@@ -24,7 +24,7 @@ export const activeTab = (pathname: string) => {
 };
 
 /** Kinds of finished action the feed can scroll to and confirm. */
-export type FeedDone = "posted" | "group-order-started" | "group-order-joined" | "group-order-left" | "deal-confirmed" | "profile" | "consents" | "onboarded";
+export type FeedDone = "posted" | "post-held" | "post-deleted" | "commented" | "group-order-started" | "group-order-joined" | "group-order-left" | "deal-confirmed" | "profile" | "consents" | "onboarded";
 
 /** Where a finished action sends the member: the feed, scrolled to the result (an element id on the feed). */
 export function feedResult(done: FeedDone, focusId?: string) {
@@ -34,7 +34,10 @@ export function feedResult(done: FeedDone, focusId?: string) {
 }
 
 export const DONE_TEXT: Record<FeedDone, string> = {
-  posted: "Your post is live.",
+  posted: "Your post is live. Here it is in your feed.",
+  "post-held": "Your post is waiting for a quick check by FLAME PH because it mentions guaranteed returns. Only you can see it for now.",
+  "post-deleted": "Your post was deleted.",
+  commented: "Your comment is posted.",
   "group-order-started": "Your group order is open. Here it is in your feed.",
   "group-order-joined": "You joined the group order. Here it is in your feed.",
   "group-order-left": "You left the group order.",
@@ -43,3 +46,13 @@ export const DONE_TEXT: Record<FeedDone, string> = {
   consents: "Your choices are saved. You can change them anytime in Settings.",
   onboarded: "You're all set. Welcome to FLAME PH!",
 };
+
+/** The same page with ?focus=<id> set, so the feed (or a post page) scrolls back to the thing the member just acted on. */
+export function withFocus(back: string, focusId: string, done?: FeedDone) {
+  const [path, query = ""] = back.split("?");
+  const q = new URLSearchParams(query.split("#")[0]);
+  q.set("focus", focusId);
+  q.delete("done");
+  if (done) q.set("done", done);
+  return `${path}?${q.toString()}`;
+}

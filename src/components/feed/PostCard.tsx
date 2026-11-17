@@ -1,0 +1,127 @@
+import Link from "next/link";
+import { Avatar } from "@/components/ui";
+import { POST_KINDS, REACTIONS, splitLinks, timeAgo, type ReactionKind } from "@/lib/feed-rules";
+import type { FeedComment, FeedPost, PostStats } from "@/lib/feed-data";
+import { deleteComment, deletePost, reactToPost } from "@/app/account/feed-actions";
+import { CommentForm } from "./CommentForm";
+import { InvestorWarning } from "./InvestorWarning";
+import { ShareButton } from "./ShareButton";
+
+export function PostText({ text }: { text: string }) {
+  return (
+    <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
+      {splitLinks(text).map((p, i) => p.href
+        ? <a key={i} href={p.href} rel="nofollow ugc noopener noreferrer" target="_blank" className="text-primary underline">{p.text}</a>
+        : <span key={i}>{p.text}</span>)}
+    </p>
+  );
+}
+
+function Author({ name, slug, at, extra }: { name: string; slug: string | null; at: string; extra?: React.ReactNode }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <Avatar name={name} size={36} />
+      <div className="min-w-0">
+        {slug ? <Link href={`/members/${slug}`} className="block truncate font-semibold hover:underline">{name}</Link> : <span className="block truncate font-semibold">{name}</span>}
+        <span className="block text-xs text-muted"><time dateTime={at}>{timeAgo(at)}</time>{extra}</span>
+      </div>
+    </div>
+  );
+}
+
+export function CommentItem({ c, viewerId, postAuthorId, back, investor }: { c: FeedComment; viewerId: string; postAuthorId: string; back: string; investor: boolean }) {
+  const name = c.author_name ?? "FLAME PH member";
+  const canDelete = c.author_id === viewerId || postAuthorId === viewerId;
+  return (
+    <li id={`comment-${c.id}`} className="rounded-xl bg-bg-soft p-3">
+      <div className="flex items-start justify-between gap-2">
+        <Author name={name} slug={c.author_slug} at={c.created_at} />
+        {canDelete && (
+          <form action={deleteComment}>
+            <input type="hidden" name="comment_id" value={c.id} /><input type="hidden" name="post_id" value={c.post_id} /><input type="hidden" name="back" value={back} />
+            <button className="btn btn-ghost min-h-11 px-2 text-xs" aria-label={`Delete comment by ${name}`}>Delete</button>
+          </form>
+        )}
+      </div>
+      <div className="mt-1.5"><PostText text={c.body} /></div>
+      {investor && <p className="mt-1 text-xs text-muted">Reply to an investor or funder post. The warning above applies.</p>}
+    </li>
+  );
+}
+
+/** One member post: who, what, the reactions, comments and sharing. Every button is a plain form, so it works before JavaScript loads. */
+export function PostCard({ post, stats, comments, viewerId, back, detail = false, confirmDelete = false }: {
+  post: FeedPost; stats: PostStats; comments: FeedComment[]; viewerId: string; back: string; detail?: boolean; confirmDelete?: boolean;
+}) {
+  const name = post.author_name ?? "FLAME PH member";
+  const investor = post.kind === "investor";
+  const mine = post.author_id === viewerId;
+  const title = `${name}: ${post.body.slice(0, 60)}`;
+  const total = stats.likes + stats.loves + stats.helpful;
+  const count: Record<ReactionKind, number> = { like: stats.likes, love: stats.loves, helpful: stats.helpful };
+  return (
+    <article id={`post-${post.id}`} aria-labelledby={`post-${post.id}-by`} className="card scroll-mt-24 p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div id={`post-${post.id}-by`} className="min-w-0"><Author name={name} slug={post.author_slug} at={post.created_at} /></div>
+        {mine && !detail && <Link href={`/posts/${post.id}?delete=1`} className="btn btn-ghost min-h-11 px-2 text-xs" aria-label="Delete your post">Delete</Link>}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs font-bold">
+        <span className={`rounded-full px-2.5 py-0.5 ${post.kind === "fulfillment" ? "bg-flame-soft text-fg" : investor ? "bg-warn-soft text-warn" : "bg-bg-soft text-muted"}`}>{POST_KINDS[post.kind]?.label ?? "Post"}</span>
+        <Link href={`/home?industry=${encodeURIComponent(post.category)}`} className="rounded-full bg-primary-soft px-2.5 py-0.5 text-primary hover:underline">{post.subcategory ?? post.category}</Link>
+        {post.status === "held" && <span className="rounded-full bg-warn-soft px-2.5 py-0.5 text-warn">Waiting for a check · only you can see it</span>}
+      </div>
+      {investor && <div className="mt-3"><InvestorWarning compact={!detail} /></div>}
+      <div className="mt-3">{detail ? <PostText text={post.body} /> : <div className="line-clamp-[12]"><PostText text={post.body} /></div>}</div>
+      {post.kind === "fulfillment" && (
+        <p className="mt-2 text-sm"><Link href={`/fulfillment#offer-${post.id}`} className="font-semibold text-primary underline">See all fulfillment offers</Link></p>
+      )}
+
+      <p className="mt-3 text-xs text-muted">
+        {total > 0 && <span>{(Object.keys(REACTIONS) as ReactionKind[]).filter((k) => count[k] > 0).map((k) => `${REACTIONS[k].emoji} ${count[k]}`).join("  ")}</span>}
+        {total > 0 && stats.comments > 0 && " · "}
+        {stats.comments > 0 && <Link href={`/posts/${post.id}`} className="underline">{stats.comments} comment{stats.comments === 1 ? "" : "s"}</Link>}
+      </p>
+
+      {post.status === "published" && (
+        <div className="mt-2 grid grid-cols-5 gap-1 border-t border-line pt-2">
+          {(Object.keys(REACTIONS) as ReactionKind[]).map((k) => (
+            <form key={k} action={reactToPost}>
+              <input type="hidden" name="post_id" value={post.id} /><input type="hidden" name="kind" value={k} />
+              <input type="hidden" name="current" value={stats.mine ?? ""} /><input type="hidden" name="back" value={back} />
+              <button aria-pressed={stats.mine === k} aria-label={`${REACTIONS[k].label}${count[k] ? `, ${count[k]}` : ""}`}
+                className={`btn min-h-11 w-full flex-col gap-0 px-1 text-xs ${stats.mine === k ? "btn-outline border-primary text-primary" : "btn-ghost"}`}>
+                <span aria-hidden className="text-base leading-none">{REACTIONS[k].emoji}</span><span aria-hidden>{REACTIONS[k].label}</span>
+              </button>
+            </form>
+          ))}
+          {detail ? <span /> : <Link href={`/posts/${post.id}#comments`} className="btn btn-ghost min-h-11 w-full flex-col gap-0 px-1 text-xs"><span aria-hidden className="text-base leading-none">💬</span>Comment</Link>}
+          <ShareButton path={`/posts/${post.id}`} title={title} />
+        </div>
+      )}
+
+      {mine && detail && confirmDelete && (
+        <form action={deletePost} className="mt-3 rounded-xl border border-danger/40 bg-danger-soft p-3">
+          <input type="hidden" name="post_id" value={post.id} />
+          <p className="font-semibold">Delete this post? Its comments and reactions go too. This can&apos;t be undone.</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button className="btn btn-danger min-h-11">Yes, delete</button>
+            <Link href={`/posts/${post.id}`} className="btn btn-outline min-h-11">Keep it</Link>
+          </div>
+        </form>
+      )}
+      {mine && detail && !confirmDelete && <Link href={`/posts/${post.id}?delete=1`} className="mt-2 inline-block text-sm text-muted underline">Delete this post</Link>}
+
+      {!detail && post.status === "published" && (
+        <div className="mt-2">
+          {comments.length > 0 && (
+            <ul className="space-y-2" aria-label="Latest comments">
+              {stats.comments > comments.length && <li><Link href={`/posts/${post.id}#comments`} className="text-sm font-semibold text-primary underline">See all {stats.comments} comments</Link></li>}
+              {comments.map((c) => <CommentItem key={c.id} c={c} viewerId={viewerId} postAuthorId={post.author_id} back={back} investor={investor} />)}
+            </ul>
+          )}
+          <CommentForm postId={post.id} back={back} />
+        </div>
+      )}
+    </article>
+  );
+}
