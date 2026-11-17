@@ -99,3 +99,26 @@ export async function signInByEmail(admin: SupabaseClient, session: SupabaseClie
   const { error } = await session.auth.verifyOtp({ token_hash: hash, type: "magiclink" });
   return !error;
 }
+
+/**
+ * A server-to-server message from one FLAME PH site to this hub (for example the Pages app reporting a new lead).
+ * Signed with that site's shared secret, but over "<purpose>.<body>" so a message can never pass as a sign-in token
+ * (and a sign-in token can never pass as a message). Short-lived; the receiver must also be safe to call twice.
+ */
+export function verifySiteMessage(client: string, purpose: string, token: string): Record<string, unknown> | null {
+  const key = secret(client);
+  const [v, body, sig] = (token ?? "").split(".");
+  if (!key || v !== "v1" || !body || !sig || !/^[a-z-]+$/.test(purpose)) return null;
+  const want = mac(key, `${purpose}.${body}`);
+  const got = Buffer.from(sig, "base64url");
+  if (got.length !== want.length || !timingSafeEqual(got, want)) return null;
+  try {
+    const c = JSON.parse(Buffer.from(body, "base64url").toString()) as Record<string, unknown>;
+    const now = Math.floor(Date.now() / 1000);
+    if (c.iss !== client || c.aud !== HUB || c.typ !== purpose) return null;
+    if (typeof c.exp !== "number" || typeof c.iat !== "number" || !(c.exp > now) || c.iat > now + 30 || c.exp - c.iat > 600) return null;
+    return c;
+  } catch {
+    return null;
+  }
+}

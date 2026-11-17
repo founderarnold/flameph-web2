@@ -3,13 +3,15 @@ import { requireUser } from "@/lib/auth";
 import { OPPORTUNITY_KINDS, type Opportunity, dateLabel, matches, notExpired } from "@/lib/growth";
 import { CountBadge, buttonClass } from "@/components/ui";
 import { TabShell } from "@/components/shell/TabShell";
+import { builderHref } from "@/lib/minisites";
 
 export const metadata = { title: "Workspace" };
 
 /** The member's day-to-day business tools in one place. Every tile opens an existing tool; nothing is rebuilt here. */
 const TOOLS = [
   { href: "/account/business", title: "My business page", text: "Edit your listing, photos and products." },
-  { href: "/account/inquiries", title: "Messages and inquiries", text: "Questions from buyers and members.", unread: true },
+  { href: builderHref(), title: "My mini-website", text: "Your free business website." },
+  { href: "/account/inquiries", title: "Leads and inquiries", text: "From your listing and your mini-website.", unread: true },
   { href: "/pos", title: "Flame POS", text: "Sales, receipts and stock." },
   { href: "/group-order", title: "Group Order", text: "Buy in bulk with other members." },
   { href: "/fulfillment", title: "Fulfillment", text: "Produce, pack or deliver orders." },
@@ -60,7 +62,7 @@ export default async function Workspace() {
         <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {TOOLS.map((t) => (
             <li key={t.href}>
-              <Link href={t.href} className="card flex h-full min-h-24 flex-col p-3 hover:border-primary">
+              <Link href={t.href} prefetch={t.href.startsWith("/sso/") ? false : undefined} className="card flex h-full min-h-24 flex-col p-3 hover:border-primary">
                 <span className="flex items-center gap-2 font-semibold">{t.title}{t.unread && <CountBadge count={unread ?? 0} label="unread" />}</span>
                 <span className="mt-1 text-sm text-muted">{t.text}</span>
               </Link>

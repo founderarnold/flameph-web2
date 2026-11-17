@@ -14,6 +14,7 @@ import { RelationshipActions } from "@/components/people/RelationshipActions";
 import { relationship, type Relationship } from "@/lib/people";
 import { noteText } from "@/lib/people-rules";
 import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
+import { builderHref, minisiteUrl } from "@/lib/minisites";
 
 export type B = {
   id: string; owner_id: string; created_at: string; name: string; slug: string; sector: string | null; description: string | null; products: string | null; city: string | null; province: string | null;
@@ -46,11 +47,14 @@ export async function BusinessProfile({ business, review, basePath, note }: { bu
     list<B>({ table: "businesses", select: "id,name,slug,sector,city,province", filters: PUBLIC_BUSINESS_FILTERS, order: "created_at" }),
   ]);
   // Registration numbers the owner chose to show (never the TIN), the chapter, and whether this member follows the owner.
-  const [regRes, chapters, rel] = await Promise.all([
+  const [regRes, chapters, rel, sitesRes] = await Promise.all([
     (supabase ?? pub)?.rpc("business_registration_view", { bid: b.id }),
     b.chapter_id ? list<{ id: string; name: string; slug: string | null }>({ table: "chapters", select: "id,name,slug" }) : Promise.resolve([]),
     user && supabase && user.id !== business.owner_id ? relationship(supabase, user.id, business.owner_id) : Promise.resolve(null as Relationship | null),
+    // The owner's published mini-websites (FlamePH Pages). Empty until database update 0020.
+    (supabase ?? pub)?.from("member_minisites").select("slug, name").eq("owner_id", b.owner_id).eq("published", true).order("updated_at", { ascending: false }).limit(3),
   ]);
+  const minisites = (sitesRes?.data ?? []) as { slug: string; name: string }[];
   const reg = (Array.isArray(regRes?.data) ? regRes.data[0] : null) as Record<string, string | null> | null;
   const regRows = reg ? [["DTI business name no.", reg.dti_bn], ["SEC registration no.", reg.sec_reg], ["CDA registration no.", reg.cda_reg], ["BMBE certificate no.", reg.bmbe_cert], ["Business permit no.", reg.mayors_permit]].filter(([, v]) => v) as [string, string][] : [];
   const chapter = chapters.find((c) => c.id === b.chapter_id);
@@ -110,12 +114,15 @@ export async function BusinessProfile({ business, review, basePath, note }: { bu
             {b.contact_email && <a data-track href={`mailto:${b.contact_email}`} className="btn btn-outline">Email</a>}
             <a href="#inquire" className="btn btn-outline">Send inquiry</a>
             {shop && <a data-track href={shop} target="_blank" rel="noopener" className="btn btn-flame">Shop on MarketplacePH ↗</a>}
+            {minisites.map((m, i) => (
+              <a key={m.slug} data-track href={minisiteUrl(m.slug)} target="_blank" rel="noopener" className="btn btn-flame">{i === 0 ? "Visit mini-website ↗" : `${m.name} ↗`}</a>
+            ))}
           </div>
           {noteText(note) && <p role="status" className="mt-3 rounded-xl bg-ok-soft p-3 text-sm">{noteText(note)}</p>}
           {user && !isOwner && rel && <div className="mt-3 max-w-sm"><RelationshipActions memberId={b.owner_id} name={b.name} rel={rel} back={`${basePath}/${b.slug}`} /></div>}
           {user && !isOwner && <p className="mt-2"><Link href={`/report?${new URLSearchParams({ type: "listing", id: b.id, back: `${basePath}/${b.slug}` })}`} className="inline-flex min-h-11 items-center text-sm text-muted underline">Report this listing</Link></p>}
           {hiddenLabels.length > 0 && <p className="mt-3 text-sm text-muted">This business shares its {hiddenLabels.join(", ")} with FLAME PH members only. <Link href={`/login?next=${encodeURIComponent(`${basePath}/${b.slug}`)}`} className="font-semibold underline">Log in</Link> or <Link href="/join" className="font-semibold underline">join free</Link> to see them.</p>}
-          {isOwner && <p className="mt-4 text-sm"><Link href="/account/business" className="font-bold text-mph underline">Edit your listing</Link> · <Link href="/account/inquiries" className="font-bold text-mph underline">See your inquiries</Link></p>}
+          {isOwner && <p className="mt-4 text-sm"><Link href="/account/business" className="font-bold text-mph underline">Edit your listing</Link> · <Link href="/account/inquiries" className="font-bold text-mph underline">See your inquiries</Link> · <a href={builderHref(minisites.length ? "/dashboard" : "/build")} className="font-bold text-mph underline">{minisites.length ? "Edit your mini-website" : "Make your free mini-website"}</a></p>}
         </div>
       </section>
       <Section>
