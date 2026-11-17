@@ -25,6 +25,13 @@ export const POST_MAX = 2000;
 export const COMMENT_MAX = 1000;
 export const PAGE_SIZE = 10;
 
+export const AUDIENCES = {
+  members: { label: "All members", help: "Every signed-in FLAME PH member" },
+  friends: { label: "Friends only", help: "Only members you are Friends with" },
+} as const;
+export type Audience = keyof typeof AUDIENCES;
+export const isAudience = (v: unknown): v is Audience => typeof v === "string" && v in AUDIENCES;
+
 /** Same words as public.feed_text_flags() in the database. */
 const INVESTOR_RE = /\b(invest|investing|investment|investments|investor|investors|funder|funders|funding|capital|roi|loans?|lending|pautang|paluwagan|equity|shares? of stock|interest rate|interest per month)\b/i;
 const RETURNS_RE = /(guarantee[ds]?|guaranteed|sure|fixed|risk[- ]?free|no[- ]risk|walang risk|siguradong|garantisadong)\W+(\w+\W+){0,3}(returns?|profits?|income|interest|kita|tubo)/i;
@@ -52,11 +59,17 @@ export const POST_ERRORS: Record<string, string> = {
   too_long: "That's too long. Please shorten it.",
   category: "Please choose an industry for your post.",
   unavailable: "Posting opens after FLAME PH finishes a database update. Please try again later.",
+  join_group_first: "Join this group first, then you can post in it.",
+  group_posts_are_for_members: "Group posts are for all members of the group. Choose \"All members\" or post outside the group.",
+  request_exists: "This member already sent you a Friend request. Accept it in Friends.",
+  blocked: "You can't connect with this member.",
+  friend_rate_limit: "You've sent a lot of Friend requests today. Please try again tomorrow.",
+  no_such_group: "That group doesn't exist.",
   failed: "Something went wrong. Please try again.",
 };
 export const postErrorCode = (message?: string | null) => {
   const m = message ?? "";
-  return Object.keys(POST_ERRORS).find((k) => m.includes(k)) ?? (/feed_(posts|comments|reactions)|schema cache|does not exist/.test(m) ? "unavailable" : "failed");
+  return Object.keys(POST_ERRORS).find((k) => m.includes(k)) ?? (/feed_(posts|comments|reactions)|friendships|member_(mutes|blocks)|group|audience|schema cache|does not exist/.test(m) ? "unavailable" : "failed");
 };
 
 /** Category select: "Industry" or "Industry › Specific industry", both from the taxonomy. */

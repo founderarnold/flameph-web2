@@ -51,5 +51,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/home", "/group-order", "/new-post", "/more", "/workspace", "/fulfillment", "/pos", "/m/:path*", "/welcome", "/members/:path*", "/posts/:path*", "/forum", "/forum/:path*", "/account/:path*", "/sso/:path*", "/admin/:path*", "/auth/:path*", "/api/:path*", "/bizconsult-ai", "/business-calculators", "/calculators/:path*", "/login", "/join"],
+  matcher: ["/", "/home", "/group-order", "/new-post", "/more", "/workspace", "/fulfillment", "/pos", "/m/:path*", "/welcome", "/members/:path*", "/posts/:path*", "/friends", "/groups", "/groups/:path*", "/forum", "/forum/:path*", "/account/:path*", "/sso/:path*", "/admin/:path*", "/auth/:path*", "/api/:path*", "/bizconsult-ai", "/business-calculators", "/calculators/:path*", "/login", "/join"],
 };

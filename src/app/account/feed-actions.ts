@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { feedResult, withFocus } from "@/lib/member-shell";
 import { safeNext } from "@/lib/safe-next";
-import { COMMENT_MAX, POST_ERRORS, POST_MAX, isPostKind, isReaction, parseCategory, postErrorCode } from "@/lib/feed-rules";
+import { COMMENT_MAX, POST_ERRORS, POST_MAX, isAudience, isPostKind, isReaction, parseCategory, postErrorCode } from "@/lib/feed-rules";
+import { isGroupSlug } from "@/lib/groups";
 
 const s = (v: FormDataEntryValue | null, max = 300) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const uuid = (v: string) => (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) ? v : null);
@@ -18,13 +19,21 @@ export async function createPost(_: FormState, fd: FormData): Promise<FormState>
   const raw = typeof fd.get("body") === "string" ? (fd.get("body") as string).trim() : "";
   const kind = s(fd.get("kind"), 20);
   const cat = parseCategory(s(fd.get("category"), 200));
-  const values = { body: raw, kind, category: s(fd.get("category"), 200) };
+  const audience = s(fd.get("audience"), 20);
+  const groupSlug = s(fd.get("group"), 80);
+  const values = { body: raw, kind, category: s(fd.get("category"), 200), audience, group: groupSlug };
   if (!cat) return { error: POST_ERRORS.category, values };
   if (raw.length < 2) return { error: POST_ERRORS.too_short, values };
   if (raw.length > POST_MAX) return { error: POST_ERRORS.too_long, values };
-  const { data, error } = await supabase.from("feed_posts")
-    .insert({ kind: isPostKind(kind) ? kind : "update", category: cat.category, subcategory: cat.subcategory, body: raw })
-    .select("id, status").single();
+  const row: Record<string, unknown> = { kind: isPostKind(kind) ? kind : "update", category: cat.category, subcategory: cat.subcategory, body: raw };
+  // Friend-only and group posts need the 0018 database update; plain posts work either way.
+  if (isAudience(audience) && audience !== "members") row.audience = audience;
+  if (isGroupSlug(groupSlug)) {
+    const { data: g } = await supabase.from("community_groups").select("id").eq("slug", groupSlug).maybeSingle();
+    if (!g) return { error: POST_ERRORS.no_such_group, values };
+    row.group_id = g.id;
+  }
+  const { data, error } = await supabase.from("feed_posts").insert(row).select("id, status").single();
   if (error || !data) return { error: POST_ERRORS[postErrorCode(error?.message)], values };
   revalidatePath("/home");
   revalidatePath("/forum", "layout");

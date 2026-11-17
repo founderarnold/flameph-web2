@@ -10,8 +10,9 @@ import { InquiryForm } from "@/components/listing/InquiryForm";
 import { ListingTracker } from "@/components/listing/ListingTracker";
 import { saveReview, deleteReview } from "@/app/directory/[slug]/actions";
 import { forViewer, FIELD_GROUPS } from "@/lib/privacy";
-import { FollowButton } from "@/components/shell/FollowButton";
-import { followingIds } from "@/lib/suggestions";
+import { RelationshipActions } from "@/components/people/RelationshipActions";
+import { relationship, type Relationship } from "@/lib/people";
+import { noteText } from "@/lib/people-rules";
 import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
 
 export type B = {
@@ -31,7 +32,7 @@ const safeLink = (u?: string | null) => (u && /^https?:\/\//i.test(u) ? u : null
  * A business profile on flameph.org. Used by /members/[slug] (members and visitors) and the older /directory/[slug].
  * Details the owner made members-only are removed for visitors who are not signed in.
  */
-export async function BusinessProfile({ business, review, basePath }: { business: B; review?: string; basePath: "/members" | "/directory" }) {
+export async function BusinessProfile({ business, review, basePath, note }: { business: B; review?: string; basePath: "/members" | "/directory"; note?: string }) {
   const sp = { review };
   const pub = createPublicClient();
   const { supabase, user } = await getSession();
@@ -45,10 +46,10 @@ export async function BusinessProfile({ business, review, basePath }: { business
     list<B>({ table: "businesses", select: "id,name,slug,sector,city,province", filters: PUBLIC_BUSINESS_FILTERS, order: "created_at" }),
   ]);
   // Registration numbers the owner chose to show (never the TIN), the chapter, and whether this member follows the owner.
-  const [regRes, chapters, following] = await Promise.all([
+  const [regRes, chapters, rel] = await Promise.all([
     (supabase ?? pub)?.rpc("business_registration_view", { bid: b.id }),
     b.chapter_id ? list<{ id: string; name: string; slug: string | null }>({ table: "chapters", select: "id,name,slug" }) : Promise.resolve([]),
-    user && supabase ? followingIds(supabase, user.id) : Promise.resolve(new Set<string>()),
+    user && supabase && user.id !== business.owner_id ? relationship(supabase, user.id, business.owner_id) : Promise.resolve(null as Relationship | null),
   ]);
   const reg = (Array.isArray(regRes?.data) ? regRes.data[0] : null) as Record<string, string | null> | null;
   const regRows = reg ? [["DTI business name no.", reg.dti_bn], ["SEC registration no.", reg.sec_reg], ["CDA registration no.", reg.cda_reg], ["BMBE certificate no.", reg.bmbe_cert], ["Business permit no.", reg.mayors_permit]].filter(([, v]) => v) as [string, string][] : [];
@@ -110,7 +111,8 @@ export async function BusinessProfile({ business, review, basePath }: { business
             <a href="#inquire" className="btn btn-outline">Send inquiry</a>
             {shop && <a data-track href={shop} target="_blank" rel="noopener" className="btn btn-flame">Shop on MarketplacePH ↗</a>}
           </div>
-          {user && !isOwner && <div className="mt-3 w-40"><FollowButton memberId={b.owner_id} following={following.has(b.owner_id)} back={`${basePath}/${b.slug}`} name={b.name} /></div>}
+          {noteText(note) && <p role="status" className="mt-3 rounded-xl bg-ok-soft p-3 text-sm">{noteText(note)}</p>}
+          {user && !isOwner && rel && <div className="mt-3 max-w-sm"><RelationshipActions memberId={b.owner_id} name={b.name} rel={rel} back={`${basePath}/${b.slug}`} /></div>}
           {hiddenLabels.length > 0 && <p className="mt-3 text-sm text-muted">This business shares its {hiddenLabels.join(", ")} with FLAME PH members only. <Link href={`/login?next=${encodeURIComponent(`${basePath}/${b.slug}`)}`} className="font-semibold underline">Log in</Link> or <Link href="/join" className="font-semibold underline">join free</Link> to see them.</p>}
           {isOwner && <p className="mt-4 text-sm"><Link href="/account/business" className="font-bold text-mph underline">Edit your listing</Link> · <Link href="/account/inquiries" className="font-bold text-mph underline">See your inquiries</Link></p>}
         </div>

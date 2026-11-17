@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Avatar } from "@/components/ui";
 import { POST_KINDS, REACTIONS, splitLinks, timeAgo, type ReactionKind } from "@/lib/feed-rules";
-import type { FeedComment, FeedPost, PostStats } from "@/lib/feed-data";
+import type { FeedComment, FeedPost, GroupTag, PostStats } from "@/lib/feed-data";
 import { deleteComment, deletePost, reactToPost } from "@/app/account/feed-actions";
 import { CommentForm } from "./CommentForm";
 import { InvestorWarning } from "./InvestorWarning";
@@ -50,8 +50,8 @@ export function CommentItem({ c, viewerId, postAuthorId, back, investor }: { c: 
 }
 
 /** One member post: who, what, the reactions, comments and sharing. Every button is a plain form, so it works before JavaScript loads. */
-export function PostCard({ post, stats, comments, viewerId, back, detail = false, confirmDelete = false }: {
-  post: FeedPost; stats: PostStats; comments: FeedComment[]; viewerId: string; back: string; detail?: boolean; confirmDelete?: boolean;
+export function PostCard({ post, stats, comments, viewerId, back, detail = false, confirmDelete = false, group = null }: {
+  post: FeedPost; stats: PostStats; comments: FeedComment[]; viewerId: string; back: string; detail?: boolean; confirmDelete?: boolean; group?: GroupTag | null;
 }) {
   const name = post.author_name ?? "FLAME PH member";
   const investor = post.kind === "investor";
@@ -68,6 +68,8 @@ export function PostCard({ post, stats, comments, viewerId, back, detail = false
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs font-bold">
         <span className={`rounded-full px-2.5 py-0.5 ${post.kind === "fulfillment" ? "bg-flame-soft text-fg" : investor ? "bg-warn-soft text-warn" : "bg-bg-soft text-muted"}`}>{POST_KINDS[post.kind]?.label ?? "Post"}</span>
         <Link href={`/home?industry=${encodeURIComponent(post.category)}`} className="rounded-full bg-primary-soft px-2.5 py-0.5 text-primary hover:underline">{post.subcategory ?? post.category}</Link>
+        {group && <Link href={`/groups/${group.slug}`} className="rounded-full bg-bg-soft px-2.5 py-0.5 text-fg hover:underline">Group: {group.name}</Link>}
+        {post.audience === "friends" && <span className="rounded-full bg-bg-soft px-2.5 py-0.5 text-muted">👥 Friends only</span>}
         {post.status === "held" && <span className="rounded-full bg-warn-soft px-2.5 py-0.5 text-warn">Waiting for a check · only you can see it</span>}
       </div>
       {investor && <div className="mt-3"><InvestorWarning compact={!detail} /></div>}
