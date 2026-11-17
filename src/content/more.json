@@ -28,7 +28,9 @@
         { "label": "Workspace", "href": "/workspace" },
         { "label": "My account", "href": "/account" },
         { "label": "My business", "href": "/account/business" },
-        { "label": "Messages and inquiries", "href": "/account/inquiries" },
+        { "label": "Leads and inquiries", "href": "/account/inquiries" },
+        { "label": "Flame POS", "href": "/pos" },
+        { "label": "Business calculators", "href": "/workspace/calculators" },
         { "label": "Opportunities", "href": "/opportunities" },
         { "label": "Group Order", "href": "/group-order" },
         { "label": "Buy together deals", "href": "/deals" },
@@ -60,8 +62,25 @@
       ]
     },
     {
-      "key": "calculators", "title": "Calculators",
-      "items": [{ "label": "Business calculators", "href": "/business-calculators" }]
+      "key": "calculators", "title": "Business calculators",
+      "items": [
+        { "label": "Markup at Margin", "href": "/workspace/calculators?calc=markup-margin" },
+        { "label": "Break-Even", "href": "/workspace/calculators?calc=break-even" },
+        { "label": "Return on Investment (ROI)", "href": "/workspace/calculators?calc=roi" },
+        { "label": "Job & Service Pricing", "href": "/workspace/calculators?calc=job-service-pricing" },
+        { "label": "8-Week Cash Flow", "href": "/workspace/calculators?calc=cash-flow" },
+        { "label": "Working Capital & Quick Ratio", "href": "/workspace/calculators?calc=working-capital" },
+        { "label": "Receivable Aging & Collection Tracker", "href": "/workspace/calculators?calc=receivables-aging" },
+        { "label": "Inventory Investment & Turnover", "href": "/workspace/calculators?calc=inventory-turnover" },
+        { "label": "Vehicle & Fleet Operating Cost", "href": "/workspace/calculators?calc=fleet-cost" },
+        { "label": "Capacity Planning", "href": "/workspace/calculators?calc=capacity-planning" },
+        { "label": "Total Employee Cost", "href": "/workspace/calculators?calc=employee-cost" },
+        { "label": "Payroll", "href": "/workspace/calculators?calc=payroll" },
+        { "label": "Hiring & Expansion Readiness", "href": "/workspace/calculators?calc=expansion-readiness" },
+        { "label": "Franchise / Micro-Fulfillment Unit Economics", "href": "/workspace/calculators?calc=franchise-unit-economics" },
+        { "label": "Customer Acquisition Cost", "href": "/workspace/calculators?calc=customer-acquisition-cost" },
+        { "label": "About the calculators (public page)", "href": "/business-calculators" }
+      ]
     },
     {
       "key": "ridesafe", "title": "RideSafe",

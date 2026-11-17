@@ -1,9 +1,11 @@
 import { PageHero, Section, Grid, FeatureCard, Notice } from "@/components/ui";
 import * as I from "@/components/icons";
 import { meta } from "@/lib/meta";
+import { POS_ORIGIN as POS_URL, posHref } from "@/lib/pos";
 
-const POS_URL = "https://pos.flameph.org";
-const POS_SSO_URL = "https://www.flameph.org/sso/authorize?client=flamepos&return=https%3A%2F%2Fpos.flameph.org%2Forganizations";
+
+// Same sign-in hub link as the member tab, on this site's own address so a signed-in member is not asked again.
+const POS_SSO_URL = posHref();
 
 export const metadata = meta(
   "FLAME POS — Free POS for Filipino MSMEs",

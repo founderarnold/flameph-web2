@@ -4,6 +4,7 @@ import { OPPORTUNITY_KINDS, type Opportunity, dateLabel, matches, notExpired } f
 import { CountBadge, buttonClass } from "@/components/ui";
 import { TabShell } from "@/components/shell/TabShell";
 import { builderHref } from "@/lib/minisites";
+import { CALCULATOR_GROUPS, calculatorHref } from "@/lib/calculators";
 
 export const metadata = { title: "Workspace" };
 
@@ -15,7 +16,7 @@ const TOOLS = [
   { href: "/pos", title: "Flame POS", text: "Sales, receipts and stock." },
   { href: "/group-order", title: "Group Order", text: "Buy in bulk with other members." },
   { href: "/fulfillment", title: "Fulfillment", text: "Produce, pack or deliver orders." },
-  { href: "/business-calculators", title: "Business calculators", text: "Pricing, profit and break-even." },
+  { href: "/workspace/calculators", title: "Business calculators", text: "15 free calculators: pricing, cash flow, payroll." },
   { href: "/bizconsult-ai", title: "Ka-FLAME AI", text: "Ask a business question anytime." },
   { href: "/account/growth", title: "Growth path", text: "Your stage and next milestones." },
   { href: "/account/rewards", title: "Rewards", text: "Points and what you can claim." },
@@ -40,7 +41,7 @@ export default async function Workspace() {
       <section id="opportunities" aria-labelledby="ws-opps" className="card p-4">
         <div className="flex items-baseline justify-between gap-2">
           <h2 id="ws-opps" className="text-lg font-bold">Opportunities {fit.length ? "for you" : ""}</h2>
-          <Link href="/opportunities" className="text-sm font-semibold text-primary underline">See all</Link>
+          <Link href="/opportunities" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline">See all</Link>
         </div>
         {shown.length === 0 ? (
           <p className="mt-2 text-sm text-muted">No open opportunities right now. We post grants, loans, trade fairs and buyer requests as they come.</p>
@@ -69,6 +70,26 @@ export default async function Workspace() {
             </li>
           ))}
         </ul>
+      </section>
+      <section id="calculators" aria-labelledby="ws-calc" className="card scroll-mt-20 p-4">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 id="ws-calc" className="text-lg font-bold">Business calculators</h2>
+          <Link href="/workspace/calculators" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline">Open all</Link>
+        </div>
+        {CALCULATOR_GROUPS.map((g) => (
+          <div key={g.title} className="mt-3">
+            <h3 className="text-sm font-semibold text-muted">{g.title}</h3>
+            <ul className="mt-1 grid gap-x-4 sm:grid-cols-2">
+              {g.items.map((c) => (
+                <li key={c.id}>
+                  <Link href={calculatorHref(c.id)} className="flex min-h-11 items-center justify-between gap-2 border-b border-line py-2 text-[15px] hover:text-primary">
+                    {c.title}<span aria-hidden className="text-muted">›</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </section>
       <Link href="/account" className={buttonClass({ variant: "ghost" })}>My account</Link>
     </TabShell>
