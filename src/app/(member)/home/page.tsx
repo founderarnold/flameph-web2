@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { list } from "@/lib/content";
-import { OPPORTUNITY_KINDS, type Opportunity, dateLabel, matches, notExpired } from "@/lib/growth";
 import { accountVerificationStatus } from "@/lib/account-verification";
 import { DONE_TEXT, type FeedDone } from "@/lib/member-shell";
 import { latestFeedAt } from "@/lib/member-shell-data";
@@ -10,67 +8,62 @@ import { SuggestedMemberCard } from "@/components/shell/MemberCard";
 import { followingIds, suggestedMembers } from "@/lib/suggestions";
 import { memberCompletion } from "@/lib/profile-completion";
 import { FeedFocus } from "@/components/shell/FeedFocus";
+import { decodeCursor, feedFilters } from "@/lib/feed-rules";
+import { activityCards, feedPosts, mergeFeed, pageWindow, postExtras, statsOf } from "@/lib/feed-data";
+import { PostCard } from "@/components/feed/PostCard";
+import { ActivityCard } from "@/components/feed/ActivityCard";
+import { FeedFilters } from "@/components/feed/FeedFilters";
 
 export const metadata = { title: "Home" };
 
-type Deal = { id: string; title: string; supplier: string | null; deadline: string | null; status: string; target_members: number; created_at: string };
-type EventRow = { id: string; title: string; slug: string | null; starts_at: string; city: string | null; type: string; status: string; created_at?: string };
-type Post = { id: string; title: string; slug: string; excerpt: string | null; published_at: string | null };
-type Item = { id: string; at: number; kind: string; title: string; sub?: string; text?: string | null; href: string; external?: boolean; badge?: string };
-
-const day = (iso: string) => new Date(iso).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" });
+type SP = { done?: string; focus?: string; before?: string; industry?: string; chapter?: string; who?: string };
 
 /** The Home feed: the member's landing screen and where every finished action returns. */
-export default async function HomeFeed({ searchParams }: { searchParams: Promise<{ done?: string; focus?: string }> }) {
+export default async function HomeFeed({ searchParams }: { searchParams: Promise<SP> }) {
   const { supabase, user } = await requireUser("/home");
   const sp = await searchParams;
   const done = sp.done && sp.done in DONE_TEXT ? (sp.done as FeedDone) : null;
+  const cursor = decodeCursor(sp.before);
 
-  const [{ data: p }, { data: biz }, { data: verificationData }, { data: opps }, { data: deals }, { data: mine }, events, posts, following, latest] = await Promise.all([
+  const [{ data: p }, { data: biz }, { data: verificationData }, { data: chapterRows }, following, latest] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase.from("businesses").select("*").eq("owner_id", user.id).limit(1).maybeSingle(),
     supabase.rpc("account_verification_status"),
-    supabase.from("opportunities").select("*").eq("published", true).order("created_at", { ascending: false }).limit(50),
-    supabase.from("deals").select("id, title, supplier, deadline, status, target_members, created_at").eq("published", true).neq("status", "closed").order("created_at", { ascending: false }).limit(10),
-    supabase.from("deal_participants").select("deal_id, quantity").eq("user_id", user.id),
-    list<EventRow>({ table: "events", select: "id,title,slug,starts_at,city,type,status,created_at", order: "starts_at", ascending: true }),
-    list<Post>({ table: "posts", select: "id,title,slug,excerpt,published_at", order: "published_at", limit: 5 }),
+    supabase.from("chapters").select("id, name").eq("published", true).order("name").limit(200),
     followingIds(supabase, user.id),
     latestFeedAt(),
   ]);
+  const chapters = (chapterRows ?? []) as { id: string; name: string }[];
+  const filters = feedFilters(sp, chapters.map((c) => c.id));
+  const firstPage = !cursor;
 
-  // 1. Profile completion meter with the exact next steps. Shown until everything is done.
+  // 1. Profile completion meter with the exact next steps. Shown until everything is done (first page only).
   const verification = accountVerificationStatus(verificationData, user);
   const meter = memberCompletion({ profile: p, business: biz, follows: following.size, emailVerified: verification.email_verified });
   const firstRun = p && "onboarded_at" in p && !p.onboarded_at; // false until the 0016 database update is run
 
   // 2. Suggested MSMEs to follow: same chapter, then the member's industries, then same province.
-  const suggested = (await suggestedMembers(user.id, { industries: p?.industries, chapter_id: p?.chapter_id, province: biz?.province ?? p?.province, sector: biz?.sector }, 10))
-    .filter((b) => !following.has(b.owner_id)).slice(0, 6);
+  const suggested = firstPage && !filters.industry && !filters.chapter && !filters.following
+    ? (await suggestedMembers(user.id, { industries: p?.industries, chapter_id: p?.chapter_id, province: biz?.province ?? p?.province, sector: biz?.sector }, 10)).filter((b) => !following.has(b.owner_id)).slice(0, 6)
+    : [];
 
-  // 3. The post stream. Newest first. Every item has an id so a finished action can scroll to it.
-  const joined = new Map(((mine ?? []) as { deal_id: string; quantity: number }[]).map((m) => [m.deal_id, m.quantity]));
-  const member = { province: biz?.province ?? p?.province, sector: biz?.sector, stage: p?.business_stage };
-  const stream: Item[] = [
-    ...((opps ?? []) as Opportunity[]).filter((o) => notExpired(o.deadline)).map((o) => ({
-      id: `opp-${o.id}`, at: new Date(o.created_at).getTime(), kind: OPPORTUNITY_KINDS[o.kind] ?? "Opportunity", title: o.title,
-      sub: [o.organizer, o.deadline && `apply by ${dateLabel(o.deadline)}`].filter(Boolean).join(" · "), text: o.summary,
-      href: "/opportunities", badge: matches(o, member) ? "Fits you" : undefined,
-    })),
-    ...((deals ?? []) as Deal[]).map((d) => ({
-      id: `deal-${d.id}`, at: new Date(d.created_at).getTime(), kind: "Group order", title: d.title,
-      sub: [d.supplier && `Supplier: ${d.supplier}`, d.deadline && `join by ${dateLabel(d.deadline)}`].filter(Boolean).join(" · "),
-      href: `/deals#deal-${d.id}`, badge: joined.has(d.id) ? `You joined (${joined.get(d.id)})` : d.status === "reached" ? "Target reached" : undefined,
-    })),
-    ...events.filter((e) => e.status === "scheduled" && new Date(e.starts_at).getTime() > Date.now()).slice(0, 5).map((e) => ({
-      id: `event-${e.id}`, at: new Date(e.created_at ?? e.starts_at).getTime(), kind: e.type === "webinar" || e.type === "training" ? "Training" : "Event", title: e.title,
-      sub: `${day(e.starts_at)}${e.city ? ` · ${e.city}` : ""}`, href: e.type === "webinar" || e.type === "training" ? "/trainings-webinars" : "/workshops",
-    })),
-    ...posts.map((n) => ({
-      id: `news-${n.slug}`, at: n.published_at ? new Date(n.published_at).getTime() : 0, kind: "Negosyo News", title: n.title,
-      sub: n.published_at ? day(n.published_at) : undefined, text: n.excerpt, href: `/news/${n.slug}`,
-    })),
-  ].sort((a, b) => b.at - a.at);
+  // 3. The feed: one page of member posts (PAGE_SIZE), with the ecosystem activity from the same stretch of time.
+  const q = { cursor, ...filters, followIds: following };
+  const viewer = { id: user.id, province: biz?.province ?? p?.province, sector: biz?.sector, stage: p?.business_stage, chapter_id: p?.chapter_id, industries: p?.industries };
+  const page = await feedPosts(supabase, q);
+  const [cards, extras] = await Promise.all([
+    activityCards(supabase, viewer, q, pageWindow(cursor?.at ?? null, page.posts, Boolean(page.next))),
+    postExtras(supabase, page.posts.map((x) => x.id)),
+  ]);
+  const entries = mergeFeed(page.posts, cards);
+
+  const keep = new URLSearchParams();
+  if (filters.industry) keep.set("industry", filters.industry);
+  if (filters.chapter) keep.set("chapter", filters.chapter);
+  if (filters.following) keep.set("who", "following");
+  const here = `/home${keep.size || sp.before ? `?${new URLSearchParams({ ...Object.fromEntries(keep), ...(sp.before ? { before: sp.before } : {}) })}` : ""}`;
+  const older = page.next ? `/home?${new URLSearchParams({ ...Object.fromEntries(keep), before: page.next })}` : null;
+  const filterName = [filters.industry, chapters.find((c) => c.id === filters.chapter)?.name, filters.following && "people you follow"].filter(Boolean).join(" · ");
 
   const first = (p?.full_name ?? "").trim().split(/\s+/)[0];
 
@@ -83,7 +76,7 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
         <div role="status" className="sticky top-16 z-30 rounded-xl shadow-md"><Notice tone="ok">{DONE_TEXT[done]}</Notice></div>
       )}
 
-      {firstRun && (
+      {firstPage && firstRun && (
         <section aria-labelledby="feed-welcome" className="card border-primary/30 bg-primary-soft p-4 sm:p-5">
           <h2 id="feed-welcome" className="text-lg font-bold">{first ? `Welcome, ${first}!` : "Welcome to FLAME PH!"} Let&apos;s set you up</h2>
           <p className="mt-1 text-sm">Four quick steps: your industries, your chapter, members to follow, and your profile.</p>
@@ -91,7 +84,7 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
         </section>
       )}
 
-      {!meter.complete && (
+      {firstPage && !meter.complete && (
         <section aria-labelledby="feed-meter" data-feed="completion" className="card p-4 sm:p-5">
           <div className="flex items-baseline justify-between gap-2">
             <h2 id="feed-meter" className="text-lg font-bold">{first && !firstRun ? `${first}, your profile is ` : "Your profile is "}{meter.percent}% complete</h2>
@@ -129,30 +122,40 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
         </section>
       )}
 
-      <section aria-labelledby="feed-stream">
-        <h2 id="feed-stream" className="text-lg font-bold">Latest for you</h2>
-        <div className="mt-3 rounded-2xl border border-dashed border-line p-4 text-sm text-muted">
-          Member posts are coming soon. For now your feed shows opportunities, group orders, events and Negosyo News.{" "}
-          <Link href="/new-post" className="font-semibold text-primary underline">New Post</Link>
+      <section aria-labelledby="feed-stream-h" id="feed-stream" className="scroll-mt-24">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 id="feed-stream-h" className="text-lg font-bold">{cursor ? "Older posts" : "Latest for you"}</h2>
+          {cursor && <Link href={keep.size ? `/home?${keep}` : "/home"} className="text-sm font-semibold text-primary underline">Back to newest</Link>}
         </div>
-        {stream.length === 0 ? (
-          <p className="mt-4 text-muted">Nothing new yet. Check back soon.</p>
+        {firstPage && (
+          <Link href="/new-post" className="card mt-3 flex min-h-14 items-center gap-3 p-3 text-muted hover:border-primary">
+            <span aria-hidden className="grid size-9 place-items-center rounded-full bg-primary-soft text-primary">✎</span>
+            <span>Share an update, a question or an offer…</span>
+          </Link>
+        )}
+        <div className="mt-3"><FeedFilters industry={filters.industry} chapter={filters.chapter} following={filters.following} chapters={chapters} myChapter={p?.chapter_id} /></div>
+        {filterName && <p className="mt-2 text-sm text-muted" role="status">Showing posts and activity for: <strong className="text-fg">{filterName}</strong></p>}
+        {!page.available && (
+          <p className="mt-3 rounded-2xl border border-dashed border-line p-4 text-sm text-muted">Member posts open after FLAME PH finishes a database update. Your feed shows group orders, opportunities, events and Negosyo News meanwhile.</p>
+        )}
+        {entries.length === 0 ? (
+          <div className="card mt-3 p-5">
+            <p className="font-semibold">{filterName ? "Nothing here yet for this filter." : "Nothing new yet."}</p>
+            <p className="mt-1 text-sm text-muted">Be the first to post{filters.industry ? ` in ${filters.industry}` : ""}.</p>
+            <Link href={`/new-post${filters.industry ? `?industry=${encodeURIComponent(filters.industry)}` : ""}`} className={`${buttonClass({ variant: "primary" })} mt-3`}>Write a post</Link>
+          </div>
         ) : (
-          <ul className="mt-3 space-y-3">
-            {stream.map((it) => (
-              <li key={it.id} id={it.id} className="card scroll-mt-24 p-4">
-                <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
-                  <span className="rounded-full bg-bg-soft px-2.5 py-0.5 text-muted">{it.kind}</span>
-                  {it.badge && <span className="rounded-full bg-ok-soft px-2.5 py-0.5 text-ok">{it.badge}</span>}
-                </div>
-                <h3 className="mt-2 font-bold"><Link href={it.href} className="hover:underline">{it.title}</Link></h3>
-                {it.sub && <p className="text-sm text-muted">{it.sub}</p>}
-                {it.text && <p className="mt-1 line-clamp-3 text-[15px]">{it.text}</p>}
-                <Link href={it.href} className={`${buttonClass({ variant: "ghost", size: "sm" })} mt-2 -ml-2`}>Open</Link>
+          <ul className="mt-3 space-y-3" aria-label="Feed">
+            {entries.map((e) => (
+              <li key={e.type === "post" ? e.post.id : e.card.id}>
+                {e.type === "post"
+                  ? <PostCard post={e.post} stats={statsOf(extras.stats, e.post.id)} comments={extras.comments.get(e.post.id) ?? []} viewerId={user.id} back={here} />
+                  : <ActivityCard card={e.card} back={`${here}${here.includes("?") ? "&" : "?"}focus=${e.card.id}`} />}
               </li>
             ))}
           </ul>
         )}
+        {older && <Link href={older} className={`${buttonClass({ variant: "outline", block: true })} mt-4`} rel="next">Show older posts</Link>}
       </section>
     </div>
   );

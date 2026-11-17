@@ -12,7 +12,8 @@
     { "label": "Become a Chapter Leader", "href": "/get-involved/chapter-leader" },
     { "label": "Chapter Activities & Events", "href": "/news" },
     { "label": "Negosyo News", "href": "/news" },
-    { "label": "FLAME Talks with MSMEs", "href": "/negosyo-talks" }
+    { "label": "FLAME Talks with MSMEs", "href": "/negosyo-talks" },
+    { "label": "Community Forum", "href": "/forum" }
   ]},
   { "key": "benefits", "label": "Benefits", "fil": "Mga Benepisyo", "items": [
     { "label": "Free Benefits", "href": "/benefits" },

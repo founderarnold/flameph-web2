@@ -1,24 +1,28 @@
-import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { TabShell, BackToFeed } from "@/components/shell/TabShell";
+import { INDUSTRY_NAMES } from "@/lib/industries";
+import { isPostKind } from "@/lib/feed-rules";
+import { Composer } from "@/components/feed/Composer";
 
 export const metadata = { title: "New Post" };
 
-/** New Post tab. A shell in this phase; posting arrives in Phase 4 and will return the member to the feed, scrolled to the new post. */
-export default async function NewPostTab() {
-  await requireUser("/new-post");
+/** New Post tab: opens the composer directly. Publishing returns the member to the Home feed, scrolled to the new post. */
+export default async function NewPostTab({ searchParams }: { searchParams: Promise<{ kind?: string; industry?: string }> }) {
+  const { supabase, user } = await requireUser("/new-post");
+  const sp = await searchParams;
+  const [{ data: p }, { data: biz }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase.from("businesses").select("sector, subsector").eq("owner_id", user.id).limit(1).maybeSingle(),
+  ]);
+  // Start on the industry the member works in: the one asked for, their business's, or the first they picked.
+  const picked = [sp.industry, biz?.sector, ...((p?.industries as string[] | undefined) ?? [])].find((x) => x && INDUSTRY_NAMES.includes(x));
+  const category = picked ? (picked === biz?.sector && biz?.subsector ? `${picked}||${biz.subsector}` : picked) : "";
   return (
-    <TabShell title="New Post" fil="Ibahagi sa komunidad" soon="Posting opens in the next update"
-      intro="Soon you can share an update, a product, a question or a request with other FLAME PH members. Your post will appear in your Home feed.">
-      <div className="card space-y-3 p-5">
-        <p className="font-semibold">While you wait, you can:</p>
-        <ul className="list-disc space-y-1 pl-5 text-[15px]">
-          <li><Link href="/account/business" className="text-primary underline">Update your business page</Link></li>
-          <li><Link href="/opportunities" className="text-primary underline">Look at opportunities</Link></li>
-          <li><Link href="/bizconsult-ai" className="text-primary underline">Ask Ka-FLAME AI</Link></li>
-        </ul>
+    <div className="mx-auto max-w-2xl">
+      <h1 className="text-2xl font-extrabold">New Post</h1>
+      <p className="mb-4 text-muted"><span lang="fil">Ibahagi sa komunidad.</span> Your post appears in the Home feed and the forum.</p>
+      <div className="card p-4 sm:p-5">
+        <Composer kind={isPostKind(sp.kind) ? sp.kind : "update"} category={category} />
       </div>
-      <BackToFeed />
-    </TabShell>
+    </div>
   );
 }

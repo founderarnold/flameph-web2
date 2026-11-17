@@ -32,7 +32,7 @@ export default async function GroupOrderTab() {
           {deals.map((d) => {
             const open = d.status === "open" && notExpired(d.deadline);
             return (
-              <li key={d.id} className="card p-4">
+              <li key={d.id} id={`deal-${d.id}`} className="card scroll-mt-24 p-4">
                 <h2 className="font-bold">{d.title}</h2>
                 <p className="text-sm text-muted">{[d.supplier && `Supplier: ${d.supplier}`, d.deal_price !== null && `${peso(d.deal_price)}${d.unit ? ` / ${d.unit}` : ""}`, d.deadline && `until ${dateLabel(d.deadline)}`].filter(Boolean).join(" · ")}</p>
                 <p className="mt-1 text-sm font-semibold">{count.get(d.id) ?? 0} of {d.target_members} members joined</p>

@@ -89,7 +89,7 @@ test("onboarding: four steps in order, each skippable; new members start there",
 
 test("Home shows the completion meter until done, and follow buttons", async () => {
   const home = await read("src/app/(member)/home/page.tsx");
-  assert.match(home, /\{!meter\.complete && \(/);
+  assert.match(home, /\{firstPage && !meter\.complete && \(/);
   assert.match(home, /SuggestedMemberCard/);
   assert.match(home, /href="\/members"/);
 });

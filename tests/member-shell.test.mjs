@@ -63,13 +63,16 @@ test("five tabs in the owner's order", () => {
   assert.equal(shell.activeTab("/m/pos")?.key, "pos");
 });
 
-test("finished actions return to the feed, scrolled to the result", () => {
+test("finished actions return to the feed, scrolled to the result", async () => {
   assert.equal(shell.feedResult("group-order-joined", "deal-1"), "/home?done=group-order-joined&focus=deal-1");
   assert.equal(shell.feedResult("posted"), "/home?done=posted");
   assert.match(actions, /redirect\(feedResult\(fd\.get\("leave"\) === "1" \? "group-order-left" : "group-order-joined", `deal-\$\{deal\}`\)\)/);
   assert.match(actions, /redirect\(feedResult\("profile"\)\)/);
-  assert.match(feed, /id=\{it\.id\}/);
-  assert.match(feed, /id: `deal-\$\{d\.id\}`/);
+  // Every feed item carries an id the result can scroll to: posts (post-<id>) and activity cards (deal-<id>, member-<id>…).
+  assert.match(feed, /<ActivityCard card=\{e\.card\}/);
+  assert.match(await read("src/components/feed/ActivityCard.tsx"), /id=\{card\.id\}/);
+  assert.match(await read("src/components/feed/PostCard.tsx"), /id=\{`post-\$\{post\.id\}`\}/);
+  assert.match(await read("src/lib/feed-data.ts"), /id: `deal-\$\{d\.id\}`/);
 });
 
 test("signed-in members land on the feed; visitors keep the public site", () => {
