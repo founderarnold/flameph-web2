@@ -1,6 +1,7 @@
 import { adminContext } from "@/lib/admin/guard";
 import { SyncedTableScroll } from "@/components/admin/SyncedTableScroll";
 import { deleteMember, setRole, setMemberStatus } from "../actions";
+import { ROLE_LABELS } from "@/lib/moderation";
 
 type RoleRow = { user_id: string; role: string };
 type Chapter = { id: string; name: string };
@@ -11,14 +12,14 @@ function RoleControls({ memberId, roles, chapters, isSuper }: { memberId: string
       {roles.map((role) => (
         <form key={role.role} action={setRole}>
           <input type="hidden" name="user_id" value={memberId} /><input type="hidden" name="role" value={role.role} /><input type="hidden" name="op" value="remove" />
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">{role.role}{isSuper && <button className="min-h-6 min-w-6" aria-label={`Remove ${role.role}`}>×</button>}</span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">{ROLE_LABELS[role.role] ?? role.role}{isSuper && <button className="min-h-6 min-w-6" aria-label={`Remove ${ROLE_LABELS[role.role] ?? role.role}`}>×</button>}</span>
         </form>
       ))}
     </div>
     {isSuper && (
       <form action={setRole} className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
         <input type="hidden" name="user_id" value={memberId} /><input type="hidden" name="op" value="add" />
-        <select name="role" className="input min-h-10 py-1 text-sm" aria-label="Role"><option value="editor">editor</option><option value="chapter_leader">chapter_leader</option><option value="admin">admin</option><option value="super_admin">super_admin</option></select>
+        <select name="role" className="input min-h-10 py-1 text-sm" aria-label="Role"><option value="editor">Editor (content)</option><option value="chapter_leader">Chapter head (moderates their chapter)</option><option value="admin">Admin</option><option value="super_admin">Founder</option></select>
         <select name="chapter_id" className="input min-h-10 py-1 text-sm" aria-label="Chapter (for chapter leaders)"><option value="">(chapter)</option>{chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.name}</option>)}</select>
         <button className="btn btn-outline min-h-10 px-3 py-1 text-sm sm:col-span-2 xl:col-span-1">Add role</button>
       </form>

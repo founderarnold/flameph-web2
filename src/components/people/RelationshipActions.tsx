@@ -1,6 +1,8 @@
 import { FollowButton } from "@/components/shell/FollowButton";
 import { acceptFriend, removeFriend, sendFriendRequest, setBlock, setMute } from "@/app/account/people-actions";
+import Link from "next/link";
 import type { Relationship } from "@/lib/people";
+import { reportHref } from "@/components/feed/PostCard";
 
 const btn = "btn min-h-11 w-full px-3 text-sm";
 
@@ -66,7 +68,7 @@ export function RelationshipActions({ memberId, name, rel, back }: { memberId: s
         </form>
       )}
       <details>
-        <summary className="min-h-11 flex items-center cursor-pointer text-sm text-muted">More: mute or block</summary>
+        <summary className="min-h-11 flex items-center cursor-pointer text-sm text-muted">More: mute, block or report</summary>
         <div className="mt-2 grid gap-2">
           <form action={setMute}>
             <Hidden memberId={memberId} back={back} extra={{ on: rel.muted ? "0" : "1" }} />
@@ -74,6 +76,7 @@ export function RelationshipActions({ memberId, name, rel, back }: { memberId: s
               {rel.muted ? "Unmute" : "Mute (hide their posts from my feed)"}
             </button>
           </form>
+          <Link href={reportHref("member", memberId, back)} className={`${btn} btn-outline`}>Report {name}</Link>
           <details>
             <summary className={`${btn} btn-outline list-none cursor-pointer`}>Block {name}</summary>
             <form action={setBlock} className="mt-2 grid gap-2">

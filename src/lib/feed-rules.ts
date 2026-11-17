@@ -65,6 +65,8 @@ export const POST_ERRORS: Record<string, string> = {
   blocked: "You can't connect with this member.",
   friend_rate_limit: "You've sent a lot of Friend requests today. Please try again tomorrow.",
   no_such_group: "That group doesn't exist.",
+  moderator_mute: "A moderator has paused your posting for now. See Notices from moderators in your account.",
+  blocked_words: "Your post uses words that aren't allowed in the community. Please change them and try again.",
   failed: "Something went wrong. Please try again.",
 };
 export const postErrorCode = (message?: string | null) => {

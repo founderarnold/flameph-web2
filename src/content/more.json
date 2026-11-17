@@ -136,6 +136,7 @@
       "items": [
         { "label": "Set up your profile", "href": "/welcome" },
         { "label": "Settings and privacy", "href": "/account/settings" },
+        { "label": "Notices from moderators", "href": "/account/notices" },
         { "label": "Edit profile", "href": "/account/profile" },
         { "label": "Change password", "href": "/account/password" }
       ]
@@ -168,7 +169,8 @@
     "/m/fulfillment": "Member version of /fulfillment (same address for members).",
     "/m/pos": "Member version of /pos (same address for members).",
     "/posts/[id]": "One member post with its comments, opened from the feed, the forum or a shared link.",
-    "/groups/[slug]": "One group's page, opened from Groups."
+    "/groups/[slug]": "One group's page, opened from Groups.",
+    "/report": "The report form, opened from the Report button on a post, comment, member or listing."
   },
   "notListedPrefixes": {
     "/admin/": "Admin sub-pages are inside the Admin console.",

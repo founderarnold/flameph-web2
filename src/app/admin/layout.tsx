@@ -7,11 +7,19 @@ export const metadata = { title: "Admin", robots: { index: false } };
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { roles } = await requireStaff();
   const isAdmin = roles.includes("super_admin") || roles.includes("admin");
+  const isModerator = isAdmin || roles.includes("chapter_leader");
   const tables = ADMIN_TABLES.filter((t) => t.roles.some((r) => roles.includes(r)));
   const Menu = () => (
     <ul className="space-y-0.5 text-[15px]">
       <li><Link className="block rounded-lg px-2 py-2 font-bold hover:bg-bg-soft" href="/admin">Dashboard</Link></li>
       <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/design-system">Design system</Link></li>
+      {isModerator && <>
+        <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Moderation</li>
+        <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/moderation">Moderation queue</Link></li>
+        <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/moderation/log">Audit log</Link></li>
+        {roles.includes("super_admin") && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/moderation/appeals">Appeals</Link></li>}
+        {roles.includes("super_admin") && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/moderation/policy">Policy</Link></li>}
+      </>}
       {isAdmin && <>
         <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/submissions">Form inbox</Link></li>
         <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Real estate</li>

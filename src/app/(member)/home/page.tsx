@@ -34,7 +34,11 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
     followingIds(supabase, user.id),
     latestFeedAt(),
   ]);
-  const [muted, blocked, friends] = await Promise.all([mutedIds(supabase, user.id), blockedIds(supabase, user.id), friendLists(supabase, user.id)]);
+  const [muted, blocked, friends, notices] = await Promise.all([
+    mutedIds(supabase, user.id), blockedIds(supabase, user.id), friendLists(supabase, user.id),
+    supabase.rpc("my_moderation_notices").then((r) => (r.error ? [] : (r.data ?? []) as { created_at: string }[])),
+  ]);
+  const recentNotices = notices.filter((n) => Date.now() - new Date(n.created_at).getTime() < 14 * 86400000).length;
   const chapters = (chapterRows ?? []) as { id: string; name: string }[];
   const filters = feedFilters(sp, chapters.map((c) => c.id));
   const firstPage = !cursor;
@@ -111,6 +115,13 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
           </ul>
           {meter.next.length > 3 && <p className="mt-1 text-sm text-muted">{meter.next.length - 3} more after these.</p>}
         </section>
+      )}
+
+      {firstPage && recentNotices > 0 && (
+        <Link href="/account/notices" data-feed="moderation-notice" className="card flex min-h-14 items-center justify-between gap-3 border-warn/40 bg-warn-soft p-4">
+          <span><span className="block font-bold">You have a notice from FLAME PH moderators</span><span className="block text-sm text-muted">See what happened and appeal if you disagree</span></span>
+          <span aria-hidden className="text-primary">→</span>
+        </Link>
       )}
 
       {firstPage && friends.received.length > 0 && (

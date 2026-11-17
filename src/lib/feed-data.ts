@@ -51,6 +51,7 @@ export const statsOf = (m: Map<string, PostStats>, id: string) => m.get(id) ?? E
 /** One page of member posts, newest first, PAGE_SIZE at a time. available is false until the 0017 database update is run. */
 export async function feedPosts(supabase: SupabaseClient, q: FeedQuery, pageSize = PAGE_SIZE) {
   if (q.following && q.followIds.size === 0) return { posts: [] as FeedPost[], next: null as string | null, available: true };
+  let hideInGroup = Boolean(q.group); // posts a moderator hid in the group (0019) stay out of the group page
   const build = (cols: string) => {
     let req = supabase.from("feed_posts").select(cols).neq("status", "hidden")
       .order("created_at", { ascending: false }).order("id", { ascending: false }).limit(pageSize + 1);
@@ -58,12 +59,14 @@ export async function feedPosts(supabase: SupabaseClient, q: FeedQuery, pageSize
     if (q.industry) req = req.eq("category", q.industry);
     if (q.chapter) req = req.eq("chapter_id", q.chapter);
     if (q.group) req = req.eq("group_id", q.group);
+    if (hideInGroup) req = req.eq("group_hidden", false);
     if (q.following) req = req.in("author_id", [...q.followIds].slice(0, 500));
     // Muted members' posts stay out of this member's feed (they can still be opened directly).
     if (q.muted?.size) req = req.not("author_id", "in", `(${[...q.muted].slice(0, 500).join(",")})`);
     return req;
   };
   let { data, error } = await build(POST_COLUMNS);
+  if (hideInGroup && error && /group_hidden/.test(error.message)) { hideInGroup = false; ({ data, error } = await build(POST_COLUMNS)); }
   if (missing0018(error)) {
     if (q.group) return { posts: [] as FeedPost[], next: null, available: false };
     ({ data, error } = await build(BASE_COLUMNS));

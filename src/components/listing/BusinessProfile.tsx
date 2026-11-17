@@ -113,6 +113,7 @@ export async function BusinessProfile({ business, review, basePath, note }: { bu
           </div>
           {noteText(note) && <p role="status" className="mt-3 rounded-xl bg-ok-soft p-3 text-sm">{noteText(note)}</p>}
           {user && !isOwner && rel && <div className="mt-3 max-w-sm"><RelationshipActions memberId={b.owner_id} name={b.name} rel={rel} back={`${basePath}/${b.slug}`} /></div>}
+          {user && !isOwner && <p className="mt-2"><Link href={`/report?${new URLSearchParams({ type: "listing", id: b.id, back: `${basePath}/${b.slug}` })}`} className="inline-flex min-h-11 items-center text-sm text-muted underline">Report this listing</Link></p>}
           {hiddenLabels.length > 0 && <p className="mt-3 text-sm text-muted">This business shares its {hiddenLabels.join(", ")} with FLAME PH members only. <Link href={`/login?next=${encodeURIComponent(`${basePath}/${b.slug}`)}`} className="font-semibold underline">Log in</Link> or <Link href="/join" className="font-semibold underline">join free</Link> to see them.</p>}
           {isOwner && <p className="mt-4 text-sm"><Link href="/account/business" className="font-bold text-mph underline">Edit your listing</Link> · <Link href="/account/inquiries" className="font-bold text-mph underline">See your inquiries</Link></p>}
         </div>
