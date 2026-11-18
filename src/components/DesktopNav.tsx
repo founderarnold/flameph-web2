@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { viaGo } from "@/lib/ecosystem";
 import { useEffect, useRef, useState } from "react";
 import type { NavGroup } from "@/lib/nav";
 import type { Lang } from "@/lib/i18n";
@@ -38,12 +39,12 @@ export function DesktopNav({ groups, lang }: { groups: NavGroup[]; lang: Lang })
                 <ul className="card w-72 p-2 shadow-lg">
                   {g.items.map((it) => (
                     <li key={`${it.label}-${it.href}`}>
-                      {it.external ? (
+                      {it.external && viaGo(it.href, it.label) === it.href ? (
                         <a href={it.href} target="_blank" rel="noopener" className="flex min-h-11 items-center justify-between rounded-lg px-3 py-2 text-[15px] hover:bg-bg-soft" onClick={() => setOpen(null)}>
                           {it.label} <span aria-label="opens in a new tab">↗</span>
                         </a>
                       ) : (
-                        <Link href={it.href} className="flex min-h-11 items-center rounded-lg px-3 py-2 text-[15px] hover:bg-bg-soft" onClick={() => setOpen(null)}>
+                        <Link href={viaGo(it.href, it.label)} className="flex min-h-11 items-center rounded-lg px-3 py-2 text-[15px] hover:bg-bg-soft" onClick={() => setOpen(null)}>
                           {it.label}
                         </Link>
                       )}

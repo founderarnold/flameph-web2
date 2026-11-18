@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { viaGo } from "@/lib/ecosystem";
 import { requireUser, isStaffRole } from "@/lib/auth";
 import MORE from "@/content/more.json";
 import { TabShell } from "@/components/shell/TabShell";
@@ -26,12 +27,12 @@ export default async function MoreTab() {
             <ul className="mt-2 grid gap-x-4 sm:grid-cols-2">
               {g.items.map((it) => (
                 <li key={it.href}>
-                  {it.external ? (
+                  {it.external && viaGo(it.href, it.label) === it.href ? (
                     <a href={it.href} target="_blank" rel="noopener" className="flex min-h-11 items-center justify-between gap-2 border-b border-line py-2 text-[15px] hover:text-primary">
                       {it.label}<span aria-hidden className="text-muted">↗</span><span className="sr-only">(opens a new tab)</span>
                     </a>
                   ) : (
-                    <Link href={it.href} className="flex min-h-11 items-center justify-between gap-2 border-b border-line py-2 text-[15px] hover:text-primary">
+                    <Link href={viaGo(it.href, it.label)} className="flex min-h-11 items-center justify-between gap-2 border-b border-line py-2 text-[15px] hover:text-primary">
                       {it.label}<span aria-hidden className="text-muted">›</span>
                     </Link>
                   )}
