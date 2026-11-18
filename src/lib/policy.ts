@@ -31,8 +31,8 @@ export const CONSENTS: ConsentDef[] = [
   },
   {
     key: "ecosystem_badge", n: 3, required: false, title: "Badge across the ecosystem",
-    en: "Share my verified status, badge level, confirmed record count and category mix, and account creation date with marketplaceph.com and negosyodepot.com, so my badge shows there. Turning this off removes my badge from those sites.",
-    tl: "Ibahagi sa marketplaceph.com at negosyodepot.com ang verified status, badge level, bilang at uri ng confirmed records, at petsa ng pagkakagawa ng account ko, para lumabas doon ang badge ko. Kapag pinatay ito, aalisin ang badge ko sa mga site na iyon.",
+    en: "Share my verified status, badge level, confirmed record count and category mix, and account creation date with marketplaceph.com and negosyodepot.com, so my badge shows there. Turning this off removes my badge from those sites within 15 minutes.",
+    tl: "Ibahagi sa marketplaceph.com at negosyodepot.com ang verified status, badge level, bilang at uri ng confirmed records, at petsa ng pagkakagawa ng account ko, para lumabas doon ang badge ko. Kapag pinatay ito, aalisin ang badge ko sa mga site na iyon sa loob ng 15 minuto.",
   },
   {
     key: "vetting", n: 4, required: false, title: "Business vetting",

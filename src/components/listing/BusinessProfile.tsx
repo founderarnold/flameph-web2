@@ -49,7 +49,7 @@ export async function BusinessProfile({ business, review, basePath, note }: { bu
     list<B>({ table: "businesses", select: "id,name,slug,sector,city,province", filters: PUBLIC_BUSINESS_FILTERS, order: "created_at" }),
   ]);
   // Registration numbers the owner chose to show (never the TIN), the chapter, and whether this member follows the owner.
-  const [regRes, chapters, rel, sitesRes, rep] = await Promise.all([
+  const [regRes, chapters, rel, sitesRes, rep, ageRes] = await Promise.all([
     (supabase ?? pub)?.rpc("business_registration_view", { bid: b.id }),
     b.chapter_id ? list<{ id: string; name: string; slug: string | null }>({ table: "chapters", select: "id,name,slug" }) : Promise.resolve([]),
     user && supabase && user.id !== business.owner_id ? relationship(supabase, user.id, business.owner_id) : Promise.resolve(null as Relationship | null),
@@ -57,8 +57,12 @@ export async function BusinessProfile({ business, review, basePath, note }: { bu
     (supabase ?? pub)?.from("member_minisites").select("slug, name").eq("owner_id", b.owner_id).eq("published", true).order("updated_at", { ascending: false }).limit(3),
     // Reputation from confirmed transaction records (only counted ones, never amounts). Null when the owner keeps switch 2 off.
     supabase ?? pub ? reputation((supabase ?? pub)!, b.owner_id) : Promise.resolve(null),
+    // Terms section 11: the flameph.org badge shows after 1 month of account age (checked in the database, 0025).
+    (supabase ?? pub)?.rpc("badge_age_ok", { uid: b.owner_id, p_months: 1 }),
   ]);
-  const badge = rep && rep.counted > 0 ? badgeLevel(rep.counted) : null;
+  // Before database update 0025 the check isn't there yet; then the badge shows as it did before.
+  const oldEnough = ageRes?.error ? true : ageRes?.data === true;
+  const badge = rep && rep.counted > 0 && oldEnough ? badgeLevel(rep.counted) : null;
   const topTags = rep ? Object.entries(rep.tags).sort((x, y) => y[1] - x[1]).slice(0, 3) : [];
   const minisites = (sitesRes?.data ?? []) as { slug: string; name: string }[];
   const reg = (Array.isArray(regRes?.data) ? regRes.data[0] : null) as Record<string, string | null> | null;

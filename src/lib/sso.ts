@@ -11,16 +11,28 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const HUB = "flameph";
 
-/** `secretEnv`: a site that has its own shared secret instead of SSO_SECRET (the same value is set in both projects). */
-type Client = { callback: string; origins: string[]; secretEnv?: string };
+/**
+ * `secretEnv`: a site that has its own shared secret instead of SSO_SECRET (the same value is set in both projects).
+ * `legacySecret`: until the site's own secret is set, the old shared SSO_SECRET still works (Phase 10A changeover).
+ * `v2`: the site uses one-time tickets bound to the visitor's browser (Phase 10A) instead of tokens in the address.
+ */
+type Client = { callback: string; origins: string[]; secretEnv?: string; legacySecret?: boolean; v2?: boolean };
 export const CLIENTS: Record<string, Client> = {
   flamepos: {
     callback: "https://pos.flameph.org/auth/flame",
     origins: ["https://pos.flameph.org"],
     secretEnv: "SSO_SECRET_FLAMEPOS",
   },
-  marketplaceph: { callback: "https://www.marketplaceph.com/auth/flame", origins: ["https://www.marketplaceph.com", "https://marketplaceph.com"] },
-  negosyodepot: { callback: "https://www.negosyodepot.com/auth/flame", origins: ["https://www.negosyodepot.com", "https://negosyodepot.com"] },
+  marketplaceph: {
+    callback: "https://www.marketplaceph.com/auth/flame",
+    origins: ["https://www.marketplaceph.com", "https://marketplaceph.com"],
+    secretEnv: "SSO_SECRET_MARKETPLACEPH", legacySecret: true, v2: true,
+  },
+  negosyodepot: {
+    callback: "https://www.negosyodepot.com/auth/flame",
+    origins: ["https://www.negosyodepot.com", "https://negosyodepot.com"],
+    secretEnv: "SSO_SECRET_NEGOSYODEPOT", legacySecret: true, v2: true,
+  },
   managerspizza: {
     callback: "https://www.managerspizza.com/auth/flame",
     origins: ["https://www.managerspizza.com", "https://managerspizza.com"],
@@ -36,11 +48,14 @@ export const CLIENTS: Record<string, Client> = {
 export type SsoClaims = { iss: string; aud: string; email: string; name?: string; iat: number; exp: number };
 
 /** The secret shared with one site (its own, or SSO_SECRET). */
+const strong = (s: string | undefined) => (s && s.length >= 32 ? s : null); // refuse to run with a missing or weak secret
 const secret = (client?: string) => {
-  const env = (client && CLIENTS[client]?.secretEnv) || "SSO_SECRET";
-  const s = process.env[env];
-  return s && s.length >= 32 ? s : null; // refuse to run with a missing or weak secret
+  const c = client ? CLIENTS[client] : undefined;
+  if (!c?.secretEnv) return strong(process.env.SSO_SECRET);
+  // A site's own secret, once set, is the only one accepted for it (so the other site can't pass as it).
+  return strong(process.env[c.secretEnv]) ?? (c.legacySecret ? strong(process.env.SSO_SECRET) : null);
 };
+export const isV2 = (client: string) => !!CLIENTS[client]?.v2;
 export const ssoEnabled = (client?: string) => secret(client) !== null;
 /** The site at the other end of a token: the audience when the hub signs, the issuer when a site signs. */
 const peer = (c: { iss?: string; aud: string }) => (c.aud === HUB ? c.iss : c.aud);
@@ -121,4 +136,13 @@ export function verifySiteMessage(client: string, purpose: string, token: string
   } catch {
     return null;
   }
+}
+
+/** Signs a message from this hub to one site (a notice such as "drop this member's badge"). Same format as site messages. */
+export function signHubMessage(client: string, purpose: string, claims: Record<string, unknown>, ttlSeconds = 120): string | null {
+  const key = secret(client);
+  if (!key || !/^[a-z-]+$/.test(purpose)) return null;
+  const now = Math.floor(Date.now() / 1000);
+  const body = b64(JSON.stringify({ ...claims, iss: HUB, aud: client, typ: purpose, iat: now, exp: now + ttlSeconds }));
+  return `v1.${body}.${b64(mac(key, `${purpose}.${body}`))}`;
 }

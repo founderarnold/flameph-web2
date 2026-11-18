@@ -9,6 +9,7 @@ import { sendEmail, NOTIFY_TO } from "@/lib/email";
 import { FEED, feedResult } from "@/lib/member-shell";
 import { createAdminClient } from "@/lib/supabase/server";
 import { purgeMemberDocs } from "@/lib/vetting-server";
+import { notifySites } from "@/lib/ecosystem-sso";
 
 /** Saves the switches from the sign-in prompt or the Settings page. Only changed switches add a row. */
 export async function saveConsents(fd: FormData) {
@@ -26,6 +27,12 @@ export async function saveConsents(fd: FormData) {
   if (changed.includes("vetting") && !choices.vetting) {
     const admin = createAdminClient();
     if (admin) await purgeMemberDocs(admin, user.id, "consent_withdrawn");
+  }
+  // Turning off switch 3 removes the badge from MarketplacePH and NegosyoDepot. The database stops sharing it at once;
+  // this tells the sites to drop what they hold now (their own 10-minute re-check is the fallback; promise: 15 minutes).
+  if (changed.includes("ecosystem_badge") && !choices.ecosystem_badge) {
+    const admin = createAdminClient();
+    if (admin) await notifySites(admin, user.id, "consent_off_notice");
   }
   // Turning off switch 1 is a request to close the account (Terms, section 16). Tell the team so a person handles it.
   if (changed.includes("terms") && !choices.terms && state.terms?.granted) {
