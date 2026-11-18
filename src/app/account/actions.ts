@@ -91,7 +91,9 @@ export async function joinDeal(fd: FormData) {
   revalidatePath("/account");
   revalidatePath("/home");
   // Back to the feed, scrolled to the group order. If it did not go through, stay on Buy Together with the error.
-  if (error) redirect(`/deals?error=1#deal-${deal}`);
+  // Group Order pages send their own address back, so a refused join (deadline passed, already sent) stays there.
+  const back = s(fd.get("back"), 80);
+  if (error) redirect(/^\/group-order(\/[0-9a-f-]{36})?$/.test(back) ? `${back}?error=join#deal-${deal}` : `/deals?error=1#deal-${deal}`);
   redirect(feedResult(fd.get("leave") === "1" ? "group-order-left" : "group-order-joined", `deal-${deal}`));
 }
 

@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { notify } from "@/lib/notify";
 import { memberCards } from "@/lib/people";
 import { cleanTags, DETAILS_MAX, parseAmount, recordErrorCode, RECORD_CATEGORIES, TERMS_MAX, TITLE_MAX } from "@/lib/records";
+import { fulfillmentTitle } from "@/lib/fulfillment";
 
 // Requests, quotes and transaction records. Every rule (consent 2, active account, mute, block, keyword filter,
 // limits, who may see and change what, both sides confirming) is enforced by the database (0022); these actions
@@ -40,6 +41,30 @@ export async function sendRequest(fd: FormData) {
     });
   }
   revalidatePath("/requests");
+  redirect(`/requests/${data!.id}?done=sent`);
+}
+
+/** A fulfillment request from the Fulfillment tab: the same request, titled "Fulfillment: <type> · <what>". */
+export async function sendFulfillmentRequest(fd: FormData) {
+  const { supabase, user } = await requireUser("/fulfillment");
+  const to = uuid(s(fd.get("provider_id"), 40));
+  const title = fulfillmentTitle(s(fd.get("type"), 20), s(fd.get("what"), 100));
+  const category = s(fd.get("category"), 60);
+  const fail = (code: string) => redirect(`/fulfillment?error=${code}${to ? `&to=${to}` : ""}#ask`);
+  if (!title || !(RECORD_CATEGORIES as readonly string[]).includes(category)) fail("bad_input");
+  const { data, error } = await supabase.from("service_requests").insert({
+    provider_id: to, title: title!, category, details: s(fd.get("details"), DETAILS_MAX) || null, needed_by: day(s(fd.get("needed_by"), 10)),
+  }).select("id").single();
+  if (error || !data) fail(recordErrorCode(error?.message));
+  if (to) {
+    const name = await nameOf(supabase, user.id);
+    await notify(to, "records", {
+      title: `${name} sent you a fulfillment request`, body: short(title!), url: `/requests/${data!.id}`,
+      email: { subject: `${name} asked your business for fulfillment help on FLAME PH`, text: `${name} sent you a fulfillment request:\n\n"${title}"\n\nOpen it in FLAME PH to send your terms. FLAME PH only records deals; no money passes through FLAME PH.` },
+    });
+  }
+  revalidatePath("/requests");
+  revalidatePath("/m/fulfillment");
   redirect(`/requests/${data!.id}?done=sent`);
 }
 
