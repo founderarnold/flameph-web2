@@ -197,3 +197,15 @@ test("the sites keep tickets out of logs and send the browser check", { skip: !h
     assert.doesNotMatch(await txt("marketplaceph", f), /\/sso\/authorize/, f); // always through /auth/flame/start now
   }
 });
+
+test("sign-in steps wait long enough for the hub (a 4-second limit wasted tickets live); page checks stay short", { skip: !haveSites && "site repositories not next to this one" }, async () => {
+  const txt = (repo, p) => readFile(sibling(repo, p), "utf8");
+  for (const [repo, lib] of [["marketplaceph", "lib/flame-sso.ts"], ["negosyodepot", "lib/sso.ts"]]) {
+    assert.match(await txt(repo, lib), /claims: Record<string, unknown>, waitMs = 10000\)[\s\S]*AbortSignal\.timeout\(waitMs\)/, repo);
+    assert.match(await txt(repo, "app/auth/flame/route.ts"), /hubCall<Who>\("\/api\/sso\/token", "sso-token", \{ code \}\)/, repo);
+  }
+  assert.match(await txt("marketplaceph", "proxy.ts"), /since: link\.since \}, 4000\)/);
+  assert.match(await txt("negosyodepot", "app/api/me/route.ts"), /since: session\.since \}, 4000\)/);
+  // The hub answers the swap faster: the independent lookups run together.
+  assert.match(await route("api/sso/token/route.ts"), /await Promise\.all\(\[\s*switchOn\(admin, "sso"\),\s*admin\.auth\.admin\.getUserById\(ticket\.user_id\),\s*linkSub\(admin, client, ticket\.user_id\),\s*\]\)/);
+});

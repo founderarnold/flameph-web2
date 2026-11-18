@@ -15,14 +15,18 @@ export async function POST(req: Request) {
   const { client, claims } = call;
   const ticket = typeof claims.code === "string" ? await consumeTicket(admin, claims.code, client, "to_site") : null;
   if (!ticket?.user_id) return NextResponse.json({ error: "bad_ticket" }, { status: 400 });
-  if (!(await switchOn(admin, "sso"))) {
+  // Independent lookups run together: each one is a round trip to the database, and the site is waiting.
+  const [on, { data }, sub] = await Promise.all([
+    switchOn(admin, "sso"),
+    admin.auth.admin.getUserById(ticket.user_id),
+    linkSub(admin, client, ticket.user_id),
+  ]);
+  if (!on) {
     await log(admin, client, ticket.user_id, "sign_in", [], "refused", "switch_off");
     return NextResponse.json({ error: "sso_off" }, { status: 403 });
   }
-  const { data } = await admin.auth.admin.getUserById(ticket.user_id);
   const user = data?.user;
-  const sub = user?.email && user.email_confirmed_at ? await linkSub(admin, client, user.id) : null;
-  if (!user?.email || !sub) return NextResponse.json({ error: "bad_ticket" }, { status: 400 });
+  if (!user?.email || !user.email_confirmed_at || !sub) return NextResponse.json({ error: "bad_ticket" }, { status: 400 });
   await log(admin, client, user.id, "sign_in", ["name", "email"], "ok");
   return NextResponse.json(
     { sub, email: user.email.toLowerCase(), name: (user.user_metadata?.full_name as string) || null, nonce: ticket.nonce, iat: Math.floor(Date.now() / 1000) },
