@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { sendEmail, NOTIFY_TO } from "@/lib/email";
 import { feedResult } from "@/lib/member-shell";
+import { courseKey } from "@/lib/academy";
 
 const STAGES = ["discover", "start", "build", "grow", "scale"];
 const s = (v: FormDataEntryValue | null, max = 120) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -60,6 +61,22 @@ export async function toggleMilestone(fd: FormData) {
   else await supabase.from("member_milestones").delete().eq("user_id", user.id).eq("key", key);
   revalidatePath("/account/growth");
   revalidatePath("/account");
+}
+
+/** Mark a published Academy course as done (or not done). Saved with the member's growth-path milestones. */
+export async function toggleCourse(fd: FormData) {
+  const { supabase, user } = await requireUser("/academy");
+  const id = s(fd.get("course_id"), 40);
+  const key = courseKey(id);
+  if (key) {
+    const { data: course } = await supabase.from("courses").select("id").eq("id", id).eq("published", true).maybeSingle();
+    if (course && fd.get("done") === "1") await supabase.from("member_milestones").upsert({ user_id: user.id, key }, { onConflict: "user_id,key" });
+    else if (fd.get("done") !== "1") await supabase.from("member_milestones").delete().eq("user_id", user.id).eq("key", key);
+  }
+  revalidatePath("/m/academy");
+  revalidatePath("/account/growth");
+  revalidatePath("/account/rewards");
+  redirect(`/academy${key ? `#course-${id}` : ""}`);
 }
 
 /** Join or leave a buy-together deal. */

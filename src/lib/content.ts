@@ -38,7 +38,7 @@ export function mediaUrl(path?: string | null) {
 export type EventRow = {
   id: string; type: string; title: string; description: string | null; starts_at: string; ends_at: string | null;
   venue: string | null; city: string | null; province: string | null; online_url: string | null; status: string;
-  capacity: number | null; registration_open: boolean; attendance_actual: number | null; photos: string[];
+  capacity: number | null; registration_open: boolean; chapter_id?: string | null; attendance_actual: number | null; photos: string[];
 };
 
 export async function eventsByType(types: string[]) {
