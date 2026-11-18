@@ -6,6 +6,7 @@ import { deleteComment, deletePost, reactToPost } from "@/app/account/feed-actio
 import { CommentForm } from "./CommentForm";
 import { InvestorWarning } from "./InvestorWarning";
 import { ShareButton } from "./ShareButton";
+import { PostMedia } from "./PostMedia";
 
 /** Link to the report form for one post, comment, member or listing. */
 export const reportHref = (type: string, id: string, back: string) => `/report?${new URLSearchParams({ type, id, back })}`;
@@ -79,6 +80,7 @@ export function PostCard({ post, stats, comments, viewerId, back, detail = false
       </div>
       {investor && <div className="mt-3"><InvestorWarning compact={!detail} /></div>}
       <div className="mt-3">{detail ? <PostText text={post.body} /> : <div className="line-clamp-[12]"><PostText text={post.body} /></div>}</div>
+      <PostMedia post={post} />
       {post.kind === "fulfillment" && (
         <p className="mt-2 text-sm"><Link href={`/fulfillment#offer-${post.id}`} className="font-semibold text-primary underline">See all fulfillment offers</Link></p>
       )}

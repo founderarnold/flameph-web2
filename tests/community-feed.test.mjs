@@ -19,7 +19,8 @@ const industries = await load("src/lib/industries.ts");
 const rules = await load("src/lib/feed-rules.ts", { "@/lib/industries": industries.url });
 const growth = await load("src/lib/growth.ts");
 const pub = await load("src/lib/public-business.ts");
-const data = (await load("src/lib/feed-data.ts", { "@/lib/growth": growth.url, "@/lib/public-business": pub.url, "@/lib/feed-rules": rules.url })).mod;
+const news = await load("src/lib/news-feeds.ts");
+const data = (await load("src/lib/feed-data.ts", { "@/lib/growth": growth.url, "@/lib/public-business": pub.url, "@/lib/feed-rules": rules.url, "@/lib/news-feeds": news.url })).mod;
 const R = rules.mod;
 
 test("database update: additive, row-level security on every new table, visitors blocked", () => {

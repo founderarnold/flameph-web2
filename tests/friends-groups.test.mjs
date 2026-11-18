@@ -95,7 +95,8 @@ test("pages: Friend request inbox, groups, composer audience, profile and post b
   assert.match(composer, /name="group"/);
   assert.match(await read("src/components/feed/PostCard.tsx"), /Friends only/);
   const home = await read("src/app/(member)/home/page.tsx");
-  assert.match(home, /mutualCounts/);
+  assert.match(home, /suggestedPeople/); // mutual connections are ranked inside suggest_members (0023)
+  assert.match(await read("src/lib/suggestions.ts"), /mutualCounts\(supabase\)/); // and in the fallback before that update
   assert.match(home, /muted/);
   assert.match(home, /\/friends#requests/);
   const sugg = await read("src/lib/suggestions.ts");

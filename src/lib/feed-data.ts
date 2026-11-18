@@ -2,12 +2,14 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { OPPORTUNITY_KINDS, type Opportunity, dateLabel, matches, notExpired, peso } from "@/lib/growth";
 import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
+import { headlineSub } from "@/lib/news-feeds";
 import { PAGE_SIZE, encodeCursor, type PostKind, type ReactionKind } from "@/lib/feed-rules";
 
 export type FeedPost = {
   id: string; author_id: string; kind: PostKind; category: string; subcategory: string | null; body: string; chapter_id: string | null;
   author_name: string | null; author_slug: string | null; status: "published" | "held" | "hidden"; held_reason: string | null; created_at: string;
   audience?: "members" | "friends"; group_id?: string | null;
+  media?: { type: "image" | "video"; path: string }[] | null; video_url?: string | null;
 };
 export type PostStats = { likes: number; loves: number; helpful: number; comments: number; mine: ReactionKind | null };
 export type FeedComment = { id: string; post_id: string; author_id: string; body: string; author_name: string | null; author_slug: string | null; created_at: string };
@@ -16,16 +18,23 @@ export type FeedComment = { id: string; post_id: string; author_id: string; body
 export type ActivityCard = {
   id: string; at: string; kind: string; title: string; sub?: string; text?: string | null; href: string; cta: string; badge?: string;
   follow?: { memberId: string; name: string; following: boolean };
+  /** Opens another website (a news source) in a new tab. */
+  external?: boolean;
 };
 export type FeedEntry = { type: "post"; at: string; post: FeedPost } | { type: "activity"; at: string; card: ActivityCard };
 
 const BASE_COLUMNS = "id, author_id, kind, category, subcategory, body, chapter_id, author_name, author_slug, status, held_reason, created_at";
 /** With the audience (all members or friends only) and group from the 0018 update. */
 export const POST_COLUMNS = `${BASE_COLUMNS}, audience, group_id`;
+/** With photos, video and video link from the 0023 update. */
+export const MEDIA_COLUMNS = `${POST_COLUMNS}, media, video_url`;
+/** True when a query failed only because the 0023 columns are not in the database yet. */
+export const missing0023 = (e: { message?: string } | null) => Boolean(e && /media|video_url/.test(e.message ?? ""));
 /** True when a query failed only because the 0018 columns are not in the database yet. */
 export const missing0018 = (e: { message?: string } | null) => Boolean(e && /audience|group_id/.test(e.message ?? ""));
 const EMPTY: PostStats = { likes: 0, loves: 0, helpful: 0, comments: 0, mine: null };
 const SOURCE_LIMIT = 6; // each activity source adds at most this many cards to one page
+const HEADLINES_PER_PAGE = 3;
 const DAY = 86400000;
 
 export type Viewer = { id: string; province?: string | null; sector?: string | null; stage?: string | null; chapter_id?: string | null; industries?: string[] | null };
@@ -65,7 +74,8 @@ export async function feedPosts(supabase: SupabaseClient, q: FeedQuery, pageSize
     if (q.muted?.size) req = req.not("author_id", "in", `(${[...q.muted].slice(0, 500).join(",")})`);
     return req;
   };
-  let { data, error } = await build(POST_COLUMNS);
+  let { data, error } = await build(MEDIA_COLUMNS);
+  if (missing0023(error)) ({ data, error } = await build(POST_COLUMNS));
   if (hideInGroup && error && /group_hidden/.test(error.message)) { hideInGroup = false; ({ data, error } = await build(POST_COLUMNS)); }
   if (missing0018(error)) {
     if (q.group) return { posts: [] as FeedPost[], next: null, available: false };
@@ -102,7 +112,7 @@ export async function activityCards(supabase: SupabaseClient, viewer: Viewer, q:
   const chapter = q.chapter ?? (q.industry ? null : viewer.chapter_id ?? null);
   const memberOr = [chapter && `chapter_id.eq.${chapter}`, wanted.length && `sector.in.(${wanted.map(quote).join(",")})`].filter(Boolean).join(",");
 
-  const [deals, mine, opps, events, courses, news, members] = await Promise.all([
+  const [deals, mine, opps, events, courses, news, members, headlines] = await Promise.all([
     filtered ? null : inWindow(supabase.from("deals").select("id, title, supplier, unit, deal_price, deadline, status, created_at").eq("published", true).eq("status", "open")).order("created_at", { ascending: false }).limit(SOURCE_LIMIT),
     filtered ? null : supabase.from("deal_participants").select("deal_id, quantity").eq("user_id", viewer.id).limit(200),
     q.chapter ? null : (() => {
@@ -122,6 +132,8 @@ export async function activityCards(supabase: SupabaseClient, viewer: Viewer, q:
       r = r.or(memberOr);
       return r.order("created_at", { ascending: false }).limit(SOURCE_LIMIT);
     })(),
+    // Business news headlines (0023): a few per page, so member posts stay first.
+    filtered ? null : inWindow(supabase.from("news_headlines").select("id, url, title, source, published_at"), "published_at").order("published_at", { ascending: false }).limit(HEADLINES_PER_PAGE),
   ]);
 
   const joined = new Map(((mine?.data ?? []) as { deal_id: string; quantity: number }[]).map((m) => [m.deal_id, m.quantity]));
@@ -158,6 +170,9 @@ export async function activityCards(supabase: SupabaseClient, viewer: Viewer, q:
     if (!n.published_at) continue;
     cards.push({ id: `news-${n.slug}`, at: n.published_at, kind: "Negosyo News", title: n.title, sub: day(n.published_at), text: n.excerpt, href: `/news/${n.slug}`, cta: "Read on the blog" });
   }
+  for (const h of (headlines?.data ?? []) as { id: string; url: string; title: string; source: string; published_at: string }[]) {
+    cards.push({ id: `headline-${h.id}`, at: h.published_at, kind: "Business news", title: h.title, sub: headlineSub(h), href: h.url, cta: `Read on ${h.source}`, external: true });
+  }
   const seen = new Set<string>();
   for (const b of (members?.data ?? []) as { id: string; owner_id: string; name: string; slug: string; sector: string | null; city: string | null; province: string | null; chapter_id: string | null; created_at: string }[]) {
     if (seen.has(b.owner_id) || q.muted?.has(b.owner_id)) continue;
@@ -191,7 +206,8 @@ export function pageWindow(cursorAt: string | null, posts: FeedPost[], hasMore: 
 /** One post by id (null when it doesn't exist or the viewer may not see it, e.g. a Friend-only post of a non-friend). */
 export async function getPost(supabase: SupabaseClient, id: string): Promise<FeedPost | null> {
   const one = (cols: string) => supabase.from("feed_posts").select(cols).eq("id", id).neq("status", "hidden").maybeSingle();
-  let { data, error } = await one(POST_COLUMNS);
+  let { data, error } = await one(MEDIA_COLUMNS);
+  if (missing0023(error)) ({ data, error } = await one(POST_COLUMNS));
   if (missing0018(error)) ({ data, error } = await one(BASE_COLUMNS));
   return error ? null : ((data as unknown as FeedPost | null) ?? null);
 }

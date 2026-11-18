@@ -4,7 +4,7 @@ export type Step = (typeof STEPS)[number];
 
 export const STEP_TITLES: Record<Step, string> = {
   industries: "Which industries are you in or interested in?",
-  chapter: "Pick your chapter",
+  chapter: "Join your chapters",
   follow: "Follow members to see their updates",
   profile: "Finish your profile",
 };

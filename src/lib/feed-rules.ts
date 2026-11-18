@@ -67,6 +67,11 @@ export const POST_ERRORS: Record<string, string> = {
   no_such_group: "That group doesn't exist.",
   moderator_mute: "A moderator has paused your posting for now. See Notices from moderators in your account.",
   blocked_words: "Your post uses words that aren't allowed in the community. Please change them and try again.",
+  bad_media: "One of the files didn't upload properly. Please remove it and add it again.",
+  too_many_photos: "You can add up to 4 photos.",
+  one_video: "You can add one video per post: either an upload or a link.",
+  bad_video_link: "Video links must be from YouTube, Facebook or TikTok.",
+  feed_posts_video_url: "Video links must be from YouTube, Facebook or TikTok.",
   failed: "Something went wrong. Please try again.",
 };
 export const postErrorCode = (message?: string | null) => {

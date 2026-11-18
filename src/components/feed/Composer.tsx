@@ -7,10 +7,12 @@ import { INDUSTRIES } from "@/lib/industries";
 import { AUDIENCES, POST_KINDS, POST_MAX, classifyPost, linkCount, type Audience, type PostKind } from "@/lib/feed-rules";
 import { INVESTOR_GROUP } from "@/lib/groups";
 import { InvestorWarning } from "./InvestorWarning";
+import { MediaPicker } from "./MediaPicker";
+import { parseMedia } from "@/lib/post-media";
 
 /** The New Post composer. Opens straight away; publishing returns the member to the feed, scrolled to the new post. */
-export function Composer({ kind: startKind, category: startCategory, group = null, friendsAvailable = false }: {
-  kind: PostKind; category: string; group?: { slug: string; name: string } | null; friendsAvailable?: boolean;
+export function Composer({ kind: startKind, category: startCategory, group = null, friendsAvailable = false, userId = null }: {
+  kind: PostKind; category: string; group?: { slug: string; name: string } | null; friendsAvailable?: boolean; userId?: string | null;
 }) {
   const [state, action] = useActionState<FormState, FormData>(createPost, {});
   const [kind, setKind] = useState<PostKind>((state.values?.kind as PostKind) ?? startKind);
@@ -31,6 +33,8 @@ export function Composer({ kind: startKind, category: startCategory, group = nul
           className="input w-full text-[16px]" aria-describedby="post-count" autoFocus />
         <p id="post-count" className="mt-1 text-right text-xs text-muted" aria-live="polite">{body.length} / {POST_MAX}{links > 3 ? " · Please keep it to 3 links or fewer" : ""}</p>
       </div>
+
+      {userId && <MediaPicker userId={userId} initial={parseMedia(state.values?.media ?? "[]", userId)} initialLink={state.values?.video_url ?? ""} />}
 
       <fieldset>
         <legend className="label">What are you sharing?</legend>

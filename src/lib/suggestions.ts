@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { list } from "@/lib/content";
 import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
+import { reasonLabel } from "@/lib/suggest-reasons";
 
 export type SuggestedBiz = { id: string; owner_id: string; name: string; slug: string; sector: string | null; city: string | null; province: string | null; logo_url: string | null; chapter_id?: string | null };
 
@@ -11,7 +12,7 @@ export async function followingIds(supabase: SupabaseClient, userId: string): Pr
   return new Set(error ? [] : (data ?? []).map((r) => r.followee_id as string));
 }
 
-export type Suggestion = SuggestedBiz & { mutual?: number };
+export type Suggestion = Omit<SuggestedBiz, "slug"> & { slug: string | null; mutual?: number; reason?: string | null };
 
 /** Members the viewer shares connections with (friends of friends, and people followed by people they follow). Empty before the 0018 update. */
 export async function mutualCounts(supabase: SupabaseClient, max = 30): Promise<Map<string, number>> {
@@ -38,4 +39,38 @@ export async function suggestedMembers(userId: string, m: { industries?: string[
     .map((b) => ({ ...b, mutual: mutual.get(b.owner_id) ?? 0 }))
     .sort((a, b) => score(b) - score(a))
     .slice(0, limit);
+}
+
+type Ranked = { user_id: string; reason: string; detail: string | null; score: number };
+type Card = { id: string; name: string; slug: string | null; sector: string | null; city: string | null; province: string | null; chapter_id: string | null };
+
+/**
+ * Members to follow, from every active member (not only published businesses): same city, same chapter, people you both
+ * know, shared industries, same province and shared groups (suggest_members, 0023). Falls back to published MSMEs
+ * (suggestedMembers) until that database update is run, or when it finds nobody.
+ */
+export async function suggestedPeople(supabase: SupabaseClient, userId: string, m: Parameters<typeof suggestedMembers>[1], limit = 8,
+  opts: { exclude?: Set<string> } = {}): Promise<Suggestion[]> {
+  const { data, error } = await supabase.rpc("suggest_members", { max_rows: Math.min(50, limit + (opts.exclude?.size ?? 0)) });
+  const ranked = (error ? [] : (data ?? []) as Ranked[]).filter((r) => r.user_id !== userId && !opts.exclude?.has(r.user_id)).slice(0, limit);
+  if (!ranked.length) return suggestedMembers(userId, m, limit, { exclude: opts.exclude, mutual: error ? undefined : await mutualCounts(supabase) });
+  return peopleCards(supabase, ranked);
+}
+
+/** Cards (name, business page, logo, place, reason) for members, in the order given. Unknown or blocked members are left out. */
+export async function peopleCards(supabase: SupabaseClient, ranked: { user_id: string; reason?: string; detail?: string | null }[]): Promise<Suggestion[]> {
+  const ids = ranked.map((r) => r.user_id).slice(0, 50);
+  if (!ids.length) return [];
+  const [{ data: cards }, logos] = await Promise.all([
+    supabase.rpc("member_cards", { ids }),
+    list<{ owner_id: string; logo_url: string | null }>({ table: "businesses", select: "owner_id, logo_url", filters: { ...PUBLIC_BUSINESS_FILTERS, owner_id: ids }, limit: 50 }),
+  ]);
+  const byId = new Map(((cards ?? []) as Card[]).map((c) => [c.id, c]));
+  const logo = new Map(logos.map((l) => [l.owner_id, l.logo_url]));
+  return ranked.flatMap((r) => {
+    const c = byId.get(r.user_id);
+    if (!c) return [];
+    return [{ id: c.id, owner_id: c.id, name: c.name, slug: c.slug, sector: c.sector, city: c.city, province: c.province, chapter_id: c.chapter_id,
+      logo_url: logo.get(c.id) ?? null, mutual: r.reason === "mutual" ? Number(r.detail) || 0 : 0, reason: r.reason ? reasonLabel({ reason: r.reason, detail: r.detail ?? null }) : null }];
+  });
 }
