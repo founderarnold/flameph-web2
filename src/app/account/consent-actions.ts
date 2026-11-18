@@ -7,6 +7,8 @@ import { choicesFrom } from "@/lib/policy";
 import { safeNext } from "@/lib/safe-next";
 import { sendEmail, NOTIFY_TO } from "@/lib/email";
 import { FEED, feedResult } from "@/lib/member-shell";
+import { createAdminClient } from "@/lib/supabase/server";
+import { purgeMemberDocs } from "@/lib/vetting-server";
 
 /** Saves the switches from the sign-in prompt or the Settings page. Only changed switches add a row. */
 export async function saveConsents(fd: FormData) {
@@ -20,6 +22,11 @@ export async function saveConsents(fd: FormData) {
   const { ok, changed } = await recordConsents(supabase, user.id, choices, source, state);
   if (!ok) redirect(`/account/settings?consent=error`);
 
+  // Turning off switch 4 deletes the member's vetting documents right away (Privacy Notice, section 5).
+  if (changed.includes("vetting") && !choices.vetting) {
+    const admin = createAdminClient();
+    if (admin) await purgeMemberDocs(admin, user.id, "consent_withdrawn");
+  }
   // Turning off switch 1 is a request to close the account (Terms, section 16). Tell the team so a person handles it.
   if (changed.includes("terms") && !choices.terms && state.terms?.granted) {
     await sendEmail({

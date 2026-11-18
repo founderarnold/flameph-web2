@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { safeNext } from "@/lib/safe-next";
 import { isModAction, isReason, isReportTarget, modErrorCode } from "@/lib/moderation";
+import { notify } from "@/lib/notify";
 
 // Reports, moderation actions, appeals and the keyword policy. Every rule (who may act, where, never on their own
 // business, the audit log) is enforced by the database (0019); these only ask and send the person back.
@@ -23,6 +24,14 @@ export async function fileReport(fd: FormData) {
   if (!isReason(reason)) redirect(`/report?${qs({ type, id, back, error: "reason" })}`);
   const { error } = await supabase.from("moderation_reports").insert({ target_type: type, target_id: id, reason, details: s(fd.get("details"), 1000) || null });
   if (error) redirect(`/report?${qs({ type, id, back, error: modErrorCode(error.message) })}`);
+  if (type === "record") {
+    // A dispute: the other member of the record is told it is on hold (not who filed it; they can see that on the record).
+    const { data: r } = await supabase.from("transaction_records").select("requester_id, provider_id, disputed_by, description").eq("id", id).maybeSingle();
+    const other = r ? (r.disputed_by === r.requester_id ? r.provider_id : r.requester_id) : null;
+    if (other) await notify(other, "records", { title: "A transaction record is on hold", body: r!.description.slice(0, 120), url: `/records/${id}`,
+      email: { subject: "A FLAME PH transaction record is on hold for review", text: `The record "${r!.description}" was disputed and is on hold. It doesn't count until a moderator reviews it, usually within 24 hours.` } });
+    redirect(`/report?${qs({ sent: "record", back })}`);
+  }
   redirect(`/report?${qs({ sent: "1", back })}`);
 }
 
@@ -83,4 +92,16 @@ export async function setKeyword(fd: FormData) {
   else if (phrase.length >= 3) ({ error } = await supabase.from("moderation_keywords").insert({ phrase, action: fd.get("action") === "block" ? "block" : "hold" }));
   revalidatePath("/admin/moderation/policy");
   redirect(`/admin/moderation/policy?${error ? `error=${modErrorCode(error.message)}` : `done=${op === "remove" ? "removed" : "added"}`}`);
+}
+
+/** Admins and founders: void a transaction record directly (Admin -> Records). What it earned is taken back. */
+export async function voidRecordAdmin(fd: FormData) {
+  const { supabase } = await requireUser("/admin/records");
+  const id = uuid(s(fd.get("record_id"), 40));
+  const note = s(fd.get("note"), 500);
+  if (!id) redirect("/admin/records");
+  if (note.length < 3) redirect(`/admin/records?error=note#rec-${id}`);
+  const { error } = await supabase.rpc("void_record", { p_record: id, p_note: note });
+  revalidatePath("/admin/records");
+  redirect(`/admin/records?${error ? `error=${modErrorCode(error.message)}` : "done=void"}#rec-${id}`);
 }

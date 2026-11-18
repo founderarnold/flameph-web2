@@ -64,15 +64,16 @@ test("Business inbox: leads, quote requests, Friend requests and notifications",
   assert.match(api, /notify\(biz\.owner_id, quote \? "quotes" : "leads"/);
 });
 
-test("notification choices per type, with defaults that keep today's emails", () => {
-  assert.deepEqual(P.NOTIFY_KEYS, ["messages", "leads", "quotes", "requests"]);
+test("notification choices per type, with defaults that keep today's emails", async () => {
+  assert.deepEqual(P.NOTIFY_KEYS, ["messages", "leads", "quotes", "requests", "records"]);
   assert.equal(P.DEFAULT_PREFS.leads_email, true);
   assert.equal(P.DEFAULT_PREFS.requests_email, false);
   assert.equal(P.mergePrefs({ leads_email: false, junk: 1 }).leads_email, false);
   assert.equal(P.mergePrefs(null).messages_push, true);
-  for (const col of P.PREF_COLUMNS) assert.match(sql, new RegExp(`${col} boolean not null default ${P.DEFAULT_PREFS[col]}`), col);
+  const sql22 = sql + await read("supabase/migrations/0022_records.sql");
+  for (const col of P.PREF_COLUMNS) assert.match(sql22.replace(/add column if not exists (\w+) boolean/g, "$1 boolean"), new RegExp(`${col} boolean not null default ${P.DEFAULT_PREFS[col]}`), col);
   assert.deepEqual(P.columnsOff("leads"), ["leads_email"]);
-  assert.deepEqual(P.columnsOff("all"), ["messages_email", "leads_email", "quotes_email", "requests_email"]);
+  assert.deepEqual(P.columnsOff("all"), ["messages_email", "leads_email", "quotes_email", "requests_email", "records_email"]);
   assert.deepEqual(P.columnsOff("digest"), []);
 });
 

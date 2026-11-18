@@ -85,18 +85,6 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
     setBusy(false);
   }
 
-  async function onDocs(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []).slice(0, 3);
-    setBusy(true);
-    try {
-      const paths = await Promise.all(files.map((f) => upload(f, "private-docs")));
-      setBiz((b) => ({ ...b, verification_docs: [...(b.verification_docs ?? []), ...paths], verification_status: "pending" }));
-      setDirty(true);
-      setMsg({ ok: true, text: "Documents uploaded. Save your listing to submit them for review." });
-    } catch (err) { setMsg({ ok: false, text: (err as Error).message }); }
-    setBusy(false);
-  }
-
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setMsg(null);
@@ -247,9 +235,9 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       </div>
       <fieldset className="rounded-xl border border-line p-4">
         <legend className="px-1 font-bold">Get a Verified badge (optional)</legend>
-        <p className="text-sm text-muted">Optional evidence may include DTI, SEC, CDA, BMBE, Mayor&apos;s/Business Permit, BIR documents or other legitimate proof. These files are not required for review, and only FLAME PH admins can see them.</p>
+        <p className="text-sm text-muted">Optional evidence may include DTI, SEC, CDA, BMBE, Mayor&apos;s/Business Permit or BIR documents. Send them in Business vetting: they are encrypted, and only FLAME PH reviewers can open them.</p>
         <p className="mt-2 text-sm font-semibold">Status: {biz.verified ? "✓ Verified" : biz.verification_status === "pending" ? "Pending review" : biz.verification_status === "rejected" ? "Not approved. Please upload clearer documents." : "Not submitted"}</p>
-        {!biz.verified && <input type="file" accept="image/*,application/pdf" multiple onChange={onDocs} className="mt-2 block min-h-11" aria-label="Upload verification documents" />}
+        {!biz.verified && <Link href="/account/vetting" className="btn btn-outline mt-2 min-h-11">Open Business vetting</Link>}
       </fieldset>
       <fieldset className="rounded-xl border border-line p-4">
         <legend className="px-1 font-bold">Account verification for publication</legend>

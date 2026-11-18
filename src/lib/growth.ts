@@ -57,7 +57,7 @@ export const STAGES: Record<Stage, { label: string; fil: string; blurb: string; 
 export const peso = (n?: number | string | null) =>
   n === null || n === undefined || n === "" ? "" : `₱${Number(n).toLocaleString("en-PH", { minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
 
-export const POINTS = { referral: 50, review: 10, event: 20, milestone: 15, deal: 10 };
+export const POINTS = { referral: 50, review: 10, event: 20, milestone: 15, deal: 10, record: 20 };   // record: counted transaction records (0022)
 
 export const OPPORTUNITY_KINDS: Record<string, string> = {
   grant: "Grant", loan: "Loan or financing", trade_fair: "Trade fair", bazaar: "Bazaar", training: "Training",

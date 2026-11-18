@@ -11,6 +11,8 @@ import { ListingTracker } from "@/components/listing/ListingTracker";
 import { saveReview, deleteReview } from "@/app/directory/[slug]/actions";
 import { forViewer, FIELD_GROUPS } from "@/lib/privacy";
 import { RelationshipActions } from "@/components/people/RelationshipActions";
+import { reputation } from "@/lib/records-server";
+import { badgeLevel, RECORD_TAGS, type RecordTag } from "@/lib/records";
 import { relationship, type Relationship } from "@/lib/people";
 import { noteText } from "@/lib/people-rules";
 import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
@@ -47,13 +49,17 @@ export async function BusinessProfile({ business, review, basePath, note }: { bu
     list<B>({ table: "businesses", select: "id,name,slug,sector,city,province", filters: PUBLIC_BUSINESS_FILTERS, order: "created_at" }),
   ]);
   // Registration numbers the owner chose to show (never the TIN), the chapter, and whether this member follows the owner.
-  const [regRes, chapters, rel, sitesRes] = await Promise.all([
+  const [regRes, chapters, rel, sitesRes, rep] = await Promise.all([
     (supabase ?? pub)?.rpc("business_registration_view", { bid: b.id }),
     b.chapter_id ? list<{ id: string; name: string; slug: string | null }>({ table: "chapters", select: "id,name,slug" }) : Promise.resolve([]),
     user && supabase && user.id !== business.owner_id ? relationship(supabase, user.id, business.owner_id) : Promise.resolve(null as Relationship | null),
     // The owner's published mini-websites (FlamePH Pages). Empty until database update 0020.
     (supabase ?? pub)?.from("member_minisites").select("slug, name").eq("owner_id", b.owner_id).eq("published", true).order("updated_at", { ascending: false }).limit(3),
+    // Reputation from confirmed transaction records (only counted ones, never amounts). Null when the owner keeps switch 2 off.
+    supabase ?? pub ? reputation((supabase ?? pub)!, b.owner_id) : Promise.resolve(null),
   ]);
+  const badge = rep && rep.counted > 0 ? badgeLevel(rep.counted) : null;
+  const topTags = rep ? Object.entries(rep.tags).sort((x, y) => y[1] - x[1]).slice(0, 3) : [];
   const minisites = (sitesRes?.data ?? []) as { slug: string; name: string }[];
   const reg = (Array.isArray(regRes?.data) ? regRes.data[0] : null) as Record<string, string | null> | null;
   const regRows = reg ? [["DTI business name no.", reg.dti_bn], ["SEC registration no.", reg.sec_reg], ["CDA registration no.", reg.cda_reg], ["BMBE certificate no.", reg.bmbe_cert], ["Business permit no.", reg.mayors_permit]].filter(([, v]) => v) as [string, string][] : [];
@@ -240,6 +246,16 @@ export async function BusinessProfile({ business, review, basePath, note }: { bu
                 {regRows.length > 0 && <div><p className="font-bold">Registration (as provided by the owner)</p>
                   <dl className="mt-1 space-y-1 text-muted">{regRows.map(([k, v]) => <div key={k}><dt className="inline">{k}: </dt><dd className="inline font-semibold text-fg">{v}</dd></div>)}</dl></div>}
               </div>
+            )}
+            {rep && (rep.counted > 0 || rep.vetted) && (
+              <section className="card space-y-2 p-4 text-sm" aria-labelledby="rep-h">
+                <p id="rep-h" className="font-bold">Track record on FLAME PH</p>
+                <p><span className="text-2xl font-extrabold">{rep.counted}</span> confirmed {rep.counted === 1 ? "deal" : "deals"} with members{badge ? <> · <strong>{badge}</strong> badge</> : null}</p>
+                {rep.rating_avg !== null && <p>Rated <strong>{rep.rating_avg} ★</strong> by {rep.rating_count} {rep.rating_count === 1 ? "member" : "members"}</p>}
+                {topTags.length > 0 && <ul className="flex flex-wrap gap-1.5">{topTags.map(([t, n]) => <li key={t} className="rounded-full bg-bg-soft px-2.5 py-1 text-xs font-semibold">{RECORD_TAGS[t as RecordTag] ?? t} · {n}</li>)}</ul>}
+                {rep.vetted && <p className="font-semibold text-ok">✓ Business vetted by FLAME PH</p>}
+                <p className="text-xs text-muted">Counted only when both members confirmed the deal. FLAME PH records deals; no money passes through FLAME PH.</p>
+              </section>
             )}
             <div className="card p-4 text-sm text-muted">
               <p className="font-semibold text-fg">FLAME PH member since {since}</p>

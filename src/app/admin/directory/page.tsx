@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { adminContext } from "@/lib/admin/guard";
 import { moderateBusiness, reviewLegacyBusiness, verifyBusiness } from "../actions";
+import { DOC_TYPES, type DocType } from "@/lib/vetting";
 
 export default async function DirectoryAdmin({ searchParams }: { searchParams: Promise<{ all?: string }> }) {
   const sp = await searchParams;
@@ -16,6 +17,12 @@ export default async function DirectoryAdmin({ searchParams }: { searchParams: P
     db.from("business_legacy_assessments").select("business_id,classification,reason_codes,possible_duplicate,was_published,action_taken,review_state,assessed_at,reviewed_at,review_note").limit(1000),
     db.from("business_moderation_events").select("id,business_id,risk_level,reason_categories,suspicious_fields,assessment_version,created_at").order("created_at", { ascending: false }).limit(1000),
   ]);
+  // Vetting documents (Phase 8A): encrypted; opened one at a time through the server, which logs each view.
+  const { data: vetDocs } = ownerIds.length
+    ? await db.from("vetting_documents").select("id,user_id,doc_type,file_name,uploaded_at").in("user_id", ownerIds).is("deleted_at", null).order("uploaded_at", { ascending: false })
+    : { data: [] };
+  const vetByOwner = new Map<string, { id: string; doc_type: string; file_name: string; uploaded_at: string }[]>();
+  for (const d of vetDocs ?? []) vetByOwner.set(d.user_id, [...(vetByOwner.get(d.user_id) ?? []), d]);
   const ownerById = new Map((owners ?? []).map((owner) => [owner.id, owner]));
   const reportsByBusiness = new Map<string, typeof reports>();
   const assessmentByBusiness = new Map((assessments ?? []).map((assessment) => [assessment.business_id, assessment]));
@@ -58,6 +65,7 @@ export default async function DirectoryAdmin({ searchParams }: { searchParams: P
           {b.reports.length > 0 && <details className="mt-3 rounded-lg border border-flame bg-flame-soft p-3"><summary className="cursor-pointer font-bold text-flame-strong">⚑ {b.reports.length} member report{b.reports.length === 1 ? "" : "s"}</summary><ul className="mt-2 space-y-2 text-sm">{b.reports.map((report: { id: string; data: Record<string, string>; status: string; created_at: string }) => <li key={report.id} className="rounded bg-card p-2"><b>{report.data.reason?.replace(/_/g, " ")}</b> · {new Date(report.created_at).toLocaleString("en-PH", { timeZone: "Asia/Manila" })}<p className="whitespace-pre-line">{report.data.details}</p><span className="text-xs uppercase text-muted">{report.status}</span></li>)}</ul></details>}
           {b.assessment && <details className="mt-3 rounded-lg border border-line p-3"><summary className="cursor-pointer font-bold">Legacy assessment: {b.assessment.classification.replace(/_/g, " ")} · {b.assessment.review_state}</summary><p className="mt-2 text-sm text-muted">Signals: {(b.assessment.reason_codes as string[]).join(", ") || "none"} · Originally {b.assessment.was_published ? "published" : "private"}</p><form action={reviewLegacyBusiness} className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]"><input type="hidden" name="id" value={b.id} /><input name="note" className="input" placeholder="Review note" /><button name="legacy_decision" value="restore_public" className="btn btn-outline">Restore public</button><button name="legacy_decision" value="clear_review" className="btn btn-outline">Clear review</button><button name="legacy_decision" value="confirm_quarantine" className="btn btn-flame">Confirm quarantine</button></form></details>}
           {b.moderationHistory.length > 0 && <details className="mt-3 rounded-lg border border-line p-3"><summary className="cursor-pointer font-bold">Automatic moderation history ({b.moderationHistory.length})</summary><ul className="mt-2 space-y-2 text-sm">{b.moderationHistory.map((event: { id: number; risk_level: string; reason_categories: string[]; suspicious_fields: string[]; assessment_version: string; created_at: string }) => <li key={event.id}><b>{event.risk_level}</b> · {event.assessment_version} · {new Date(event.created_at).toLocaleString("en-PH", { timeZone: "Asia/Manila" })}<br/><span className="text-muted">{[...event.reason_categories, ...event.suspicious_fields].join(", ") || "No flags"}</span></li>)}</ul></details>}
+          {(vetByOwner.get(b.owner_id) ?? []).length > 0 && <div className="mt-3 rounded-lg border border-line p-3"><p className="text-sm font-bold">Vetting documents (encrypted; each view is logged; you can&apos;t open your own)</p><ul className="mt-1 space-y-1 text-sm">{(vetByOwner.get(b.owner_id) ?? []).map((d) => <li key={d.id}><a className="text-mph underline" href={`/api/vetting/doc/${d.id}`} target="_blank" rel="noopener noreferrer">{DOC_TYPES[d.doc_type as DocType]?.label ?? d.doc_type}: {d.file_name}</a> <span className="text-muted">· {new Date(d.uploaded_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila" })}</span></li>)}</ul></div>}
           <ul className="mt-2 space-y-1">{b.docs.map((d: { p: string; url?: string }) => <li key={d.p}><a className="text-mph underline" href={d.url ?? "#"} target="_blank" rel="noopener">{d.p.split("/").pop()}</a></li>)}</ul>
           <form action={verifyBusiness} className="mt-3 flex flex-wrap items-end gap-2">
             <input type="hidden" name="id" value={b.id} />
