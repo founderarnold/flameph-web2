@@ -5,7 +5,7 @@ import { DONE_TEXT, type FeedDone } from "@/lib/member-shell";
 import { latestFeedAt } from "@/lib/member-shell-data";
 import { Notice, buttonClass } from "@/components/ui";
 import { SuggestedMemberCard } from "@/components/shell/MemberCard";
-import { followingIds, mutualCounts, suggestedMembers } from "@/lib/suggestions";
+import { followingIds, suggestedPeople } from "@/lib/suggestions";
 import { blockedIds, friendLists, mutedIds } from "@/lib/people";
 import { memberCompletion } from "@/lib/profile-completion";
 import { FeedFocus } from "@/components/shell/FeedFocus";
@@ -48,11 +48,11 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
   const meter = memberCompletion({ profile: p, business: biz, follows: following.size, emailVerified: verification.email_verified });
   const firstRun = p && "onboarded_at" in p && !p.onboarded_at; // false until the 0016 database update is run
 
-  // 2. Suggested MSMEs to connect with: same chapter, the member's industries, mutual connections, then same province.
+  // 2. Members to connect with: same city, chapter, people you both know, the member's industries, province and groups.
   //    Never someone already followed, a Friend, a pending request, muted or blocked.
   const exclude = new Set([...following, ...muted, ...blocked, ...friends.friends, ...friends.sent, ...friends.received]);
   const suggested = firstPage && !filters.industry && !filters.chapter && !filters.following
-    ? await suggestedMembers(user.id, { industries: p?.industries, chapter_id: p?.chapter_id, province: biz?.province ?? p?.province, sector: biz?.sector }, 6, { mutual: await mutualCounts(supabase), exclude })
+    ? await suggestedPeople(supabase, user.id, { industries: p?.industries, chapter_id: p?.chapter_id, province: biz?.province ?? p?.province, sector: biz?.sector }, 8, { exclude })
     : [];
 
   // 3. The feed: one page of member posts (PAGE_SIZE), with the ecosystem activity from the same stretch of time.
@@ -134,7 +134,7 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
       {suggested.length > 0 && (
         <section aria-labelledby="feed-suggested">
           <div className="flex items-baseline justify-between gap-2">
-            <h2 id="feed-suggested" className="text-lg font-bold">MSMEs to connect with</h2>
+            <h2 id="feed-suggested" className="text-lg font-bold">Members to connect with</h2>
             <Link href="/members" className="text-sm font-semibold text-primary underline">See all</Link>
           </div>
           <ul className="-mx-4 mt-3 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">

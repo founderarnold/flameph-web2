@@ -9,6 +9,7 @@ import { visibilityFromForm, type RegistrationVisibility } from "@/lib/privacy";
 import { feedResult } from "@/lib/member-shell";
 import { safeNext } from "@/lib/safe-next";
 import { STEPS, type Step } from "@/lib/onboarding";
+import { chapterGroupSlug, isGroupSlug } from "@/lib/groups";
 
 const s = (v: FormDataEntryValue | null, max = 120) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const uuid = (v: string) => (/^[0-9a-f-]{36}$/i.test(v) ? v : null);
@@ -30,12 +31,40 @@ export async function saveIndustries(fd: FormData) {
   after("industries", error ? "save" : undefined);
 }
 
-/** Step 2: the member's chapter (or none). */
+/** Step 2, when the profile has no place yet: province and city first, so we can suggest the member's local chapter. */
+export async function saveLocation(fd: FormData) {
+  const { supabase, user } = await requireUser("/welcome");
+  const province = s(fd.get("province"));
+  if (!PROVINCES.includes(province)) redirect("/welcome?step=chapter&where=1&error=province");
+  const { error } = await supabase.from("profiles").update({ province, city: s(fd.get("city")) || null }).eq("id", user.id);
+  revalidatePath("/home");
+  redirect(error ? "/welcome?step=chapter&where=1&error=save" : "/welcome?step=chapter");
+}
+
+/**
+ * Step 2: the member's local chapter (or none), and the industry chapters (groups) they want to be in.
+ * Joining the local chapter also joins its group, so its posts reach them. Industry groups that were shown and left
+ * unticked are left; groups that were not on the screen are never touched.
+ */
 export async function saveChapter(fd: FormData) {
   const { supabase, user } = await requireUser("/welcome");
   const chapter = uuid(s(fd.get("chapter_id"), 40));
   const { error } = await supabase.from("profiles").update({ chapter_id: chapter }).eq("id", user.id);
+  if (!error && chapter) {
+    const { data: c } = await supabase.from("chapters").select("id, slug").eq("id", chapter).maybeSingle();
+    if (c) await supabase.rpc("join_group", { p_slug: chapterGroupSlug(c) });
+  }
+  const shown = new Set(fd.getAll("shown_group").map(String).filter(isGroupSlug).slice(0, 40));
+  const picked = new Set(fd.getAll("industry_group").map(String).filter((g) => shown.has(g)));
+  await Promise.all([...picked].map((slug) => supabase.rpc("join_group", { p_slug: slug })));
+  const drop = [...shown].filter((g) => !picked.has(g));
+  if (drop.length) {
+    const { data: gs } = await supabase.from("community_groups").select("id").eq("kind", "industry").in("slug", drop);
+    const ids = (gs ?? []).map((g) => g.id as string);
+    if (ids.length) await supabase.from("group_members").delete().eq("user_id", user.id).in("group_id", ids);
+  }
   revalidatePath("/home");
+  revalidatePath("/groups", "layout");
   after("chapter", error ? "save" : undefined);
 }
 

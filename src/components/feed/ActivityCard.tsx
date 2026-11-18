@@ -11,11 +11,15 @@ export function ActivityCard({ card, back }: { card: Card; back: string }) {
         <span className="rounded-full bg-bg-soft px-2.5 py-0.5 text-muted">{card.kind}</span>
         {card.badge && <span className="rounded-full bg-ok-soft px-2.5 py-0.5 text-ok">{card.badge}</span>}
       </div>
-      <h3 id={`${card.id}-t`} className="mt-2 font-bold"><Link href={card.href} className="hover:underline">{card.title}</Link></h3>
+      <h3 id={`${card.id}-t`} className="mt-2 font-bold">{card.external
+        ? <a href={card.href} target="_blank" rel="noopener nofollow" className="hover:underline">{card.title}</a>
+        : <Link href={card.href} className="hover:underline">{card.title}</Link>}</h3>
       {card.sub && <p className="text-sm text-muted">{card.sub}</p>}
       {card.text && <p className="mt-1 line-clamp-3 text-[15px]">{card.text}</p>}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Link href={card.href} className={buttonClass({ variant: card.follow ? "outline" : "primary", size: "sm", className: "min-h-11" })}>{card.cta}</Link>
+        {card.external
+          ? <a href={card.href} target="_blank" rel="noopener nofollow" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}>{card.cta} <span aria-hidden>↗</span><span className="sr-only"> (opens another website)</span></a>
+          : <Link href={card.href} className={buttonClass({ variant: card.follow ? "outline" : "primary", size: "sm", className: "min-h-11" })}>{card.cta}</Link>}
         {card.follow && <div className="w-32"><FollowButton memberId={card.follow.memberId} following={card.follow.following} back={back} name={card.follow.name} /></div>}
       </div>
     </article>

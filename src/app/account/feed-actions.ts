@@ -6,6 +6,7 @@ import { feedResult, withFocus } from "@/lib/member-shell";
 import { safeNext } from "@/lib/safe-next";
 import { COMMENT_MAX, POST_ERRORS, POST_MAX, isAudience, isPostKind, isReaction, parseCategory, postErrorCode } from "@/lib/feed-rules";
 import { isGroupSlug } from "@/lib/groups";
+import { parseMedia, videoLink } from "@/lib/post-media";
 
 const s = (v: FormDataEntryValue | null, max = 300) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const uuid = (v: string) => (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) ? v : null);
@@ -15,17 +16,25 @@ export type FormState = { error?: string; values?: Record<string, string> };
 
 /** New Post: publish, then go back to the feed scrolled to the new post. */
 export async function createPost(_: FormState, fd: FormData): Promise<FormState> {
-  const { supabase } = await requireUser("/new-post");
+  const { supabase, user } = await requireUser("/new-post");
   const raw = typeof fd.get("body") === "string" ? (fd.get("body") as string).trim() : "";
   const kind = s(fd.get("kind"), 20);
   const cat = parseCategory(s(fd.get("category"), 200));
   const audience = s(fd.get("audience"), 20);
   const groupSlug = s(fd.get("group"), 80);
-  const values = { body: raw, kind, category: s(fd.get("category"), 200), audience, group: groupSlug };
+  const media = parseMedia(s(fd.get("media"), 4000), user.id);
+  const rawLink = s(fd.get("video_url"), 400);
+  const link = videoLink(rawLink);
+  const values = { body: raw, kind, category: s(fd.get("category"), 200), audience, group: groupSlug, media: JSON.stringify(media), video_url: rawLink };
+  if (rawLink && !link) return { error: POST_ERRORS.bad_video_link, values };
+  if (link && media.some((m) => m.type === "video")) return { error: POST_ERRORS.one_video, values };
   if (!cat) return { error: POST_ERRORS.category, values };
   if (raw.length < 2) return { error: POST_ERRORS.too_short, values };
   if (raw.length > POST_MAX) return { error: POST_ERRORS.too_long, values };
   const row: Record<string, unknown> = { kind: isPostKind(kind) ? kind : "update", category: cat.category, subcategory: cat.subcategory, body: raw };
+  // Photos and videos need the 0023 database update; posts without them work either way.
+  if (media.length) row.media = media;
+  if (link) row.video_url = link;
   // Friend-only and group posts need the 0018 database update; plain posts work either way.
   if (isAudience(audience) && audience !== "members") row.audience = audience;
   if (isGroupSlug(groupSlug)) {
@@ -44,7 +53,13 @@ export async function createPost(_: FormState, fd: FormData): Promise<FormState>
 export async function deletePost(fd: FormData) {
   const { supabase } = await requireUser("/home");
   const id = uuid(s(fd.get("post_id"), 40));
-  if (id) await supabase.from("feed_posts").delete().eq("id", id);
+  if (id) {
+    // The post's own photos and videos go with it (members can delete only files in their own folder).
+    const { data: post } = await supabase.from("feed_posts").select("author_id, media").eq("id", id).maybeSingle();
+    const { error } = await supabase.from("feed_posts").delete().eq("id", id);
+    const files = !error && post ? parseMedia(JSON.stringify(post.media ?? []), post.author_id as string).map((m) => m.path) : [];
+    if (files.length) await supabase.storage.from("media").remove(files);
+  }
   revalidatePath("/home");
   revalidatePath("/forum", "layout");
   redirect(feedResult("post-deleted"));
