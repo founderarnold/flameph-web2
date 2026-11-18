@@ -3,6 +3,7 @@ import { PageHero, Section, EmptyState } from "@/components/ui";
 import { list } from "@/lib/content";
 import { meta } from "@/lib/meta";
 import { FlameAdSlot } from "@/components/FlameAdSlot";
+import { FOCUS_REGIONS } from "@/lib/regions";
 
 export const metadata = meta("Chapters Near You", "Find a FLAME PH chapter in your region, province or city, or start one.", "/chapters");
 
@@ -18,6 +19,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
       <PageHero status="live" fil="Mga chapter sa inyong lugar" title="Chapters Near You" path="/chapters"
         intro="FLAME PH chapters are local groups of entrepreneurs led by volunteers from the community." />
       <Section>
+        <nav aria-label="Chapters and events by region" className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-muted">Chapters and events in:</span>
+          {FOCUS_REGIONS.map((r) => <Link key={r.slug} href={`/chapters/${r.slug}`} className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-4 text-sm font-semibold hover:border-primary">{r.name}</Link>)}
+        </nav>
         <form role="search" className="flex gap-2">
           <label htmlFor="cq" className="sr-only">Search by region, province or city</label>
           <input id="cq" name="q" defaultValue={q} placeholder="Region, province or city" className="input" />

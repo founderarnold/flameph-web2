@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isHome = path === "/";
   const memberTab = MEMBER_REWRITES[path];
-  // "?view=public" also opens the public page of a tab (/fulfillment, /pos, /bizconsult-ai) for members.
+  // "?view=public" also opens the public page of a tab (/fulfillment, /pos, /bizconsult-ai, /academy, /volunteering) for members.
   if (isHome || memberTab) {
     const signedInCookie = request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
     if (!signedInCookie || request.nextUrl.searchParams.get("view") === "public") return response;
@@ -51,5 +51,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/home", "/group-order", "/new-post", "/more", "/workspace", "/fulfillment", "/pos", "/m/:path*", "/welcome", "/members/:path*", "/posts/:path*", "/report", "/friends", "/groups", "/groups/:path*", "/forum", "/forum/:path*", "/account/:path*", "/sso/:path*", "/admin/:path*", "/auth/:path*", "/api/:path*", "/bizconsult-ai", "/business-calculators", "/calculators/:path*", "/login", "/join"],
+  matcher: ["/", "/home", "/group-order", "/new-post", "/more", "/workspace", "/fulfillment", "/pos", "/m/:path*", "/welcome", "/members/:path*", "/posts/:path*", "/report", "/friends", "/groups", "/groups/:path*", "/forum", "/forum/:path*", "/account/:path*", "/sso/:path*", "/admin/:path*", "/auth/:path*", "/api/:path*", "/bizconsult-ai", "/academy", "/volunteering", "/business-calculators", "/calculators/:path*", "/login", "/join"],
 };
