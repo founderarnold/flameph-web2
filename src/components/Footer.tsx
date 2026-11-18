@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { viaGo } from "@/lib/ecosystem";
 import { Logo } from "./Logo";
 import { NewsletterForm } from "./NewsletterForm";
+import { EcosystemFooter } from "./EcosystemFooter";
 import { NAV, LEGAL_LINKS } from "@/lib/nav";
 import { ORG, PURPOSE, REGISTRATION_LINE, TAGLINES } from "@/lib/site";
 import { getDict, getLang } from "@/lib/i18n";
@@ -12,6 +14,7 @@ export async function Footer() {
   const year = new Date().getFullYear();
   return (
     <footer className="mt-16 border-t border-line bg-bg-soft pb-24 lg:pb-0">
+      <EcosystemFooter here="flameph" />
       <div className="container-x grid gap-10 py-12 lg:grid-cols-[1.2fr_1fr]">
         <div>
           <div className="inline-block rounded-xl bg-white p-3"><Logo height={48} className="h-12 w-auto" /></div>
@@ -38,10 +41,10 @@ export async function Footer() {
             <ul className="mt-2 space-y-0.5">
               {g.items.map((it) => (
                 <li key={`${it.label}-${it.href}`}>
-                  {it.external ? (
+                  {it.external && viaGo(it.href, it.label) === it.href ? (
                     <a href={it.href} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-[15px] text-muted hover:text-fg hover:underline lg:min-h-9">{it.label} ↗</a>
                   ) : (
-                    <Link href={it.href} className="inline-flex min-h-11 items-center text-[15px] text-muted hover:text-fg hover:underline lg:min-h-9">{it.label}</Link>
+                    <Link href={viaGo(it.href, it.label)} className="inline-flex min-h-11 items-center text-[15px] text-muted hover:text-fg hover:underline lg:min-h-9">{it.label}</Link>
                   )}
                 </li>
               ))}

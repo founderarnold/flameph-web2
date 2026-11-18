@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import * as I from "@/components/icons";
+import { viaGo } from "@/lib/ecosystem";
 
 type Action = {
   title: string;
@@ -12,15 +13,15 @@ type Action = {
 };
 
 const ACTIONS: Action[] = [
-  { title: "Start a Business", text: "Explore business ideas, packages and practical guidance. Halimbawa: pumili ng negosyong pasok sa puhunan at skills mo.", href: "https://www.negosyodepot.com", external: true, accent: "#0b4fd1", image: "/goal-cards/start-business.webp" },
+  { title: "Start a Business", text: "Explore business ideas, packages and practical guidance. Halimbawa: pumili ng negosyong pasok sa puhunan at skills mo.", href: "https://www.negosyodepot.com/#/explore", external: true, accent: "#0b4fd1", image: "/goal-cards/start-business.webp" },
   { title: "Grow My Business", text: "Use training, tools, resources and community connections. Halimbawa: alamin kung paano dagdagan ang sales at ayusin ang operations.", href: "/explore", accent: "#24a467", image: "/goal-cards/grow-business.webp" },
-  { title: "Sell My Products", text: "Reach more customers through MarketplacePH. Halimbawa: ilagay online ang produkto para mas maraming makakita at bumili.", href: "https://www.marketplaceph.com", external: true, accent: "#ef3340", image: "/goal-cards/sell-products.webp" },
+  { title: "Sell My Products", text: "Reach more customers through MarketplacePH. Halimbawa: ilagay online ang produkto para mas maraming makakita at bumili.", href: "https://www.marketplaceph.com/sell/new", external: true, accent: "#ef3340", image: "/goal-cards/sell-products.webp" },
   { title: "Buy a Business", text: "Explore businesses and ready opportunities you can acquire through MarketplacePH. Halimbawa: humanap ng existing na negosyo na pasok sa budget at plano mo.", href: "https://www.marketplaceph.com", external: true, accent: "#1680f5", image: "/goal-cards/buy-business.webp" },
   { title: "Sell a Business", text: "Reach potential buyers when you are ready to transfer or sell your business. Halimbawa: ilista ang negosyo kasama ang malinaw na details para makita ng interested buyers.", href: "https://www.marketplaceph.com", external: true, accent: "#ef3340", image: "/goal-cards/sell-business.webp" },
   { title: "Pasalo a Business", text: "Find or hand over an operating business through a clear pasalo opportunity. Halimbawa: ipasa ang store sa bagong operator na kayang magpatuloy ng negosyo.", href: "https://www.marketplaceph.com", external: true, accent: "#f18a10", image: "/goal-cards/pasalo-business.webp" },
-  { title: "Franchise a Business", text: "Compare franchise and ready-to-start business packages from NegosyoDepot. Halimbawa: pumili ng tested concept at alamin ang support bago mag-franchise.", href: "https://www.negosyodepot.com", external: true, accent: "#6d5ce7", image: "/goal-cards/franchise-business.webp" },
-  { title: "Find Suppliers", text: "Explore suppliers, distributors and business packages. Halimbawa: maghanap ng mapagkakatiwalaang supplier na swak sa budget.", href: "https://www.negosyodepot.com", external: true, accent: "#6d5ce7", image: "/goal-cards/find-suppliers.webp" },
-  { title: "Find Cargo Movers", text: "Connect with trucking, freight and air-cargo providers for MSME shipments. Halimbawa: ipadala ang products sa ibang lungsod o bansa nang mas maayos.", href: "https://www.marketplaceph.com", external: true, accent: "#1680f5", image: "/goal-cards/cargo-movers.webp" },
+  { title: "Franchise a Business", text: "Compare franchise and ready-to-start business packages from NegosyoDepot. Halimbawa: pumili ng tested concept at alamin ang support bago mag-franchise.", href: "https://www.negosyodepot.com/#/explore", external: true, accent: "#6d5ce7", image: "/goal-cards/franchise-business.webp" },
+  { title: "Find Suppliers", text: "Explore suppliers, distributors and business packages. Halimbawa: maghanap ng mapagkakatiwalaang supplier na swak sa budget.", href: "https://www.negosyodepot.com/#/find", external: true, accent: "#6d5ce7", image: "/goal-cards/find-suppliers.webp" },
+  { title: "Find Cargo Movers", text: "Connect with trucking, freight and air-cargo providers for MSME shipments. Halimbawa: ipadala ang products sa ibang lungsod o bansa nang mas maayos.", href: "https://www.marketplaceph.com/delivery/new", external: true, accent: "#1680f5", image: "/goal-cards/cargo-movers.webp" },
   { title: "Find Vehicle Dealers", text: "Find vehicle dealers and business-ready transport options for deliveries or operations. Halimbawa: humanap ng van o truck na bagay sa delivery needs at budget mo.", href: "https://www.marketplaceph.com", external: true, accent: "#0b4fd1", image: "/goal-cards/vehicle-dealers.webp" },
   { title: "Find Import Assistance", text: "Get practical help with import documents, shipping and customs coordination. Halimbawa: magpatulong sa requirements bago umangkat ng supplies o products.", href: "/directory", accent: "#0b4fd1", image: "/goal-cards/import-assistance.webp" },
   { title: "Find Tax Compliance Assistance", text: "Find bookkeeping and tax professionals to help keep your business records and filings in order. Halimbawa: ayusin ang resibo at BIR requirements bago ang deadline.", href: "/get-involved/professional-services", accent: "#24a467", image: "/goal-cards/tax-compliance.webp" },
@@ -28,15 +29,15 @@ const ACTIONS: Action[] = [
   { title: "Find Business Opportunities", text: "Discover FLAME PH and NegosyoDepot opportunities. Halimbawa: tingnan ang distributorship, partnership o bagong pagkakakitaan.", href: "/opportunities", accent: "#f18a10", image: "/goal-cards/business-opportunities.webp" },
   { title: "Find Investment Opportunities", text: "Explore grants, programs and carefully reviewed opportunities for business growth. Halimbawa: humanap ng opportunity na tugma sa puhunan, risk at long-term plan mo.", href: "/opportunities", accent: "#e4a400", image: "/goal-cards/investment-opportunities.webp" },
   { title: "Find Partners or Joint Venture", text: "Connect with potential partners for a shared project, investment or market opportunity. Halimbawa: humanap ng ka-partner para pagsamahin ang skills, puhunan o customers.", href: "/partners", accent: "#7258e8", image: "/goal-cards/joint-venture.webp" },
-  { title: "Find Customers", text: "List, promote and sell through the right ecosystem service. Halimbawa: ipakilala ang negosyo sa tamang buyers sa iyong lugar.", href: "https://www.marketplaceph.com", external: true, accent: "#00a99d", image: "/goal-cards/find-customers.webp" },
+  { title: "Find Customers", text: "List, promote and sell through the right ecosystem service. Halimbawa: ipakilala ang negosyo sa tamang buyers sa iyong lugar.", href: "https://www.marketplaceph.com/sell/new", external: true, accent: "#00a99d", image: "/goal-cards/find-customers.webp" },
   { title: "Easy Startup for Aspiring Managers", text: "Explore ready-to-start pizza business packages and operational support. Halimbawa: magsimula ng pizza business gamit ang tested package at support.", href: "https://www.managerspizza.com", external: true, accent: "#ef1762", image: "/goal-cards/pizza-startup.webp" },
   { title: "Get Business Advice", text: "Ask FLAME AI or connect with mentors and experts. Halimbawa: humingi ng gabay sa pricing, permits o susunod na business step.", href: "/bizconsult-ai", accent: "#7258e8", image: "/goal-cards/business-advice.webp" },
   { title: "Find Digital Marketing Experts", text: "Connect with professionals who can improve your online visibility, content and customer reach. Halimbawa: magpatulong sa social media at online ads para mas maraming makakita ng negosyo mo.", href: "/get-involved/professional-services", accent: "#00a99d", image: "/goal-cards/digital-marketing-experts.webp" },
   { title: "Find Training", text: "Join FLAME Academy, workshops and webinars. Halimbawa: matuto ng bookkeeping, marketing at business planning.", href: "/academy", accent: "#e4a400", image: "/goal-cards/find-training.webp" },
-  { title: "Find a Job", text: "Search employment opportunities on MarketplacePH. Halimbawa: maghanap ng trabahong tugma sa skills at lokasyon mo.", href: "https://www.marketplaceph.com", external: true, accent: "#1680f5", image: "/goal-cards/find-job.webp" },
-  { title: "Work From Home Jobs", text: "Find flexible remote and home-based work opportunities through MarketplacePH. Halimbawa: maghanap ng online o work-from-home na trabaho na bagay sa schedule at skills mo.", href: "https://www.marketplaceph.com", external: true, accent: "#0b4fd1", image: "/goal-cards/work-from-home-jobs.webp" },
+  { title: "Find a Job", text: "Search employment opportunities on MarketplacePH. Halimbawa: maghanap ng trabahong tugma sa skills at lokasyon mo.", href: "https://www.marketplaceph.com/jobs", external: true, accent: "#1680f5", image: "/goal-cards/find-job.webp" },
+  { title: "Work From Home Jobs", text: "Find flexible remote and home-based work opportunities through MarketplacePH. Halimbawa: maghanap ng online o work-from-home na trabaho na bagay sa schedule at skills mo.", href: "https://www.marketplaceph.com/jobs", external: true, accent: "#0b4fd1", image: "/goal-cards/work-from-home-jobs.webp" },
   { title: "Find Financing Assistance", text: "Explore grants, loans and trusted financing information for your next business step. Halimbawa: maghanap ng financing option para sa dagdag puhunan o bagong equipment.", href: "/opportunities", accent: "#24a467", image: "/goal-cards/financing-assistance.webp" },
-  { title: "Hire People", text: "Post jobs and reach applicants through MarketplacePH. Halimbawa: humanap ng maaasahang staff para lumago ang negosyo.", href: "https://www.marketplaceph.com", external: true, accent: "#18a7d4", image: "/goal-cards/hire-people.webp" },
+  { title: "Hire People", text: "Post jobs and reach applicants through MarketplacePH. Halimbawa: humanap ng maaasahang staff para lumago ang negosyo.", href: "https://www.marketplaceph.com/jobs/post", external: true, accent: "#18a7d4", image: "/goal-cards/hire-people.webp" },
   { title: "Find Business Property", text: "Explore Real Estate for MSMEs via Corporate H. Halimbawa: humanap ng pwesto para sa store, office o production area.", href: "/real-estate-for-msmes", accent: "#2e9c59", image: "/goal-cards/business-property.webp" },
   { title: "Earn Extra Income", text: "Explore affiliate and referral opportunities. Halimbawa: kumita sa qualified referrals at partner opportunities.", href: "/get-involved/affiliate", accent: "#e55773", image: "/goal-cards/extra-income.webp" },
   { title: "Build Portfolio", text: "Volunteer your professional services to gain hands-on experience, build a credible portfolio, and unlock earning opportunities through upgraded services. Halimbawa: tumulong sa isang MSME project, idagdag ang output sa portfolio mo, at mag-offer ng premium service kapag handa ka na.", href: "/get-involved/professional-services", accent: "#6d52e5", image: "/goal-cards/build-portfolio.webp" },
@@ -64,6 +65,9 @@ function SmartLink({ action }: { action: Action }) {
     </>
   );
   const cls = "group flex h-full flex-col items-start gap-0 rounded-2xl border border-line bg-card p-5 shadow-[0_8px_24px_rgba(0,50,137,.08)] transition hover:-translate-y-1 hover:border-primary hover:shadow-[0_14px_34px_rgba(0,50,137,.14)]";
+  // MarketplacePH and NegosyoDepot open through /go, which says they are focused apps of the same FLAME PH ecosystem.
+  const go = action.external ? viaGo(action.href, action.title) : action.href;
+  if (go !== action.href) return <Link href={go} className={cls}>{body}</Link>;
   return action.external ? <a href={action.href} target="_blank" rel="noopener" className={cls}>{body}<span className="sr-only"> (opens in a new tab)</span></a> : <Link href={action.href} className={cls}>{body}</Link>;
 }
 
@@ -117,7 +121,8 @@ export function EcosystemFrontDoor() {
             <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
               {ECOSYSTEM.map((item) => {
                 const body = <><span className="relative block h-16 w-full"><Image src={item.image} alt={`${item.name} logo`} fill sizes="220px" className="object-contain object-left" /></span><strong className="mt-3 block text-sm text-primary">{item.name}</strong><span className="mt-1 block text-xs leading-5 text-muted">{item.description}</span></>;
-                return <li key={item.name}>{item.external ? <a href={item.href} target="_blank" rel="noopener" className="block min-h-44 rounded-2xl border border-line p-4 hover:border-primary">{body}</a> : <Link href={item.href} className="block min-h-44 rounded-2xl border border-line p-4 hover:border-primary">{body}</Link>}</li>;
+                const go = item.external ? viaGo(item.href) : item.href;
+                return <li key={item.name}>{item.external && go === item.href ? <a href={item.href} target="_blank" rel="noopener" className="block min-h-44 rounded-2xl border border-line p-4 hover:border-primary">{body}</a> : <Link href={go} className="block min-h-44 rounded-2xl border border-line p-4 hover:border-primary">{body}</Link>}</li>;
               })}
             </ul>
           </div>

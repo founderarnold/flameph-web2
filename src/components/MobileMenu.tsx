@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { viaGo } from "@/lib/ecosystem";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -60,10 +61,10 @@ export function MobileMenu({ groups, lang, signedIn, labels }: { groups: NavGrou
                 <ul className="pb-3">
                   {g.items.map((it) => (
                     <li key={`${it.label}-${it.href}`}>
-                      {it.external ? (
+                      {it.external && viaGo(it.href, it.label) === it.href ? (
                         <a href={it.href} target="_blank" rel="noopener" className="flex min-h-11 items-center rounded-lg px-3 text-base text-muted hover:bg-bg-soft">{it.label} ↗</a>
                       ) : (
-                        <Link href={it.href} className="flex min-h-11 items-center rounded-lg px-3 text-base text-muted hover:bg-bg-soft">{it.label}</Link>
+                        <Link href={viaGo(it.href, it.label)} className="flex min-h-11 items-center rounded-lg px-3 text-base text-muted hover:bg-bg-soft">{it.label}</Link>
                       )}
                     </li>
                   ))}

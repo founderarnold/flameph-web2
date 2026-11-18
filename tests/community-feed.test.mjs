@@ -135,7 +135,9 @@ test("activity cards link to the tab that owns them, and the action comes back t
   assert.match(src, /href: "\/academy"/);
   assert.match(src, /href: `\/members\/\$\{b\.slug\}`/);
   assert.match(src, /kind: "New member"/);
-  assert.match(await read("src/app/(member)/group-order/page.tsx"), /id=\{`deal-\$\{d\.id\}`\}/);
+  // The Group Order tab renders each order with GroupOrderCard (Phase 10), which carries the same card id.
+  assert.match(await read("src/app/(member)/group-order/page.tsx"), /<GroupOrderCard d=\{d\}/);
+  assert.match(await read("src/components/group-order/GroupOrderCard.tsx"), /id=\{`deal-\$\{d\.id\}`\}/);
   // Joining from the Group Order tab returns to the feed scrolled to the same card id.
   assert.match(await read("src/app/account/actions.ts"), /`deal-\$\{deal\}`/);
   assert.match(await read("src/app/(member)/m/fulfillment/page.tsx"), /id=\{`offer-\$\{o\.id\}`\}/);

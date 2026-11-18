@@ -67,6 +67,7 @@ export function RelationshipActions({ memberId, name, rel, back }: { memberId: s
         <button className={`${btn} btn-outline`} aria-label={`Send ${name} a message`}>Message</button>
       </form>
       <Link href={`/requests/new?to=${memberId}`} className={`${btn} btn-outline`} aria-label={`Send ${name} a request for a quote`}>Send a request</Link>
+      <Link href={`/group-order/new?to=${memberId}`} className={`${btn} btn-outline`} aria-label={`Start a group order with ${name} as the supplier`}>Group order</Link>
       {rel.friend === "received" && (
         <form action={removeFriend}>
           <Hidden memberId={memberId} back={back} extra={{ what: "declined" }} />
