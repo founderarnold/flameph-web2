@@ -1,4 +1,5 @@
 "use server";
+import { log as ecosystemLog, notifySites } from "@/lib/ecosystem-sso";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { adminContext } from "@/lib/admin/guard";
@@ -265,4 +266,16 @@ export async function saveSettings(fd: FormData) {
   await ctx.audit("settings_update", "settings", undefined, { keys: Object.keys(values) });
   revalidateTag("settings"); revalidateTag("stats");
   redirect("/admin/settings?saved=1");
+}
+
+/** Phase 10A off switches. Kept apart from the other settings: not public, and read by the database itself. */
+export async function saveEcosystemSwitches(fd: FormData) {
+  const ctx = await adminContext(["super_admin", "admin"]);
+  const value = { badges: fd.get("badges") === "on", sso: fd.get("sso") === "on" };
+  const { data: before } = await ctx.db.from("settings").select("value").eq("key", "ecosystem").maybeSingle();
+  await ctx.db.from("settings").upsert({ key: "ecosystem", value, is_public: false, updated_at: new Date().toISOString() });
+  await ctx.audit("ecosystem_switches", "settings", "ecosystem", { before: before?.value ?? null, after: value });
+  await ecosystemLog(ctx.db, "flameph", ctx.user.id, "switch_change", [], "ok", `badges=${value.badges} sso=${value.sso}`);
+  if (!value.badges && (before?.value as { badges?: boolean } | undefined)?.badges !== false) await notifySites(ctx.db, null, "switch_change");
+  redirect("/admin/settings?switches=1");
 }
