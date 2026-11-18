@@ -42,7 +42,7 @@ export default function Page() {
 
       <h2>3. What moves between the ecosystem web apps</h2>
       <p><strong>For sign-in only:</strong> your account identity (name and verified email) when you choose to sign in to another ecosystem site.</p>
-      <p><strong>Only with consent 3:</strong> your verified status, badge level, confirmed record count and category mix, and account creation date.</p>
+      <p><strong>Only with consent 3:</strong> your verified status, badge level, confirmed record count and category mix, and account creation date (month and year). Your badge shows on those sites only after your account is 3 months old. If you turn consent 3 off, your badge is removed from those sites <strong>within 15 minutes</strong>. Every time one of those sites receives any of this, it is recorded, and you can ask us for that record.</p>
       <p><strong>Never shared:</strong> private messages, vetting documents, amounts in records, and other members&apos; contact details.</p>
       <p>Every cross-site data access is logged for audit.</p>
 
