@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSettings } from "@/lib/settings";
 import { DEFAULT_MEMBER_MONTHLY_CAP_USD } from "./budget";
+import { fetchAll } from "@/lib/paging";
 
 export async function getAnonId(): Promise<string> {
   const c = await cookies();
@@ -29,6 +30,21 @@ export function startOfManilaMonth() {
 export type Gate = { ok: true; limit: number; used: number } | { ok: false; reason: "limit" | "resting" | "member_cap"; limit?: number };
 
 /** Daily per-user/IP limits, each member's monthly AI allowance (USD) and the overall monthly spend cap. */
+/**
+ * Ka-FLAME spending this month (Manila time), for everyone (null) or one member. Added up by the database (0027), so it
+ * stays right past 1,000 messages a month. Before 0027 it falls back to adding rows here, page by page.
+ */
+async function monthSpend(admin: SupabaseClient, userId: string | null): Promise<number> {
+  const { data, error } = await admin.rpc("ai_month_spend", { p_user: userId });
+  if (!error) return Number(data ?? 0);
+  const rows = await fetchAll<{ cost_usd: number | null }>((a, b) => {
+    let q = admin.from("ai_messages").select("cost_usd").gte("created_at", startOfManilaMonth()).order("created_at");
+    if (userId) q = q.eq("user_id", userId);
+    return q.range(a, b);
+  });
+  return rows.reduce((s, r) => s + Number(r.cost_usd ?? 0), 0);
+}
+
 export async function checkGate(admin: SupabaseClient, who: { userId: string | null; anonId: string; ipHash: string }): Promise<Gate> {
   const settings = await getSettings();
   const limits = settings.ai_limits ?? { guest: 3, free: 10 };
@@ -41,16 +57,14 @@ export async function checkGate(admin: SupabaseClient, who: { userId: string | n
 
   const cap = Number(settings.ai_monthly_cap_usd ?? 0);
   if (cap > 0) {
-    const { data } = await admin.from("ai_messages").select("cost_usd").gte("created_at", startOfManilaMonth());
-    const spent = (data ?? []).reduce((s, r) => s + Number(r.cost_usd ?? 0), 0);
+    const spent = await monthSpend(admin, null);
     if (spent >= cap) return { ok: false, reason: "resting" };
   }
 
   // Each member's own monthly allowance, so one account can never cost more than this in a month (0 = off).
   const memberCap = Number(settings.ai_member_monthly_cap_usd ?? DEFAULT_MEMBER_MONTHLY_CAP_USD);
   if (who.userId && memberCap > 0) {
-    const { data } = await admin.from("ai_messages").select("cost_usd").eq("user_id", who.userId).gte("created_at", startOfManilaMonth());
-    const spent = (data ?? []).reduce((s, r) => s + Number(r.cost_usd ?? 0), 0);
+    const spent = await monthSpend(admin, who.userId);
     if (spent >= memberCap) return { ok: false, reason: "member_cap" };
   }
 

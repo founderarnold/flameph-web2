@@ -8,7 +8,7 @@ export type SuggestedBiz = { id: string; owner_id: string; name: string; slug: s
 
 /** Who the member already follows. Empty until the 0016 database update is run. */
 export async function followingIds(supabase: SupabaseClient, userId: string): Promise<Set<string>> {
-  const { data, error } = await supabase.from("member_follows").select("followee_id").eq("follower_id", userId);
+  const { data, error } = await supabase.from("member_follows").select("followee_id").eq("follower_id", userId).limit(500);
   return new Set(error ? [] : (data ?? []).map((r) => r.followee_id as string));
 }
 

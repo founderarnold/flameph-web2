@@ -18,7 +18,7 @@ export default async function Business({ searchParams }: { searchParams: Promise
   const { data: biz } = await supabase.from("businesses").select("*").eq("owner_id", user.id).limit(1).maybeSingle();
   const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
   const { data: products, error: productsError } = biz
-    ? await supabase.from("business_products").select("*").eq("business_id", biz.id).order("sort").order("created_at")
+    ? await supabase.from("business_products").select("*").eq("business_id", biz.id).order("sort").order("created_at").limit(100)
     : { data: null, error: null };
   const rideSafeTag = providerType && !String(biz?.products ?? "").toLowerCase().includes(`ridesafe provider service: ${providerType.toLowerCase()}`)
     ? `RideSafe provider service: ${providerType}`

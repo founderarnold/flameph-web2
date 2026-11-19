@@ -3,6 +3,7 @@ import { viaGo } from "@/lib/ecosystem";
 import { requireUser, isStaffRole } from "@/lib/auth";
 import MORE from "@/content/more.json";
 import { TabShell } from "@/components/shell/TabShell";
+import { InstallApp } from "@/components/InstallApp";
 
 export const metadata = { title: "More" };
 
@@ -15,6 +16,7 @@ export default async function MoreTab() {
   const groups = (MORE.groups as Group[]).filter((g) => !g.staffOnly || isStaffRole(roles));
   return (
     <TabShell title="More" intro="Everything on FLAME PH, in one place.">
+      <div className="mb-5"><InstallApp /></div>
       <nav aria-label="All FLAME PH pages" className="space-y-5">
         <ul className="flex flex-wrap gap-2" aria-label="Jump to a group">
           {groups.map((g) => (

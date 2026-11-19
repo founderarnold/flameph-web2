@@ -1,7 +1,13 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { createClient, createEmailLinkClient } from "@/lib/supabase/browser";
+import { hasSupabase } from "@/lib/env";
+
+// Phase 11: the Supabase library (the biggest part of this page's code) loads right after the page shows, not before,
+// so the form appears sooner on a slow phone. It is ready long before anyone finishes typing.
+const loadAuth = () => import("@/lib/supabase/browser");
+const client = async () => (await loadAuth()).createClient()!;
+const linkClient = async () => { const m = await loadAuth(); return m.createEmailLinkClient() ?? m.createClient()!; };
 import { Turnstile } from "@/components/Turnstile";
 import { Switch } from "@/components/ui";
 import { CONSENTS, CONSENT_KEYS, POLICY_PAGES, POLICY_VERSION, type ConsentKey } from "@/lib/policy";
@@ -22,7 +28,8 @@ type Props = { mode: "join" | "login"; next?: string; haveCode?: boolean; initia
  */
 export function AuthForm({ mode, next: nextRaw = AFTER_SIGN_IN, haveCode = false, initialEmail = "", referral }: Props) {
   const next = safeNext(nextRaw);
-  const supabase = createClient();
+  const supabase = hasSupabase;
+  useEffect(() => { void loadAuth(); }, []);
   const [method, setMethod] = useState<Method>(haveCode ? "code" : "password");
   const [email, setEmail] = useState(initialEmail);
   const [name, setName] = useState("");
@@ -77,7 +84,7 @@ export function AuthForm({ mode, next: nextRaw = AFTER_SIGN_IN, haveCode = false
     setBusy(true); setTopError("");
     // Backup copy of "where to go next": if the provider trims the return link, /auth/callback reads this.
     try { document.cookie = `fl_next=${encodeURIComponent(next)}; path=/; max-age=900; samesite=lax; secure`; } catch {}
-    const { error } = await supabase!.auth.signInWithOAuth({
+    const { error } = await (await client()).auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: callback(mode === "join" ? `&consent=1&mkt=${marketing ? 1 : 0}${consentQuery}${referral ? `&ref=${encodeURIComponent(referral)}` : ""}` : ""),
@@ -97,7 +104,7 @@ export function AuthForm({ mode, next: nextRaw = AFTER_SIGN_IN, haveCode = false
       const res = await fetch("/api/auth/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, email, password, consent, marketing, ref: referral }) });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) { setBusy(false); return setError(j.error || "May problema. Please try again."); }
-      const { data, error } = await supabase!.auth.signUp({
+      const { data, error } = await (await client()).auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -116,12 +123,12 @@ export function AuthForm({ mode, next: nextRaw = AFTER_SIGN_IN, haveCode = false
       setTurnstileToken(""); setAuthBotReset((n) => n + 1);
       if (error) { setBusy(false); return setError(/already registered|already exists/i.test(error.message) ? "May account na ang email na ito. Log in instead, or use \"Email me a link\"." : "Hindi ma-create ang account. Please try again."); }
       if (data.user && data.user.identities?.length === 0) { setBusy(false); return setError("May account na ang email na ito. Log in instead, or use \"Email me a link\"."); }
-      if (data.session) await supabase!.auth.signOut();
+      if (data.session) await (await client()).auth.signOut();
       remember();
       setBusy(false); setCodeSent(true); setCode(""); setMethod("code");
       return;
     }
-    const { error } = await supabase!.auth.signInWithPassword({
+    const { error } = await (await client()).auth.signInWithPassword({
       email: email.trim(),
       password,
       options: { captchaToken: turnstileToken },
@@ -141,7 +148,7 @@ export function AuthForm({ mode, next: nextRaw = AFTER_SIGN_IN, haveCode = false
     if (!turnstileToken) return setError("Please complete the security check.");
     setBusy(true); setError("");
     const target = resetting ? "/account/password" : next;
-    const { error } = await (createEmailLinkClient() ?? supabase!).auth.signInWithOtp({
+    const { error } = await (await linkClient()).auth.signInWithOtp({
       email: email.trim(),
       options: {
         emailRedirectTo: `${window.location.origin}/auth/link?next=${encodeURIComponent(target)}`,
@@ -160,7 +167,7 @@ export function AuthForm({ mode, next: nextRaw = AFTER_SIGN_IN, haveCode = false
   async function verify(token: string) {
     if (busy || !email.trim()) return;
     setBusy(true); setError("");
-    const { error } = await supabase!.auth.verifyOtp({ email: email.trim(), token, type: "email" });
+    const { error } = await (await client()).auth.verifyOtp({ email: email.trim(), token, type: "email" });
     setBusy(false);
     if (error) { setCode(""); return setError("Mali o expired ang code. Check the newest email, or tap \"Send a new link\"."); }
     finish(resetting ? "/account/password" : next);

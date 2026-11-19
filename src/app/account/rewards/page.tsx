@@ -21,7 +21,7 @@ export default async function Rewards({ searchParams }: { searchParams: Promise<
   ]);
   const [{ data: pts }, { data: items }, { data: claims }, rep] = await Promise.all([
     supabase.rpc("member_points"),
-    supabase.from("reward_items").select("*").eq("published", true).order("points_cost"),
+    supabase.from("reward_items").select("*").eq("published", true).order("points_cost").limit(100),
     supabase.from("reward_redemptions").select("id, item_title, points, status, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
     reputation(supabase, user.id),
   ]);

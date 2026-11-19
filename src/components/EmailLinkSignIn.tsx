@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/browser";
 import { safeNext } from "@/lib/safe-next";
 
 /**
@@ -20,9 +19,10 @@ export function EmailLinkSignIn() {
     history.replaceState(null, "", window.location.pathname + window.location.search);
     if (failed || !access_token || !refresh_token) { window.location.replace("/login?error=1"); return; }
     setMsg("Signing you in…");
-    createClient()?.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
-      window.location.replace(error ? "/login?error=1" : to);
-    });
+    // Phase 11: the Supabase library loads only on the rare visit that carries a sign-in link, not on every page.
+    import("@/lib/supabase/browser").then(({ createClient }) => createClient()?.auth.setSession({ access_token, refresh_token })).then((r) => {
+      window.location.replace(!r || r.error ? "/login?error=1" : to);
+    }).catch(() => window.location.replace("/login?error=1"));
   }, []);
   return msg ? <div role="status" className="fixed inset-x-0 top-0 z-[60] bg-primary p-3 text-center font-semibold text-primary-fg">{msg}</div> : null;
 }

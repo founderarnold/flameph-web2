@@ -18,7 +18,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ j
   const pub = createPublicClient();
   const { supabase, user } = await getSession();
   const [{ data }, { data: counts }, mineRes] = await Promise.all([
-    pub ? pub.from("deals").select("*").eq("published", true).order("deadline", { ascending: true, nullsFirst: false }) : Promise.resolve({ data: [] }),
+    pub ? pub.from("deals").select("*").eq("published", true).order("deadline", { ascending: true, nullsFirst: false }).limit(100) : Promise.resolve({ data: [] }),
     pub ? pub.rpc("deal_counts") : Promise.resolve({ data: [] }),
     user && supabase ? supabase.from("deal_participants").select("deal_id, quantity").eq("user_id", user.id) : null,
   ]);

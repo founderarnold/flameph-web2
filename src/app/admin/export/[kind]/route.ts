@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminContext } from "@/lib/admin/guard";
+import { fetchAll } from "@/lib/paging";
 import { REAL_ESTATE_ADMIN_SECTIONS } from "@/lib/real-estate-admin";
 
 const csv = (rows: Record<string, unknown>[]) => {
@@ -19,26 +20,29 @@ export async function GET(req: Request, { params }: { params: Promise<{ kind: st
   const url = new URL(req.url);
   let rows: Record<string, unknown>[] = [];
   if (kind === "members") {
-    const [{ data: profiles }, users] = await Promise.all([db.from("profiles").select("*").order("created_at"), db.auth.admin.listUsers({ perPage: 1000 })]);
+    const [{ data: profiles }, users] = await Promise.all([fetchAll((a, b) => db.from("profiles").select("*").order("created_at").order("id").range(a, b)).then((data) => ({ data })), db.auth.admin.listUsers({ perPage: 1000 })]);
     const byId = new Map((users.data?.users ?? []).map((u) => [u.id, u]));
     rows = (profiles ?? []).map((p) => ({ member_code: p.member_code, full_name: p.full_name, email: byId.get(p.id)?.email, email_verified: Boolean(byId.get(p.id)?.email_confirmed_at), mobile: p.mobile, province: p.province, city: p.city, business_stage: p.business_stage, tier: p.tier, status: p.status, consent_marketing: p.consent_marketing, created_at: p.created_at }));
   } else if (kind === "submissions") {
-    let q = db.from("submissions").select("*").order("created_at", { ascending: false });
-    if (url.searchParams.get("type")) q = q.eq("type", url.searchParams.get("type")!);
-    if (url.searchParams.get("status")) q = q.eq("status", url.searchParams.get("status")!);
-    const { data } = await q;
+    const data = await fetchAll((a, b) => {
+      let q = db.from("submissions").select("*").order("created_at", { ascending: false }).order("id");
+      if (url.searchParams.get("type")) q = q.eq("type", url.searchParams.get("type")!);
+      if (url.searchParams.get("status")) q = q.eq("status", url.searchParams.get("status")!);
+      return q.range(a, b);
+    });
     rows = (data ?? []).map((r) => { const { data: d, ...rest } = r; delete (rest as Record<string, unknown>).ip_hash; return { ...rest, ...(d as object) }; });
   } else if (kind === "newsletter") {
-    const { data } = await db.from("newsletter_subscribers").select("email,confirmed_at,unsubscribed_at,created_at").not("confirmed_at", "is", null);
-    rows = data ?? [];
+    rows = await fetchAll((a, b) => db.from("newsletter_subscribers").select("email,confirmed_at,unsubscribed_at,created_at").not("confirmed_at", "is", null).order("created_at").range(a, b));
   } else {
     const realEstate = Object.values(REAL_ESTATE_ADMIN_SECTIONS).find((section) => section.exportKind === kind);
     if (!realEstate) return NextResponse.json({ error: "Unknown export" }, { status: 404 });
-    let q = db.from(realEstate.table).select("*").order("created_at", { ascending: false });
     const status = url.searchParams.get("status");
-    if (status && realEstate.statuses.includes(status as never)) q = q.eq("status", status);
-    const { data } = await q;
-    rows = (data ?? []).map((row) => {
+    const data = await fetchAll<Record<string, unknown>>((a, b) => {
+      let q = db.from(realEstate.table).select("*").order("created_at", { ascending: false });
+      if (status && realEstate.statuses.includes(status as never)) q = q.eq("status", status);
+      return q.range(a, b);
+    });
+    rows = data.map((row) => {
       const nested = row[realEstate.dataColumn] as Record<string, unknown> | null;
       const rest = { ...row } as Record<string, unknown>;
       delete rest[realEstate.dataColumn];

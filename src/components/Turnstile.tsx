@@ -1,7 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type TurnstileApi = {
   render: (element: HTMLElement, options: Record<string, unknown>) => string;
@@ -19,6 +19,25 @@ export function Turnstile({ action, onToken, resetKey = 0 }: { action: string; o
   const widgetId = useRef<string | null>(null);
   const onTokenRef = useRef(onToken);
   onTokenRef.current = onToken;
+  // Phase 11: Cloudflare's check is about 1.7 MB. It loads only when the visitor starts using the form (a tap, a click
+  // or typing in it), or after the form has been on screen for a few seconds, never just because a page has a form
+  // somewhere (like the newsletter box in the footer). Visitors who never use a form never download it.
+  const [wanted, setWanted] = useState(false);
+  useEffect(() => {
+    const box = container.current;
+    if (!box || wanted) return;
+    const scope: HTMLElement = box.closest("form") ?? box.parentElement ?? box;
+    const go = () => setWanted(true);
+    const events = ["focusin", "pointerdown", "touchstart", "keydown"] as const;
+    events.forEach((t) => scope.addEventListener(t, go, { once: true, passive: true }));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const io = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { if (!timer) timer = setTimeout(go, 4000); }
+      else if (timer) { clearTimeout(timer); timer = undefined; }
+    }) : null;
+    io?.observe(box);
+    return () => { events.forEach((t) => scope.removeEventListener(t, go)); io?.disconnect(); if (timer) clearTimeout(timer); };
+  }, [wanted]);
 
   const render = useCallback(() => {
     if (!siteKey || !container.current || !window.turnstile || widgetId.current) return;
@@ -55,7 +74,7 @@ export function Turnstile({ action, onToken, resetKey = 0 }: { action: string; o
 
   return (
     <div className="min-h-[65px]" aria-label="Security check">
-      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" onReady={render} />
+      {wanted && <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" onReady={render} />}
       <div ref={container} />
     </div>
   );

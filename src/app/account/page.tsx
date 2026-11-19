@@ -26,8 +26,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   // Growth features (0003 database update). Each query is empty, not an error page, until that update is run.
   const since30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [{ data: productRows }, { data: stats }, { count: newInquiries }, { data: opps }, { data: deals }, events] = await Promise.all([
-    biz ? supabase.from("business_products").select("id").eq("business_id", biz.id) : Promise.resolve({ data: [] }),
-    biz ? supabase.from("business_stats").select("views, clicks").eq("business_id", biz.id).gte("day", since30) : Promise.resolve({ data: [] }),
+    biz ? supabase.from("business_products").select("id").eq("business_id", biz.id).limit(100) : Promise.resolve({ data: [] }),
+    biz ? supabase.from("business_stats").select("views, clicks").eq("business_id", biz.id).gte("day", since30).limit(31) : Promise.resolve({ data: [] }),
     supabase.from("business_inquiries").select("id", { count: "exact", head: true }).eq("owner_id", user.id).eq("status", "new"),
     supabase.from("opportunities").select("*").eq("published", true).order("deadline", { ascending: true, nullsFirst: false }).limit(100),
     supabase.from("deals").select("id, title, deadline, target_members").eq("published", true).eq("status", "open").limit(3),

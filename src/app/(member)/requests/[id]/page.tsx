@@ -30,7 +30,7 @@ export default async function RequestPage({ params, searchParams }: { params: Pr
   if (!r) notFound();
   const req = r as Req;
   const [{ data: qs }, { data: rec }, consentOn] = await Promise.all([
-    supabase.from("service_quotes").select("*").eq("request_id", id).order("created_at", { ascending: true }),
+    supabase.from("service_quotes").select("*").eq("request_id", id).order("created_at", { ascending: true }).limit(100),
     supabase.from("transaction_records").select("id").eq("request_id", id).maybeSingle(),
     recordsConsentOn(supabase, user.id),
   ]);

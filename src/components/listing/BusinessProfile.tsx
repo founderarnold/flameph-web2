@@ -43,10 +43,11 @@ export async function BusinessProfile({ business, review, basePath, note }: { bu
   const b = forViewer(business, isMember || user?.id === business.owner_id) as B & { hidden_groups: string[] };
   // Products, reviews and related listings; each is empty until the 0003 database update is run.
   const [productsRes, reviewsRes, profileRes, all] = await Promise.all([
-    pub?.from("business_products").select("*").eq("business_id", b.id).order("sort").order("created_at"),
+    pub?.from("business_products").select("*").eq("business_id", b.id).order("sort").order("created_at").limit(100),
     pub?.from("business_reviews").select("id,user_id,rating,body,reviewer_name,reviewer_city,created_at").eq("business_id", b.id).eq("hidden", false).order("created_at", { ascending: false }).limit(50),
     user && supabase ? supabase.from("profiles").select("full_name, mobile").eq("id", user.id).single() : null,
-    list<B>({ table: "businesses", select: "id,name,slug,sector,city,province", filters: PUBLIC_BUSINESS_FILTERS, order: "created_at" }),
+    // Related listings: only the same sector, newest 24 (was every public listing on every profile view).
+    b.sector ? list<B>({ table: "businesses", select: "id,name,slug,sector,city,province", filters: { ...PUBLIC_BUSINESS_FILTERS, sector: b.sector }, order: "created_at", limit: 24 }) : Promise.resolve([] as B[]),
   ]);
   // Registration numbers the owner chose to show (never the TIN), the chapter, and whether this member follows the owner.
   const [regRes, chapters, rel, sitesRes, rep, ageRes] = await Promise.all([

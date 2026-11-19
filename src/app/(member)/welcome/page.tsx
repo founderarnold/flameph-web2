@@ -118,7 +118,7 @@ async function ChapterStep({ supabase, userId, p, where }: { supabase: Supa; use
   const [{ data: homeRows }, chapters, { data: catalog }, { data: mine }] = await Promise.all([
     supabase.rpc("home_chapter"),
     list<Chapter>({ table: "chapters", order: "name", ascending: true }),
-    supabase.from("group_catalog").select("slug, name, sector, priority, sort").order("sort"),
+    supabase.from("group_catalog").select("slug, name, sector, priority, sort").order("sort").limit(200),
     supabase.from("group_members").select("community_groups(slug)").eq("user_id", userId),
   ]);
   const home = ((homeRows ?? []) as Home[])[0] ?? null;
