@@ -10,6 +10,7 @@ import { FEED, feedResult } from "@/lib/member-shell";
 import { createAdminClient } from "@/lib/supabase/server";
 import { purgeMemberDocs } from "@/lib/vetting-server";
 import { notifySites } from "@/lib/ecosystem-sso";
+import { addWorkingDays, ANSWER_WORKING_DAYS } from "@/lib/data-rights";
 
 /** Saves the switches from the sign-in prompt or the Settings page. Only changed switches add a row. */
 export async function saveConsents(fd: FormData) {
@@ -34,14 +35,26 @@ export async function saveConsents(fd: FormData) {
     const admin = createAdminClient();
     if (admin) await notifySites(admin, user.id, "consent_off_notice");
   }
-  // Turning off switch 1 is a request to close the account (Terms, section 16). Tell the team so a person handles it.
-  if (changed.includes("terms") && !choices.terms && state.terms?.granted) {
-    await sendEmail({
-      to: NOTIFY_TO,
-      subject: "Member withdrew consent 1 (account closure request)",
-      text: `A member turned off "Terms, Guidelines and Privacy" in Settings.\n\nMember ID: ${user.id}\nEmail: ${user.email ?? "(none)"}\nTime: ${new Date().toISOString()}\n\nPlease close the account and reply to the member within 15 working days, as the Privacy Notice promises.`,
-      replyTo: user.email ?? undefined,
-    });
+  // Turning off switch 1 is a request to close the account (Terms, section 16). Phase 12: it becomes a tracked request
+  // for the Data Protection Officer; if the switch is still off after 15 working days, the daily job closes the account.
+  // Turning it back on withdraws that request.
+  if (changed.includes("terms")) {
+    const admin = createAdminClient();
+    if (!choices.terms && state.terms?.granted) {
+      if (admin) {
+        const { data: p } = await admin.from("profiles").select("member_code").eq("id", user.id).maybeSingle();
+        await admin.from("privacy_requests").insert({ user_id: user.id, member_code: p?.member_code ?? null, kind: "closure", source: "consent_switch", status: "open", due_at: addWorkingDays(new Date(), ANSWER_WORKING_DAYS).toISOString() });
+      }
+      await sendEmail({
+        to: NOTIFY_TO,
+        subject: "Member withdrew consent 1 (account closure request)",
+        text: `A member turned off "Terms, Guidelines and Privacy" in Settings.\n\nMember ID: ${user.id}\nEmail: ${user.email ?? "(none)"}\nTime: ${new Date().toISOString()}\n\nIt is in Admin → Privacy and security. If the member doesn't turn it back on, the account closes automatically after 15 working days; you can also close it there sooner and reply to the member.`,
+        replyTo: user.email ?? undefined,
+      });
+    } else if (choices.terms && admin) {
+      await admin.from("privacy_requests").update({ status: "withdrawn", closed_at: new Date().toISOString(), response: "Withdrawn: the member turned consent 1 back on." })
+        .eq("user_id", user.id).eq("kind", "closure").eq("source", "consent_switch").eq("status", "open");
+    }
   }
   revalidatePath("/account", "layout");
   // Say so on the page they land on. Member pages show the note; other pages (e.g. signing in to another FLAME PH site) are left untouched.

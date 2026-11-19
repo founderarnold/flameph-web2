@@ -13,6 +13,9 @@ export async function GET(req: Request) {
   const supabase = await createClient();
   const { data } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   if (!supabase || !data.user) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(next)}`, req.url));
+  // Phase 12: a closed account lands on its privacy page, where it can be reopened (or its data downloaded).
+  const { data: prof } = await supabase.from("profiles").select("status").eq("id", data.user.id).maybeSingle();
+  if (prof?.status === "closed") return NextResponse.redirect(new URL("/account/privacy", req.url));
   const ask = await needsConsentPrompt(supabase, data.user.id);
   return NextResponse.redirect(new URL(ask ? `/account/consent?next=${encodeURIComponent(next)}` : next, req.url));
 }

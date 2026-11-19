@@ -88,6 +88,7 @@ export function parseStart(get: (k: string) => string, today = manilaToday()) {
 }
 
 export const GROUP_ORDER_ERRORS: Record<string, string> = {
+  new_account_group_order: "You can start a group order once your account is 7 days old. You can join other members' group orders now.",
   ...RECORD_ERRORS,
   bad_input: "Please write what you want to buy (3 to 120 characters) and choose a category.",
   bad_deadline: `Choose a deadline from tomorrow up to ${GO_MAX_DAYS} days from today.`,

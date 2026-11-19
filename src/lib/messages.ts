@@ -5,6 +5,9 @@
 export const MESSAGE_MAX = 2000;
 
 export const MSG_ERRORS: Record<string, string> = {
+  new_account_conversation_limit: "New accounts can start a few conversations a day (3 on the first day, 10 a day in the first week). Please try again tomorrow.",
+  new_account_message_limit: "New accounts can send 50 messages on their first day. You can send more tomorrow.",
+  new_account_links: "New accounts can't send links on their first day. Please send it without the link, or try again tomorrow.",
   blocked: "You can't message this member. One of you has blocked the other.",
   moderator_mute: "A moderator paused your posting and messaging for a while. See Notices in your account.",
   not_active_member: "Your account can't send messages right now.",

@@ -87,6 +87,9 @@ export function parseAmount(v: string): number | null {
 export type Reputation = { counted: number; confirmed: number; rating_avg: number | null; rating_count: number; tags: Record<string, number>; categories: Record<string, number>; vetted: boolean };
 
 export const RECORD_ERRORS: Record<string, string> = {
+  new_account_records: "You can create transaction records once your account is 1 day old.",
+  new_account_request_limit: "New accounts can post 3 requests on their first day. You can post more tomorrow.",
+  new_account_report_limit: "New accounts can send 5 reports on their first day. You can send more tomorrow.",
   records_consent: "Turn on switch 2, \"Transaction records\", in Settings first. It lets you create and confirm records with other members.",
   moderator_mute: "A moderator paused your posting for a while. See Notices in your account.",
   not_active_member: "Your account can't do this right now.",

@@ -80,6 +80,7 @@ export const NOTICE_TEXT: Record<string, string> = {
 };
 
 export const MOD_ERRORS: Record<string, string> = {
+  new_account_report_limit: "New accounts can send 5 reports on their first day. You can send more tomorrow.",
   own_content: "You can't report your own post, listing or account.",
   own_business: "You can't act on a report about your own business. Another moderator will handle it.",
   out_of_scope: "This report is outside your chapter.",
