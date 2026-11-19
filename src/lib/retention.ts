@@ -22,7 +22,12 @@ export const RETENTION: RetentionRule[] = [
   { key: "newsletter_pending", what: "Newsletter sign-ups never confirmed", keep: "30 days", days: 30, how: "" },
   { key: "privacy_requests", what: "Your privacy requests and our answers", keep: "3 years after we close them", days: 1095, how: "Kept as proof of what we did, even after an erasure." },
   { key: "retention_runs", what: "Reports of these clean-ups", keep: "1 year", days: 365, how: "" },
+  { key: "site_errors", what: "Anonymous error reports (page and message only)", keep: "90 days", days: 90, how: "No name, account or IP address is kept." },
+  { key: "web_vitals", what: "Anonymous page-speed readings", keep: "30 days", days: 30, how: "No name, account or IP address is kept." },
 ];
 
+/** Enforced by release_monitor_cleanup() (supabase/migrations/0030_release_monitor.sql), run by the same daily job. */
+export const MONITOR_RETENTION_KEYS = ["site_errors", "web_vitals"];
+
 /** Rules the daily database job enforces (the others are enforced by the account erasure and vetting jobs). */
-export const DB_RETENTION_KEYS = RETENTION.map((r) => r.key).filter((k) => !["account", "vetting_documents"].includes(k));
+export const DB_RETENTION_KEYS = RETENTION.map((r) => r.key).filter((k) => !["account", "vetting_documents", ...MONITOR_RETENTION_KEYS].includes(k));
