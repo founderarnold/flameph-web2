@@ -3,6 +3,7 @@ import { LegalPage } from "@/components/LegalPage";
 import { ORG, OFFICIAL_LINKS } from "@/lib/site";
 import { meta } from "@/lib/meta";
 import { CONSENTS } from "@/lib/policy";
+import { RETENTION } from "@/lib/retention";
 
 export const metadata = meta("Privacy Notice and Data-Sharing Consent", "How FLAME PH collects, uses, shares and protects personal data under the Data Privacy Act of 2012, and the consent switches members control.", "/legal/privacy");
 
@@ -60,19 +61,18 @@ export default function Page() {
       <p>Some of them store data outside the Philippines. We use them only with safeguards required by the NPC.</p>
 
       <h2>5. How long we keep data</h2>
+      <p>We delete each kind of data when its period ends. A daily job does this automatically.</p>
       <ul>
-        <li>Account data: while your account is open, then 1 year, unless the law requires longer.</li>
-        <li>Moderation cases: 3 years.</li>
-        <li>Vetting documents: until vetting is decided plus 1 year, or sooner when you withdraw consent.</li>
-        <li>Ka-FLAME AI chats: 1 year, or until you delete them.</li>
+        {RETENTION.map((r) => <li key={r.key}>{r.what}: {r.keep}.{r.how ? ` ${r.how}` : ""}</li>)}
       </ul>
+      <p>We keep something longer only when the law requires it, or while a dispute, moderation case or legal claim about it is open.</p>
 
       <h2>6. Your rights</h2>
       <p>You have the rights to be informed, to access, to object, to correct, to erasure or blocking, to data portability, to damages, and to file a complaint with the <a href={OFFICIAL_LINKS.NPC} target="_blank" rel="noopener">National Privacy Commission</a>.</p>
-      <p>To use these rights, go to <Link href="/account/settings">Settings</Link> or write to the DPO. We answer within 15 working days.</p>
+      <p>To use these rights, go to <Link href="/account/privacy">Your data and privacy</Link>. There you can download a copy of all your data, correct it, object to a use of it, close your account, or ask us to delete your account and data. You can also write to the DPO. We answer within 15 working days.</p>
 
       <h2>7. Security and breaches</h2>
-      <p>Security measures include row level security on every table, encryption in transit, hashed IP addresses and role-based admin access.</p>
+      <p>Security measures include row level security on every table, encryption in transit, encrypted vetting documents, hashed IP addresses, role-based admin access, an audit log nobody can edit, rate limits, and an hourly automatic check for signs of a breach.</p>
       <p>If a personal data breach is likely to put you at real risk, we notify the <strong>National Privacy Commission and affected members within 72 hours</strong> of knowing about it, as required by NPC Circular 16-03.</p>
 
       <h2>8. Changes</h2>

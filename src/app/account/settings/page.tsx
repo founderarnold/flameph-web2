@@ -15,7 +15,7 @@ import { mergePrefs, NOTIFY_KEYS, NOTIFY_TYPES } from "@/lib/notification-prefs"
 export const metadata = { title: "Settings", robots: { index: false } };
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" });
-const SOURCE = { signup: "at sign-up", prompt: "after sign-in", settings: "in Settings" } as const;
+const SOURCE = { signup: "at sign-up", prompt: "after sign-in", settings: "in Settings", legacy_signup: "on the old Join form" } as const;
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ saved?: string; closing?: string; consent?: string; privacy?: string; notify?: string }> }) {
   const { supabase, user } = await requireUser("/account/settings");
@@ -34,7 +34,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
     <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-3xl font-extrabold text-primary">Settings</h1>
       {sp.saved && !sp.closing && <div role="status" className="space-y-3"><Notice tone="ok">Saved. Your choices apply right away.</Notice><BackToFeed /></div>}
-      {sp.closing && <Notice tone="danger">You turned off switch 1, so we&apos;ll close your account. A person from FLAME PH will confirm by email within 15 working days. Changed your mind? Turn it back on and save.</Notice>}
+      {sp.closing && <Notice tone="danger">You turned off switch 1, so we&apos;ll close your account in 15 working days. Changed your mind? Turn it back on and save. Want it closed now, or deleted? Go to <Link className="underline" href="/account/privacy">Your data and privacy</Link>.</Notice>}
       {sp.consent === "error" && <Notice tone="danger">That didn&apos;t save. Please try again.</Notice>}
       {!ready && <Notice>Your consent settings will appear here soon.</Notice>}
 
@@ -103,7 +103,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
           <li><Link className="text-mph underline" href="/account/profile">Edit your profile</Link></li>
           <li><Link className="text-mph underline" href="/account/password">Change your password</Link></li>
           <li><Link className="text-mph underline" href="/account/ai">Delete your FLAME AI history</Link></li>
-          <li>To see, correct or get a copy of your data, email our Data Protection Officer at <a className="text-mph underline" href={`mailto:${ORG.emailPrimary}`}>{ORG.emailPrimary}</a>.</li>
+          <li><Link className="text-mph underline" href="/account/privacy">Your data and privacy</Link>: download a copy of your data, correct it, object to a use of it, or close or delete your account.</li>
+          <li>Or email our Data Protection Officer at <a className="text-mph underline" href={`mailto:${ORG.emailPrimary}`}>{ORG.emailPrimary}</a>.</li>
         </ul>
       </section>
     </div>

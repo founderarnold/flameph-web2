@@ -169,7 +169,8 @@ export async function moderateBusiness(fd: FormData) {
   } else if (action === "ban_owner") {
     await Promise.all([
       ctx.db.from("profiles").update({ status: "suspended" }).eq("id", business.owner_id),
-      ctx.db.from("businesses").update({ published: false }).eq("owner_id", business.owner_id),
+      // publication_status is what the listing rules read; "published" alone is put back by the database (Phase 12 fix).
+      ctx.db.from("businesses").update({ published: false, publication_status: "unpublished" }).eq("owner_id", business.owner_id),
     ]);
   } else if (action === "delete_business") {
     if (!ctx.roles.includes("super_admin") || String(fd.get("confirmation") ?? "") !== "DELETE") return;

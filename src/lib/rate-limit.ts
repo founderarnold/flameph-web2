@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "crypto";
 import { createAdminClient } from "@/lib/supabase/server";
 
-export type RateLimitAction = "ai_chat" | "ai_embed" | "business_submit" | "inquiry" | "newsletter" | "otp_request" | "otp_verify_failure" | "public_form" | "signup" | "ecosystem_api";
+export type RateLimitAction = "ai_chat" | "ai_embed" | "business_submit" | "inquiry" | "newsletter" | "otp_request" | "otp_verify_failure" | "public_form" | "signup" | "ecosystem_api" | "data_export";
 
 type LimitConfig = { limit: number; windowSeconds: number; blockSeconds: number };
 type RateLimitResult = { allowed: boolean; remaining: number; retryAfter: number; keyHash: string };
@@ -32,6 +32,8 @@ export const RATE_LIMITS: Record<RateLimitAction, LimitConfig> = {
   // Phase 10A: badge and sign-in calls from MarketplacePH / NegosyoDepot servers, per site.
   ecosystem_api: { limit: positiveInt("RATE_LIMIT_ECOSYSTEM_MAX", 120, 5000), windowSeconds: 60, blockSeconds: 0 },
   newsletter: { limit: positiveInt("RATE_LIMIT_NEWSLETTER_MAX", 5, 100), windowSeconds: positiveInt("RATE_LIMIT_NEWSLETTER_WINDOW_SECONDS", 3600, 86400), blockSeconds: 0 },
+  // Phase 12: "Download my data" builds a large file; 3 a day per member is plenty.
+  data_export: { limit: positiveInt("RATE_LIMIT_DATA_EXPORT_MAX", 3, 20), windowSeconds: 86400, blockSeconds: 0 },
 };
 
 function requestIp(req: Request) {

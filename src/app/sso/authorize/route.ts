@@ -46,6 +46,14 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
 
+  // Phase 12: a closed or suspended account can't sign in to the other sites (they fall back to their own sign-in).
+  if (user) {
+    const { data: prof } = await supabase!.from("profiles").select("status").eq("id", user.id).maybeSingle();
+    if (prof && prof.status !== "active") {
+      callback.searchParams.set("error", "not_active");
+      return NextResponse.redirect(callback, { headers: { "Referrer-Policy": "no-referrer", "Cache-Control": "no-store" } });
+    }
+  }
   if (user?.email && user.email_confirmed_at && (await emailProven(supabase!, user.app_metadata))) {
     const name = (user.user_metadata?.full_name as string) || undefined;
     if (v2) {

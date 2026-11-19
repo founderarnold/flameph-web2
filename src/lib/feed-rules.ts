@@ -69,6 +69,7 @@ export const linkCount = (t: string) => (t.match(/(https?:\/\/|www\.)/gi) ?? [])
 
 /** Plain-language messages for the database's refusals. */
 export const POST_ERRORS: Record<string, string> = {
+  new_account_friend_limit: "New accounts can send 10 Friend requests on their first day. You can send more tomorrow.",
   duplicate_post: "You posted the same thing in the last day. Try changing the words, or reply to your earlier post.",
   duplicate_comment: "You just wrote the same comment.",
   post_rate_limit: "You've posted a lot in the last hour. Please wait a little before posting again.",

@@ -160,6 +160,7 @@
       "items": [
         { "label": "Set up your profile", "href": "/welcome" },
         { "label": "Settings and privacy", "href": "/account/settings" },
+        { "label": "Your data: download, correct or delete", "href": "/account/privacy" },
         { "label": "Notices from moderators", "href": "/account/notices" },
         { "label": "Edit profile", "href": "/account/profile" },
         { "label": "Change password", "href": "/account/password" }
