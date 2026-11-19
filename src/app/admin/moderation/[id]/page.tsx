@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { Notice } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
 import { moderateReport, overrideAction } from "@/app/account/moderation-actions";
-import { requireModerator, previews, peopleNames, REPORT_COLUMNS, type LogEntry, type Report } from "@/lib/moderation-data";
+import { requireModerator, previews, peopleNames, investorReports, heldDetails, REPORT_COLUMNS, type LogEntry, type Report } from "@/lib/moderation-data";
+import { InvestorWarning } from "@/components/feed/InvestorWarning";
 import { ACTIONS, LOG_LABELS, MOD_ERRORS, REASONS, TARGETS, actionsFor, clockText } from "@/lib/moderation";
 
 export const metadata = { title: "Report" };
@@ -19,9 +20,10 @@ export default async function ReportDetail({ params, searchParams }: { params: P
   const { data } = await supabase.from("moderation_reports").select(REPORT_COLUMNS).eq("id", id).maybeSingle();
   if (!data) notFound(); // also when the report is about this moderator's own business
   const r = data as Report;
-  const [prev, { data: logRows }] = await Promise.all([
+  const [prev, { data: logRows }, investorIds] = await Promise.all([
     previews(supabase, [id]),
     supabase.from("moderation_actions").select("*").eq("report_id", id).order("id", { ascending: true }).limit(50),
+    investorReports(supabase, [id]),
   ]);
   const log = (logRows ?? []) as LogEntry[];
   const names = await peopleNames(supabase, [r.reporter_id, ...log.map((l) => l.actor_id)]);
@@ -41,6 +43,7 @@ export default async function ReportDetail({ params, searchParams }: { params: P
         <h2 id="what-h" className="font-bold">What was reported</h2>
         <p className="text-sm font-semibold">{p?.owner_name ?? "Member"}</p>
         <blockquote className="whitespace-pre-wrap rounded-xl bg-bg-soft p-3 text-sm">{p?.preview ?? "(removed)"}</blockquote>
+        {investorIds.has(id) && <InvestorWarning compact />}
         {p?.link && <Link href={p.link} className="text-sm font-semibold text-primary underline">Open it</Link>}
         <dl className="grid gap-1 text-sm sm:grid-cols-2">
           <div><dt className="inline font-semibold">Reason: </dt><dd className="inline">{r.reason === "automatic" ? "Automatic filter" : REASONS[r.reason as keyof typeof REASONS]?.label}</dd></div>
@@ -48,7 +51,7 @@ export default async function ReportDetail({ params, searchParams }: { params: P
           <div><dt className="inline font-semibold">Reported: </dt><dd className="inline">{when(r.created_at)}</dd></div>
           <div><dt className="inline font-semibold">Clock: </dt><dd className="inline">{r.status !== "open" ? "Closed" : r.escalated_at ? (r.escalation_reason === "no_chapter" ? "Admin queue (not in any chapter)" : `Escalated to admin ${when(r.escalated_at)}`) : clockText(r.due_at)}</dd></div>
         </dl>
-        {r.details && <p className="text-sm"><span className="font-semibold">Details: </span>{r.details}</p>}
+        {r.details && <p className="text-sm"><span className="font-semibold">Details: </span>{heldDetails(r.details)}</p>}
       </section>
 
       <section className="card p-4" aria-labelledby="act-h">

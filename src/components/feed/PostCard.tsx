@@ -7,6 +7,7 @@ import { CommentForm } from "./CommentForm";
 import { InvestorWarning } from "./InvestorWarning";
 import { ShareButton } from "./ShareButton";
 import { PostMedia } from "./PostMedia";
+import { INVESTOR_PROFILE_LABEL, REGISTRATION_LABEL_MEANING, registrationLabel, shareText, type InvestorLabel } from "@/lib/investor";
 
 /** Link to the report form for one post, comment, member or listing. */
 export const reportHref = (type: string, id: string, back: string) => `/report?${new URLSearchParams({ type, id, back })}`;
@@ -21,25 +22,37 @@ export function PostText({ text }: { text: string }) {
   );
 }
 
-function Author({ name, slug, at, extra }: { name: string; slug: string | null; at: string; extra?: React.ReactNode }) {
+/** "Investor or funder" next to the name, and the registration label (a label only, never an endorsement). */
+export function InvestorBadge({ label }: { label?: InvestorLabel | null }) {
+  const reg = registrationLabel(label);
+  return (
+    <span className="mt-0.5 flex flex-wrap items-center gap-1 text-xs">
+      <span className="rounded-full bg-warn-soft px-2 py-0.5 font-bold text-warn">{INVESTOR_PROFILE_LABEL}</span>
+      {reg && <span className="rounded-full bg-bg-soft px-2 py-0.5 text-muted" title={REGISTRATION_LABEL_MEANING}>{reg}</span>}
+    </span>
+  );
+}
+
+function Author({ name, slug, at, extra, investor = false, label }: { name: string; slug: string | null; at: string; extra?: React.ReactNode; investor?: boolean; label?: InvestorLabel | null }) {
   return (
     <div className="flex min-w-0 items-center gap-2.5">
       <Avatar name={name} size={36} />
       <div className="min-w-0">
         {slug ? <Link href={`/members/${slug}`} className="block truncate font-semibold hover:underline">{name}</Link> : <span className="block truncate font-semibold">{name}</span>}
         <span className="block text-xs text-muted"><time dateTime={at}>{timeAgo(at)}</time>{extra}</span>
+        {investor && <InvestorBadge label={label} />}
       </div>
     </div>
   );
 }
 
-export function CommentItem({ c, viewerId, postAuthorId, back, investor }: { c: FeedComment; viewerId: string; postAuthorId: string; back: string; investor: boolean }) {
+export function CommentItem({ c, viewerId, postAuthorId, back, investor, labels }: { c: FeedComment; viewerId: string; postAuthorId: string; back: string; investor: boolean; labels?: Map<string, InvestorLabel> }) {
   const name = c.author_name ?? "FLAME PH member";
   const canDelete = c.author_id === viewerId || postAuthorId === viewerId;
   return (
     <li id={`comment-${c.id}`} className="rounded-xl bg-bg-soft p-3">
       <div className="flex items-start justify-between gap-2">
-        <Author name={name} slug={c.author_slug} at={c.created_at} />
+        <Author name={name} slug={c.author_slug} at={c.created_at} investor={Boolean(c.author_investor)} label={labels?.get(c.author_id)} />
         {c.author_id !== viewerId && <Link href={reportHref("comment", c.id, back)} className="btn btn-ghost min-h-11 px-2 text-xs" aria-label={`Report comment by ${name}`}>Report</Link>}
         {canDelete && (
           <form action={deleteComment}>
@@ -50,16 +63,20 @@ export function CommentItem({ c, viewerId, postAuthorId, back, investor }: { c: 
       </div>
       <div className="mt-1.5"><PostText text={c.body} /></div>
       {investor && <p className="mt-1 text-xs text-muted">Reply to an investor or funder post. The warning above applies.</p>}
+      {!investor && c.author_investor && <div className="mt-2"><InvestorWarning compact /></div>}
     </li>
   );
 }
 
 /** One member post: who, what, the reactions, comments and sharing. Every button is a plain form, so it works before JavaScript loads. */
-export function PostCard({ post, stats, comments, viewerId, back, detail = false, confirmDelete = false, group = null }: {
+export function PostCard({ post, stats, comments, viewerId, back, detail = false, confirmDelete = false, group = null, labels }: {
   post: FeedPost; stats: PostStats; comments: FeedComment[]; viewerId: string; back: string; detail?: boolean; confirmDelete?: boolean; group?: GroupTag | null;
+  /** Registration labels of investor/funder authors (investorLabels in feed-data). */
+  labels?: Map<string, InvestorLabel>;
 }) {
   const name = post.author_name ?? "FLAME PH member";
-  const investor = post.kind === "investor";
+  // An investor/funder post: by kind (set by the database from the words, the group or the author's profile type).
+  const investor = post.kind === "investor" || Boolean(post.author_investor);
   const mine = post.author_id === viewerId;
   const title = `${name}: ${post.body.slice(0, 60)}`;
   const total = stats.likes + stats.loves + stats.helpful;
@@ -67,7 +84,7 @@ export function PostCard({ post, stats, comments, viewerId, back, detail = false
   return (
     <article id={`post-${post.id}`} aria-labelledby={`post-${post.id}-by`} className="card scroll-mt-24 p-4">
       <div className="flex items-start justify-between gap-2">
-        <div id={`post-${post.id}-by`} className="min-w-0"><Author name={name} slug={post.author_slug} at={post.created_at} /></div>
+        <div id={`post-${post.id}-by`} className="min-w-0"><Author name={name} slug={post.author_slug} at={post.created_at} investor={Boolean(post.author_investor)} label={labels?.get(post.author_id)} /></div>
         {mine && !detail && <Link href={`/posts/${post.id}?delete=1`} className="btn btn-ghost min-h-11 px-2 text-xs" aria-label="Delete your post">Delete</Link>}
         {!mine && <Link href={reportHref("post", post.id, back)} className="btn btn-ghost min-h-11 shrink-0 px-2 text-xs" aria-label={`Report post by ${name}`}>Report</Link>}
       </div>
@@ -104,7 +121,7 @@ export function PostCard({ post, stats, comments, viewerId, back, detail = false
             </form>
           ))}
           {detail ? <span /> : <Link href={`/posts/${post.id}#comments`} className="btn btn-ghost min-h-11 w-full flex-col gap-0 px-1 text-xs"><span aria-hidden className="text-base leading-none">💬</span>Comment</Link>}
-          <ShareButton path={`/posts/${post.id}`} title={title} />
+          <ShareButton path={`/posts/${post.id}`} title={investor ? `Investor or funder post by ${name}` : title} text={shareText(investor)} />
         </div>
       )}
 
@@ -125,7 +142,7 @@ export function PostCard({ post, stats, comments, viewerId, back, detail = false
           {comments.length > 0 && (
             <ul className="space-y-2" aria-label="Latest comments">
               {stats.comments > comments.length && <li><Link href={`/posts/${post.id}#comments`} className="text-sm font-semibold text-primary underline">See all {stats.comments} comments</Link></li>}
-              {comments.map((c) => <CommentItem key={c.id} c={c} viewerId={viewerId} postAuthorId={post.author_id} back={back} investor={investor} />)}
+              {comments.map((c) => <CommentItem key={c.id} c={c} viewerId={viewerId} postAuthorId={post.author_id} back={back} investor={investor} labels={labels} />)}
             </ul>
           )}
           <CommentForm postId={post.id} back={back} />

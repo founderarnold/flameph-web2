@@ -18,6 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/moderation">Moderation queue</Link></li>
         <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/moderation/log">Audit log</Link></li>
         {isAdmin && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/records">Transaction records</Link></li>}
+        {isAdmin && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/investors">Investor registrations</Link></li>}
         {roles.includes("super_admin") && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/moderation/appeals">Appeals</Link></li>}
         {roles.includes("super_admin") && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/moderation/policy">Policy</Link></li>}
       </>}

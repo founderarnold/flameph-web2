@@ -11,14 +11,16 @@ import { MediaPicker } from "./MediaPicker";
 import { parseMedia } from "@/lib/post-media";
 
 /** The New Post composer. Opens straight away; publishing returns the member to the feed, scrolled to the new post. */
-export function Composer({ kind: startKind, category: startCategory, group = null, friendsAvailable = false, userId = null }: {
+export function Composer({ kind: startKind, category: startCategory, group = null, friendsAvailable = false, userId = null, investorAuthor = false }: {
   kind: PostKind; category: string; group?: { slug: string; name: string } | null; friendsAvailable?: boolean; userId?: string | null;
+  /** The member's profile type is "Investor or funder": every post they make is an investor/funder post (0026). */
+  investorAuthor?: boolean;
 }) {
   const [state, action] = useActionState<FormState, FormData>(createPost, {});
   const [kind, setKind] = useState<PostKind>((state.values?.kind as PostKind) ?? startKind);
   const [body, setBody] = useState(state.values?.body ?? "");
   const [audience, setAudience] = useState<Audience>((state.values?.audience as Audience) || "members");
-  const check = classifyPost(body, group?.slug === INVESTOR_GROUP ? "investor" : kind);
+  const check = classifyPost(body, group?.slug === INVESTOR_GROUP ? "investor" : kind, investorAuthor);
   const links = linkCount(body);
   return (
     <form action={action} className="space-y-4" aria-describedby={state.error ? "post-error" : undefined}>
@@ -84,12 +86,12 @@ export function Composer({ kind: startKind, category: startCategory, group = nul
 
       {check.kind === "investor" && (
         <div>
-          <p className="mb-2 text-sm font-semibold">{kind === "investor" ? "This warning is always shown on your post and its replies:" : "Your post mentions investment or funding, so this warning will be shown on it and its replies:"}</p>
+          <p className="mb-2 text-sm font-semibold">{investorAuthor ? "Your profile type is Investor or funder, so this warning is always shown on your posts and their replies. It can't be removed or hidden:" : kind === "investor" ? "This warning is always shown on your post and its replies:" : "Your post mentions investment or funding, so this warning will be shown on it and its replies:"}</p>
           <InvestorWarning />
         </div>
       )}
       {check.held && (
-        <p role="note" className="rounded-xl bg-warn-soft p-3 text-sm text-fg">Posts that promise guaranteed, fixed or risk-free returns are checked by FLAME PH before other members see them.</p>
+        <p role="note" className="rounded-xl bg-warn-soft p-3 text-sm text-fg">Posts that promise guaranteed, fixed or risk-free returns, or that use pyramid, MLM or recruitment structures, are checked by a FLAME PH moderator before other members see them.</p>
       )}
 
       <p className="text-sm text-muted">{audience === "friends" && !group ? "Only your Friends will see this post." : "Only signed-in FLAME PH members see posts."} Please follow the <Link href="/membership/terms" className="underline">Community Guidelines</Link>. FLAME PH never handles payment between members.</p>

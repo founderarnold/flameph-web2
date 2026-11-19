@@ -7,7 +7,7 @@ import { PostCard } from "@/components/feed/PostCard";
 import { InvestorWarning } from "@/components/feed/InvestorWarning";
 import { FeedFocus } from "@/components/shell/FeedFocus";
 import { decodeCursor } from "@/lib/feed-rules";
-import { feedPosts, postExtras, statsOf } from "@/lib/feed-data";
+import { feedPosts, investorLabels, postExtras, statsOf } from "@/lib/feed-data";
 import { getGroup } from "@/lib/groups-data";
 import { INVESTOR_GROUP, isGroupSlug } from "@/lib/groups";
 import { mutedIds } from "@/lib/people";
@@ -51,6 +51,7 @@ export default async function GroupPage({ params, searchParams }: { params: Prom
   const muted = await mutedIds(supabase, user.id);
   const page = await feedPosts(supabase, { cursor, industry: null, chapter: null, following: false, followIds: new Set(), group: g.id, muted });
   const extras = await postExtras(supabase, page.posts.map((p) => p.id));
+  const labels = await investorLabels(supabase, [...page.posts, ...[...extras.comments.values()].flat()]);
   const back = sp.before ? `${here}?before=${encodeURIComponent(sp.before)}` : here;
   const tag = { slug: g.slug, name: g.name };
 
@@ -78,7 +79,7 @@ export default async function GroupPage({ params, searchParams }: { params: Prom
         ) : (
           <ul className="mt-3 space-y-3">
             {page.posts.map((p) => (
-              <li key={p.id}><PostCard post={p} stats={statsOf(extras.stats, p.id)} comments={extras.comments.get(p.id) ?? []} viewerId={user.id} back={back} group={tag} /></li>
+              <li key={p.id}><PostCard post={p} stats={statsOf(extras.stats, p.id)} comments={extras.comments.get(p.id) ?? []} viewerId={user.id} back={back} group={tag} labels={labels} /></li>
             ))}
           </ul>
         )}

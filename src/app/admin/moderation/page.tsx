@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Notice } from "@/components/ui";
-import { requireModerator, previews, REPORT_COLUMNS, type Report } from "@/lib/moderation-data";
+import { requireModerator, previews, investorReports, REPORT_COLUMNS, type Report } from "@/lib/moderation-data";
+import { InvestorWarning } from "@/components/feed/InvestorWarning";
 import { LEVEL_NAMES, LOG_LABELS, REASONS, TARGETS, clockText, sortQueue } from "@/lib/moderation";
 import { timeAgo } from "@/lib/feed-rules";
 
@@ -27,7 +28,7 @@ export default async function ModerationQueue({ searchParams }: { searchParams: 
   ]);
   const rows = (data ?? []) as Report[];
   const sorted = view === "open" ? sortQueue(rows, level, myChapters, (myGroups ?? []).map((g) => g.id)) : rows;
-  const prev = await previews(supabase, sorted.map((r) => r.id));
+  const [prev, investorIds] = await Promise.all([previews(supabase, sorted.map((r) => r.id)), investorReports(supabase, sorted.map((r) => r.id))]);
   const escalated = rows.filter((r) => r.escalated_at).length;
 
   return (
@@ -56,6 +57,7 @@ export default async function ModerationQueue({ searchParams }: { searchParams: 
                   <span className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
                     <span className="rounded-full bg-bg-soft px-2 py-0.5 capitalize">{TARGETS[r.target_type as keyof typeof TARGETS] ?? r.target_type}</span>
                     <span className={`rounded-full px-2 py-0.5 ${r.reason === "automatic" ? "bg-warn-soft text-warn" : "bg-primary-soft text-primary"}`}>{reasonLabel(r.reason)}</span>
+                    {investorIds.has(r.id) && <span className="rounded-full bg-warn-soft px-2 py-0.5 text-warn">Investor or funder</span>}
                     {r.status === "open" && r.escalated_at && <span className="rounded-full bg-danger-soft px-2 py-0.5 text-danger">{r.escalation_reason === "no_chapter" ? "Admin queue: no chapter" : `Escalated to admin · ${timeAgo(r.escalated_at)}`}</span>}
                     {r.status === "open" && !r.escalated_at && <span className={`rounded-full px-2 py-0.5 ${overdue ? "bg-danger-soft text-danger" : "bg-ok-soft text-ok"}`}>⏱ {clockText(r.due_at)}</span>}
                     {r.status !== "open" && <span className="rounded-full bg-bg-soft px-2 py-0.5">{LOG_LABELS[r.resolution ?? ""] ?? r.status}</span>}
@@ -64,6 +66,7 @@ export default async function ModerationQueue({ searchParams }: { searchParams: 
                   <span className="line-clamp-2 block text-sm text-muted">{p?.preview ?? "(removed)"}</span>
                   <span className="mt-1 block text-xs text-muted">Reported {timeAgo(r.created_at)}</span>
                 </Link>
+                {investorIds.has(r.id) && <div className="mt-1"><InvestorWarning compact /></div>}
               </li>
             );
           })}

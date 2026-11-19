@@ -10,7 +10,7 @@ import { blockedIds, friendLists, mutedIds } from "@/lib/people";
 import { memberCompletion } from "@/lib/profile-completion";
 import { FeedFocus } from "@/components/shell/FeedFocus";
 import { decodeCursor, feedFilters } from "@/lib/feed-rules";
-import { activityCards, feedPosts, groupTags, mergeFeed, pageWindow, postExtras, statsOf } from "@/lib/feed-data";
+import { activityCards, feedPosts, groupTags, investorLabels, mergeFeed, pageWindow, postExtras, statsOf } from "@/lib/feed-data";
 import { PostCard } from "@/components/feed/PostCard";
 import { ActivityCard } from "@/components/feed/ActivityCard";
 import { FeedFilters } from "@/components/feed/FeedFilters";
@@ -63,7 +63,7 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
     activityCards(supabase, viewer, q, pageWindow(cursor?.at ?? null, page.posts, Boolean(page.next))),
     postExtras(supabase, page.posts.map((x) => x.id)),
   ]);
-  const groups = await groupTags(supabase, page.posts);
+  const [groups, labels] = await Promise.all([groupTags(supabase, page.posts), investorLabels(supabase, [...page.posts, ...[...extras.comments.values()].flat()])]);
   const entries = mergeFeed(page.posts, cards);
 
   const keep = new URLSearchParams();
@@ -172,7 +172,7 @@ export default async function HomeFeed({ searchParams }: { searchParams: Promise
             {entries.map((e) => (
               <li key={e.type === "post" ? e.post.id : e.card.id}>
                 {e.type === "post"
-                  ? <PostCard post={e.post} stats={statsOf(extras.stats, e.post.id)} comments={extras.comments.get(e.post.id) ?? []} viewerId={user.id} back={here} group={e.post.group_id ? groups.get(e.post.group_id) : null} />
+                  ? <PostCard post={e.post} stats={statsOf(extras.stats, e.post.id)} comments={extras.comments.get(e.post.id) ?? []} viewerId={user.id} back={here} group={e.post.group_id ? groups.get(e.post.group_id) : null} labels={labels} />
                   : <ActivityCard card={e.card} back={`${here}${here.includes("?") ? "&" : "?"}focus=${e.card.id}`} />}
               </li>
             ))}

@@ -22,7 +22,7 @@ export default async function PolicyPage({ searchParams }: { searchParams: Promi
         <ul className="list-disc space-y-1 pl-5">
           <li>At most 10 posts and 30 comments an hour; no duplicate posts within a day.</li>
           <li>New accounts: 3 posts on their first day, and no links. Everyone: at most 3 links in a post, 2 in a comment.</li>
-          <li>Promised returns, pyramid or recruitment wording: held for review. Investment and loan posts get the investor warning.</li>
+          <li>Promised returns (guaranteed, fixed or risk-free, &quot;double your money&quot;, a percentage per day, week or month on an investment post), and pyramid, MLM or recruitment wording: held for review, in posts and in replies. Investment and loan posts, and every post by a member whose profile type is &quot;Investor or funder&quot;, get the investor warning.</li>
           <li>Spam patterns (the same letter many times, mostly capitals, many phone numbers): held for review.</li>
           <li>Members muted or banned by a moderator can&apos;t post or comment.</li>
           <li>The keywords below: <strong>Hold</strong> sends the post to the queue; <strong>Block</strong> refuses it.</li>

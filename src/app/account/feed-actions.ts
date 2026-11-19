@@ -73,11 +73,12 @@ export async function addComment(_: FormState, fd: FormData): Promise<FormState>
   if (!postId) return { error: POST_ERRORS.failed };
   if (!body) return { error: "Please write a comment first.", values: { body } };
   if (body.length > COMMENT_MAX) return { error: POST_ERRORS.too_long, values: { body } };
-  const { error } = await supabase.from("feed_comments").insert({ post_id: postId, body });
+  const { data, error } = await supabase.from("feed_comments").insert({ post_id: postId, body }).select("status").single();
   if (error) return { error: POST_ERRORS[postErrorCode(error.message)], values: { body } };
   revalidatePath("/home");
   revalidatePath(`/posts/${postId}`);
-  redirect(withFocus(back(fd), `post-${postId}`, "commented"));
+  // A reply that promises returns or recruits is held for a moderator (0026), like other held replies (0019).
+  redirect(withFocus(back(fd), `post-${postId}`, data?.status === "hidden" ? "comment-held" : "commented"));
 }
 
 export async function deleteComment(fd: FormData) {
