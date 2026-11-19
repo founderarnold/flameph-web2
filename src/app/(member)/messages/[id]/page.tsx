@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { investorProfiles } from "@/lib/feed-data";
+import { InvestorBadge } from "@/components/feed/PostCard";
+import { InvestorWarning } from "@/components/feed/InvestorWarning";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { Avatar, Notice } from "@/components/ui";
@@ -29,13 +32,15 @@ export default async function ConversationPage({ params, searchParams }: { param
   if (!conv) notFound();
   const c = conv as Conversation;
   const other = otherMember(c, user.id);
-  const [{ data: rows }, cards, { data: iBlocked }, { data: blockedEither }] = await Promise.all([
+  const [{ data: rows }, cards, { data: iBlocked }, { data: blockedEither }, , investors] = await Promise.all([
     supabase.from("direct_messages").select("id, sender_id, body, created_at, hidden_at").eq("conversation_id", id).order("created_at", { ascending: false }).limit(100),
     memberCards(supabase, [other]),
     supabase.from("member_blocks").select("blocked_id").eq("blocker_id", user.id).eq("blocked_id", other).maybeSingle(),
     supabase.rpc("is_blocked_between", { a: user.id, b: other }),
     supabase.rpc("mark_conversation_read", { p_conversation: id }),
+    investorProfiles(supabase, [other]),
   ]);
+  const investor = investors.get(other);
   const msgs = ((rows ?? []) as Msg[]).reverse();
   const card = cards.get(other);
   const name = card?.name ?? "FLAME PH member";
@@ -55,8 +60,10 @@ export default async function ConversationPage({ params, searchParams }: { param
           <h1 className="truncate text-lg font-bold">{name}</h1>
           {card?.slug ? <Link href={`/members/${card.slug}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline">See their page</Link>
             : <p className="text-sm text-muted">{[card?.sector, card?.city].filter(Boolean).join(" · ") || "FLAME PH member"}</p>}
+          {investor && <InvestorBadge label={investor} />}
         </div>
       </header>
+      {investor && <InvestorWarning compact />}
 
       {note && <div role="status"><Notice tone="ok">{note}</Notice></div>}
 

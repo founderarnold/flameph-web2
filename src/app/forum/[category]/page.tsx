@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InvestorWarning } from "@/components/feed/InvestorWarning";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { decodeCursor, industryFromSlug } from "@/lib/feed-rules";
@@ -40,6 +41,7 @@ export default async function ForumCategory({ params, searchParams }: { params: 
                       {p.status === "held" ? " · waiting for a check" : ""}
                     </span>
                   </Link>
+                  {(p.kind === "investor" || p.author_investor) && <div className="px-4 pb-3"><InvestorWarning compact /></div>}
                 </li>
               );
             })}

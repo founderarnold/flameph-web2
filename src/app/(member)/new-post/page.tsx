@@ -32,7 +32,7 @@ export default async function NewPostTab({ searchParams }: { searchParams: Promi
           <JoinLeave slug={group.slug} member={false} name={group.name} back={`/new-post?group=${group.slug}`} /></div>
       )}
       <div className="card p-4 sm:p-5">
-        <Composer kind={isPostKind(sp.kind) ? sp.kind : "update"} category={category} group={group && found?.member ? group : null} friendsAvailable={!friendsCheck.error} userId={user.id} />
+        <Composer kind={isPostKind(sp.kind) ? sp.kind : "update"} category={category} group={group && found?.member ? group : null} friendsAvailable={!friendsCheck.error} userId={user.id} investorAuthor={p?.member_type === "investor_funder"} />
       </div>
     </div>
   );

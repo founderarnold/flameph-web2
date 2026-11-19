@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { investorProfiles } from "@/lib/feed-data";
+import { InvestorBadge } from "@/components/feed/PostCard";
+import type { InvestorLabel } from "@/lib/investor";
 import { requireUser } from "@/lib/auth";
 import { Avatar, Notice } from "@/components/ui";
 import { FollowButton } from "@/components/shell/FollowButton";
@@ -12,7 +15,7 @@ export const metadata = { title: "Friends and requests" };
 const BACK = "/friends";
 const btn = "btn min-h-11 px-3 text-sm";
 
-function Person({ c, children }: { c: MemberCard | undefined; children: React.ReactNode }) {
+function Person({ c, children, investor }: { c: MemberCard | undefined; children: React.ReactNode; investor?: InvestorLabel }) {
   const name = c?.name ?? "FLAME PH member";
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 py-3">
@@ -21,6 +24,7 @@ function Person({ c, children }: { c: MemberCard | undefined; children: React.Re
         <div className="min-w-0">
           {c?.slug ? <Link href={`/members/${c.slug}`} className="block truncate font-semibold hover:underline">{name}</Link> : <span className="block truncate font-semibold">{name}</span>}
           <span className="block truncate text-xs text-muted">{[c?.sector, c?.city].filter(Boolean).join(" · ")}</span>
+          {investor && <InvestorBadge label={investor} />}
         </div>
       </div>
       <div className="flex shrink-0 gap-2">{children}</div>
@@ -56,7 +60,8 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     friendLists(supabase, user.id), followingIds(supabase, user.id), mutedIds(supabase, user.id), blockedIds(supabase, user.id),
   ]);
   const followList = [...following].slice(0, 100);
-  const cards = await memberCards(supabase, [...lists.received, ...lists.sent, ...lists.friends, ...followList, ...muted].slice(0, 100));
+  const everyone = [...lists.received, ...lists.sent, ...lists.friends, ...followList, ...muted].slice(0, 100);
+  const [cards, investors] = await Promise.all([memberCards(supabase, everyone), investorProfiles(supabase, everyone)]);
   // Blocked members aren't returned by member_cards (by design), so their names come from their published business.
   const blockedList = [...blocked].slice(0, 50);
   const { data: blockedBiz } = blockedList.length
@@ -76,7 +81,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
 
       <Block id="requests" title="Friend requests" count={lists.received.length} empty="No new requests.">
         {lists.received.map((id) => (
-          <Person key={id} c={cards.get(id)}>
+          <Person key={id} c={cards.get(id)} investor={investors.get(id)}>
             <One action={acceptFriend} id={id} name={name(id)} label="Accept" aria="Accept Friend request from" primary />
             <One action={removeFriend} id={id} name={name(id)} label="Decline" aria="Decline Friend request from" extra={{ what: "declined" }} />
           </Person>
@@ -85,7 +90,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
 
       <Block id="friends" title="Friends" count={lists.friends.length} empty="No Friends yet. Open a member's profile and press Add Friend.">
         {lists.friends.map((id) => (
-          <Person key={id} c={cards.get(id)}>
+          <Person key={id} c={cards.get(id)} investor={investors.get(id)}>
             <One action={removeFriend} id={id} name={name(id)} label="Unfriend" aria="Unfriend" extra={{ what: "unfriended" }} />
           </Person>
         ))}
@@ -94,7 +99,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       {lists.sent.length > 0 && (
         <Block id="sent" title="Requests you sent" count={lists.sent.length} empty="">
           {lists.sent.map((id) => (
-            <Person key={id} c={cards.get(id)}>
+            <Person key={id} c={cards.get(id)} investor={investors.get(id)}>
               <One action={removeFriend} id={id} name={name(id)} label="Cancel" aria="Cancel your Friend request to" extra={{ what: "cancelled" }} />
             </Person>
           ))}
@@ -103,7 +108,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
 
       <Block id="following" title="People you follow" count={following.size} empty="You don't follow anyone yet. Find members to follow in Find members.">
         {followList.map((id) => (
-          <Person key={id} c={cards.get(id)}>
+          <Person key={id} c={cards.get(id)} investor={investors.get(id)}>
             <div className="w-32"><FollowButton memberId={id} following back={BACK} name={name(id)} /></div>
           </Person>
         ))}
@@ -111,7 +116,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
 
       <Block id="muted" title="Muted" count={muted.size} empty="Nobody muted. Muting hides a member's posts from your feed without telling them.">
         {[...muted].slice(0, 100).map((id) => (
-          <Person key={id} c={cards.get(id)}>
+          <Person key={id} c={cards.get(id)} investor={investors.get(id)}>
             <One action={setMute} id={id} name={name(id)} label="Unmute" aria="Unmute" extra={{ on: "0" }} />
           </Person>
         ))}

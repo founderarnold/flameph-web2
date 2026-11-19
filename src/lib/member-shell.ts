@@ -24,7 +24,7 @@ export const activeTab = (pathname: string) => {
 };
 
 /** Kinds of finished action the feed can scroll to and confirm. */
-export type FeedDone = "posted" | "post-held" | "post-deleted" | "commented" | "group-order-started" | "group-order-joined" | "group-order-left" | "deal-confirmed" | "profile" | "consents" | "onboarded";
+export type FeedDone = "posted" | "post-held" | "post-deleted" | "commented" | "comment-held" | "group-order-started" | "group-order-joined" | "group-order-left" | "deal-confirmed" | "profile" | "consents" | "onboarded";
 
 /** Where a finished action sends the member: the feed, scrolled to the result (an element id on the feed). */
 export function feedResult(done: FeedDone, focusId?: string) {
@@ -35,9 +35,10 @@ export function feedResult(done: FeedDone, focusId?: string) {
 
 export const DONE_TEXT: Record<FeedDone, string> = {
   posted: "Your post is live. Here it is in your feed.",
-  "post-held": "Your post is waiting for a quick check by FLAME PH because it mentions guaranteed returns. Only you can see it for now.",
+  "post-held": "Your post is waiting for a check by a FLAME PH moderator because it mentions guaranteed or fixed returns, or a recruitment or pyramid structure. Only you can see it for now.",
   "post-deleted": "Your post was deleted.",
   commented: "Your comment is posted.",
+  "comment-held": "Your comment is waiting for a check by a FLAME PH moderator before other members can see it.",
   "group-order-started": "Your group order is open. Here it is in your feed.",
   "group-order-joined": "You joined the group order. Here it is in your feed.",
   "group-order-left": "You left the group order.",

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withWarning } from "@/lib/investor";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
 import { unsubscribeHeaders, unsubscribeUrl } from "@/lib/unsubscribe";
@@ -68,7 +69,7 @@ export async function GET(req: Request) {
       ...(mine.length ? ["Opportunities for you:", ...mine.map((o) => `- ${o.title} (${OPPORTUNITY_KINDS[o.kind] ?? "Opportunity"}${o.deadline ? `, apply by ${dateLabel(o.deadline)}` : ""})`), `  ${ORG.url}/opportunities?mine=1`, ""] : []),
       ...((deals ?? []).length ? ["Buy together this week:", ...(deals ?? []).slice(0, 2).map((d) => `- ${d.title}${d.deadline ? ` (join by ${dateLabel(d.deadline)})` : ""}`), `  ${ORG.url}/deals`, ""] : []),
       ...(coming.length ? ["Business events coming up:", ...coming.map((e) => `- ${e.title}, ${new Date(e.starts_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" })}${e.city ? `, ${e.city}` : ""}${chapterId && e.chapter_id === chapterId ? " (your chapter)" : ""}`), ""] : []),
-      ...(groupPosts.length ? ["New in your chapter and groups:", ...groupPosts.map((g) => `- ${g.author_name ?? "A member"} in ${extra.groupName.get(g.group_id) ?? "a group"}: ${snippet(g.body)}`), `  ${ORG.url}/groups`, ""] : []),
+      ...(groupPosts.length ? ["New in your chapter and groups:", ...groupPosts.map((g) => withWarning(`- ${g.author_name ?? "A member"} in ${extra.groupName.get(g.group_id) ?? "a group"}: ${snippet(g.body)}`, g.kind === "investor")), `  ${ORG.url}/groups`, ""] : []),
       ...(extra.blog.length ? ["From FLAME PH:", ...extra.blog.map((b) => `- ${b.title}: ${ORG.url}/news/${b.slug}`), ""] : []),
       ...(extra.headlines.length ? ["Business news this week:", ...extra.headlines.map((h) => `- ${h.title} (${h.source})\n  ${h.url}`), ""] : []),
       `Your growth path: ${ORG.url}/account/growth`,
@@ -97,10 +98,10 @@ async function weekExtras(admin: NonNullable<ReturnType<typeof createAdminClient
   const [{ data: headlines }, { data: blog }, { data: posts }] = await Promise.all([
     admin.from("news_headlines").select("title, source, url, published_at").eq("hidden", false).gte("published_at", iso).order("published_at", { ascending: false }).limit(4),
     admin.from("posts").select("title, slug, published_at").eq("published", true).gte("published_at", iso).order("published_at", { ascending: false }).limit(3),
-    admin.from("feed_posts").select("group_id, author_id, author_name, body, created_at").eq("status", "published").eq("audience", "members").not("group_id", "is", null)
+    admin.from("feed_posts").select("group_id, author_id, author_name, body, kind, created_at").eq("status", "published").eq("audience", "members").not("group_id", "is", null)
       .gte("created_at", iso).order("created_at", { ascending: false }).limit(300),
   ]);
-  const groupPosts = (posts ?? []) as { group_id: string; author_id: string; author_name: string | null; body: string }[];
+  const groupPosts = (posts ?? []) as { group_id: string; author_id: string; author_name: string | null; body: string; kind: string }[];
   const ids = [...new Set(groupPosts.map((g) => g.group_id))];
   const [{ data: groups }, { data: members }] = ids.length
     ? await Promise.all([admin.from("community_groups").select("id, name").in("id", ids), admin.from("group_members").select("group_id, user_id").in("group_id", ids)])

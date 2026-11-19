@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InvestorWarning } from "@/components/feed/InvestorWarning";
 import { requireUser } from "@/lib/auth";
 import { Notice } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -33,9 +34,19 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
   const type = isReportTarget(sp.type) ? sp.type : null;
   const id = sp.id && /^[0-9a-f-]{36}$/i.test(sp.id) ? sp.id : null;
   let what: string | null = null;
+  // Reporting an investor/funder post, or a reply under one: the warning stays with the quoted text.
+  let investor = false;
   if (type && id) {
-    if (type === "post") what = (await supabase.from("feed_posts").select("body").eq("id", id).maybeSingle()).data?.body ?? null;
-    if (type === "comment") what = (await supabase.from("feed_comments").select("body").eq("id", id).maybeSingle()).data?.body ?? null;
+    if (type === "post") {
+      const r = (await supabase.from("feed_posts").select("body, kind").eq("id", id).maybeSingle()).data;
+      what = r?.body ?? null;
+      investor = r?.kind === "investor";
+    }
+    if (type === "comment") {
+      const r = (await supabase.from("feed_comments").select("body, post_id").eq("id", id).maybeSingle()).data;
+      what = r?.body ?? null;
+      if (r?.post_id) investor = (await supabase.from("feed_posts").select("kind").eq("id", r.post_id).maybeSingle()).data?.kind === "investor";
+    }
     if (type === "listing") what = (await supabase.from("businesses").select("name").eq("id", id).maybeSingle()).data?.name ?? null;
     if (type === "member") what = (await memberCards(supabase, [id])).get(id)?.name ?? null;
     // Only the two members in a conversation can read its messages, so only they can report one.
@@ -62,6 +73,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
       <Link href={back} className="inline-flex min-h-11 items-center gap-1 font-semibold text-primary"><span aria-hidden>←</span> Back</Link>
       <h1 className="text-2xl font-bold">{type === "record" ? "Dispute this transaction record" : `Report this ${TARGETS[type]}`}</h1>
       <blockquote className="card line-clamp-4 border-l-4 border-line p-3 text-sm text-muted">{what}</blockquote>
+      {investor && <InvestorWarning compact />}
       <form action={fileReport} className="card space-y-4 p-4" aria-describedby={error ? "report-error" : undefined}>
         <input type="hidden" name="type" value={type} /><input type="hidden" name="id" value={id} /><input type="hidden" name="back" value={back} />
         <fieldset>

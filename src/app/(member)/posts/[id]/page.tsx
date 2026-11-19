@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { decodeCursor, encodeCursor } from "@/lib/feed-rules";
-import { getPost, groupTags, postExtras, statsOf, type FeedComment } from "@/lib/feed-data";
+import { COMMENT_COLUMNS, getPost, groupTags, investorLabels, missing0026, postExtras, statsOf, type FeedComment } from "@/lib/feed-data";
 import { relationship } from "@/lib/people";
 import { noteText } from "@/lib/people-rules";
 import { RelationshipActions } from "@/components/people/RelationshipActions";
@@ -27,19 +27,27 @@ export default async function PostPage({ params, searchParams }: { params: Promi
 
   // Comments, newest first, COMMENTS_PAGE at a time.
   const cursor = decodeCursor(sp.before);
-  let req = supabase.from("feed_comments").select("id, post_id, author_id, body, author_name, author_slug, created_at").eq("post_id", id).eq("status", "published")
-    .order("created_at", { ascending: false }).order("id", { ascending: false }).limit(COMMENTS_PAGE + 1);
-  if (cursor) req = req.or(`created_at.lt.${cursor.at},and(created_at.eq.${cursor.at},id.lt.${cursor.id})`);
+  const build = (cols: string) => {
+    let req = supabase.from("feed_comments").select(cols).eq("post_id", id).eq("status", "published")
+      .order("created_at", { ascending: false }).order("id", { ascending: false }).limit(COMMENTS_PAGE + 1);
+    if (cursor) req = req.or(`created_at.lt.${cursor.at},and(created_at.eq.${cursor.at},id.lt.${cursor.id})`);
+    return req;
+  };
+  const loadComments = async () => {
+    const first = await build(`${COMMENT_COLUMNS}, author_investor`);
+    return missing0026(first.error) ? build(COMMENT_COLUMNS) : first;
+  };
   const mine = post.author_id === user.id;
-  const [{ data: rows }, extras, groups, rel] = await Promise.all([req, postExtras(supabase, [id], 0), groupTags(supabase, [post]), mine ? null : relationship(supabase, user.id, post.author_id)]);
+  const [{ data: rows }, extras, groups, rel] = await Promise.all([loadComments(), postExtras(supabase, [id], 0), groupTags(supabase, [post]), mine ? null : relationship(supabase, user.id, post.author_id)]);
   const note = noteText(sp.note);
-  const all = (rows ?? []) as FeedComment[];
+  const all = (rows ?? []) as unknown as FeedComment[];
   const comments = all.slice(0, COMMENTS_PAGE);
   const last = comments[comments.length - 1];
   const older = all.length > COMMENTS_PAGE && last ? `/posts/${id}?before=${encodeURIComponent(encodeCursor(last.created_at, last.id))}#comments` : null;
   const back = `/posts/${id}`;
   const done = sp.done && sp.done in DONE_TEXT ? (sp.done as FeedDone) : null;
-  const investor = post.kind === "investor";
+  const investor = post.kind === "investor" || Boolean(post.author_investor);
+  const labels = await investorLabels(supabase, [post, ...comments]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -48,7 +56,7 @@ export default async function PostPage({ params, searchParams }: { params: Promi
       <Link href={`/home?focus=post-${id}`} className="inline-flex min-h-11 items-center gap-1 font-semibold text-primary"><span aria-hidden>←</span> Back to feed</Link>
       {done && <div role="status"><Notice tone="ok">{DONE_TEXT[done]}</Notice></div>}
       {note && <div role="status"><Notice tone="ok">{note}</Notice></div>}
-      <PostCard post={post} stats={statsOf(extras.stats, id)} comments={[]} viewerId={user.id} back={back} detail confirmDelete={sp.delete === "1"} group={post.group_id ? groups.get(post.group_id) : null} />
+      <PostCard post={post} stats={statsOf(extras.stats, id)} comments={[]} viewerId={user.id} back={back} detail confirmDelete={sp.delete === "1"} group={post.group_id ? groups.get(post.group_id) : null} labels={labels} />
       {rel && (
         <section aria-labelledby="author-h" className="card p-4">
           <h2 id="author-h" className="mb-2 text-sm font-bold">Connect with {post.author_name ?? "this member"}</h2>
@@ -62,10 +70,11 @@ export default async function PostPage({ params, searchParams }: { params: Promi
           <CommentForm postId={id} back={back} />
           {comments.length === 0 ? <p className="mt-3 text-sm text-muted">No comments yet. Be the first.</p> : (
             <ul className="mt-3 space-y-2">
-              {comments.map((c) => <CommentItem key={c.id} c={c} viewerId={user.id} postAuthorId={post.author_id} back={back} investor={investor} />)}
+              {comments.map((c) => <CommentItem key={c.id} c={c} viewerId={user.id} postAuthorId={post.author_id} back={back} investor={investor} labels={labels} />)}
             </ul>
           )}
           {older && <Link href={older} className="btn btn-outline mt-3 min-h-11 w-full">Older comments</Link>}
+          {investor && comments.length > 2 && <div className="mt-3"><InvestorWarning compact /></div>}
         </section>
       )}
     </div>

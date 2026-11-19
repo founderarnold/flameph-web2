@@ -4,15 +4,18 @@ import { OPPORTUNITY_KINDS, type Opportunity, dateLabel, matches, notExpired, pe
 import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
 import { headlineSub } from "@/lib/news-feeds";
 import { PAGE_SIZE, encodeCursor, type PostKind, type ReactionKind } from "@/lib/feed-rules";
+import type { InvestorLabel } from "@/lib/investor";
 
 export type FeedPost = {
   id: string; author_id: string; kind: PostKind; category: string; subcategory: string | null; body: string; chapter_id: string | null;
   author_name: string | null; author_slug: string | null; status: "published" | "held" | "hidden"; held_reason: string | null; created_at: string;
   audience?: "members" | "friends"; group_id?: string | null;
   media?: { type: "image" | "video"; path: string }[] | null; video_url?: string | null;
+  /** The author's profile type was "Investor or funder" when they posted (0026). Set by the database. */
+  author_investor?: boolean;
 };
 export type PostStats = { likes: number; loves: number; helpful: number; comments: number; mine: ReactionKind | null };
-export type FeedComment = { id: string; post_id: string; author_id: string; body: string; author_name: string | null; author_slug: string | null; created_at: string };
+export type FeedComment = { id: string; post_id: string; author_id: string; body: string; author_name: string | null; author_slug: string | null; created_at: string; author_investor?: boolean };
 
 /** A card for something that happened elsewhere on FLAME PH. href opens the tab that owns it. */
 export type ActivityCard = {
@@ -28,7 +31,12 @@ const BASE_COLUMNS = "id, author_id, kind, category, subcategory, body, chapter_
 export const POST_COLUMNS = `${BASE_COLUMNS}, audience, group_id`;
 /** With photos, video and video link from the 0023 update. */
 export const MEDIA_COLUMNS = `${POST_COLUMNS}, media, video_url`;
+/** With the investor or funder profile label from the 0026 update. */
+export const INVESTOR_COLUMNS = `${MEDIA_COLUMNS}, author_investor`;
+export const COMMENT_COLUMNS = "id, post_id, author_id, body, author_name, author_slug, created_at";
 /** True when a query failed only because the 0023 columns are not in the database yet. */
+/** True when a query failed only because the 0026 columns are not in the database yet. */
+export const missing0026 = (e: { message?: string } | null) => Boolean(e && /author_investor/.test(e.message ?? ""));
 export const missing0023 = (e: { message?: string } | null) => Boolean(e && /media|video_url/.test(e.message ?? ""));
 /** True when a query failed only because the 0018 columns are not in the database yet. */
 export const missing0018 = (e: { message?: string } | null) => Boolean(e && /audience|group_id/.test(e.message ?? ""));
@@ -74,7 +82,8 @@ export async function feedPosts(supabase: SupabaseClient, q: FeedQuery, pageSize
     if (q.muted?.size) req = req.not("author_id", "in", `(${[...q.muted].slice(0, 500).join(",")})`);
     return req;
   };
-  let { data, error } = await build(MEDIA_COLUMNS);
+  let { data, error } = await build(INVESTOR_COLUMNS);
+  if (missing0026(error)) ({ data, error } = await build(MEDIA_COLUMNS));
   if (missing0023(error)) ({ data, error } = await build(POST_COLUMNS));
   if (hideInGroup && error && /group_hidden/.test(error.message)) { hideInGroup = false; ({ data, error } = await build(POST_COLUMNS)); }
   if (missing0018(error)) {
@@ -206,10 +215,28 @@ export function pageWindow(cursorAt: string | null, posts: FeedPost[], hasMore: 
 /** One post by id (null when it doesn't exist or the viewer may not see it, e.g. a Friend-only post of a non-friend). */
 export async function getPost(supabase: SupabaseClient, id: string): Promise<FeedPost | null> {
   const one = (cols: string) => supabase.from("feed_posts").select(cols).eq("id", id).neq("status", "hidden").maybeSingle();
-  let { data, error } = await one(MEDIA_COLUMNS);
+  let { data, error } = await one(INVESTOR_COLUMNS);
+  if (missing0026(error)) ({ data, error } = await one(MEDIA_COLUMNS));
   if (missing0023(error)) ({ data, error } = await one(POST_COLUMNS));
   if (missing0018(error)) ({ data, error } = await one(BASE_COLUMNS));
   return error ? null : ((data as unknown as FeedPost | null) ?? null);
+}
+
+/**
+ * Registration labels for investor and funder authors (0026). Only authors flagged as investors are looked up, so most
+ * pages make no call at all. Before 0026 is applied the call fails quietly and no label is shown.
+ */
+export async function investorLabels(supabase: SupabaseClient, items: { author_id: string; author_investor?: boolean }[]): Promise<Map<string, InvestorLabel>> {
+  const ids = [...new Set(items.filter((x) => x.author_investor).map((x) => x.author_id))].slice(0, 200);
+  if (!ids.length) return new Map();
+  const { data, error } = await supabase.rpc("investor_labels", { uids: ids });
+  if (error) return new Map();
+  return new Map(((data ?? []) as (InvestorLabel & { user_id: string })[]).map((r) => [r.user_id, { regulator: r.regulator, checked_at: r.checked_at }]));
+}
+
+/** Which of these members are investors or funders (any member, not only post authors), with their registration label. */
+export async function investorProfiles(supabase: SupabaseClient, ids: string[]): Promise<Map<string, InvestorLabel>> {
+  return investorLabels(supabase, ids.map((author_id) => ({ author_id, author_investor: true })));
 }
 
 export type GroupTag = { slug: string; name: string };

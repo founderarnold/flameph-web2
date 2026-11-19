@@ -107,6 +107,7 @@ export const RECORD_ERRORS: Record<string, string> = {
   bad_date: "Choose the date the deal happened (today or within the past year).",
   bad_input: "Please fill in the title (3 to 120 characters) and choose a category.",
   bad_terms: "Please write your terms (3 to 1,000 characters).",
+  investment_not_allowed: "Requests, quotes and records are for products and services. FLAME PH has no way to invest, lend, pledge or commit money, so investment and loan deals can't be requested or recorded here.",
   own_business: "Moderators can't act on their own records.",
   not_allowed_for_role: "Only admins and founders can do this.",
   report_rate_limit: "You've sent many reports today. Please try again tomorrow.",

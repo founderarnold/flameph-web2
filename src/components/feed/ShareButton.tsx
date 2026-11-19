@@ -1,15 +1,18 @@
 "use client";
 import { useState } from "react";
 
-/** Share a post: the phone's share sheet (Messenger, Viber, SMS…) where there is one, otherwise copy the link. */
-export function ShareButton({ path, title }: { path: string; title: string }) {
+/**
+ * Share a post: the phone's share sheet (Messenger, Viber, SMS…) where there is one, otherwise copy the link.
+ * text: for an investor/funder post, the full warning in English and Taglish travels with the link (and is copied with it).
+ */
+export function ShareButton({ path, title, text }: { path: string; title: string; text?: string }) {
   const [msg, setMsg] = useState("");
   const share = async () => {
     const url = `${window.location.origin}${path}`;
     try {
-      if (navigator.share) { await navigator.share({ title, url }); return; }
-      await navigator.clipboard.writeText(url);
-      setMsg("Link copied. Only FLAME PH members can open it.");
+      if (navigator.share) { await navigator.share(text ? { title, text, url } : { title, url }); return; }
+      await navigator.clipboard.writeText(text ? `${text}\n\n${url}` : url);
+      setMsg(text ? "Link copied with the investor warning. Only FLAME PH members can open it." : "Link copied. Only FLAME PH members can open it.");
     } catch {
       // The member closed the share sheet.
     }

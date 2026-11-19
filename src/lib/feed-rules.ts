@@ -32,15 +32,37 @@ export const AUDIENCES = {
 export type Audience = keyof typeof AUDIENCES;
 export const isAudience = (v: unknown): v is Audience => typeof v === "string" && v in AUDIENCES;
 
-/** Same words as public.feed_text_flags() in the database. */
+/** Same words as public.feed_text_flags() in the database (0017, extended in 0026_investor_funder.sql). */
 const INVESTOR_RE = /\b(invest|investing|investment|investments|investor|investors|funder|funders|funding|capital|roi|loans?|lending|pautang|paluwagan|equity|shares? of stock|interest rate|interest per month)\b/i;
-const RETURNS_RE = /(guarantee[ds]?|guaranteed|sure|fixed|risk[- ]?free|no[- ]risk|walang risk|siguradong|garantisadong)\W+(\w+\W+){0,3}(returns?|profits?|income|interest|kita|tubo)/i;
-const SCHEME_RE = /(double your money|doble ang pera|pyramid|downline|recruit(ment)? (bonus|income)|pay[- ]?in)/i;
+const RETURNS_RE = [
+  /(guarantee[ds]?|guaranteed|assured|sure|fixed|risk[- ]?free|no[- ]risk|walang risk|siguradong|garantisadong)\W+(\w+\W+){0,3}(returns?|profits?|income|interest|kita|tubo)/i,
+  /(returns?|profits?|income|interest|kita|tubo)\W+(\w+\W+){0,3}(guaranteed|assured|garantisado|sigurado)/i,
+  /(double|triple|doblehin|doble) (your |ang |nyo ang |mo ang )?(money|pera|investment|puhunan)/i,
+];
+/** Only held when the post is also about investing or funding. */
+const RISK_FREE_RE = /(risk[- ]?free|no[- ]risk|zero[- ]risk|walang (risk|lugi)|hindi (ka )?malulugi|sure ?(ball|win)|surebol|100% safe)/i;
+const PCT_PERIOD_RE = /[0-9]+(\.[0-9]+)? ?% ?(a |per |every |kada |bawat |\/ ?)?(day|daily|week|weekly|month|monthly|araw|linggo|buwan)/i;
+const SCHEME_RE = /(pyramid|ponzi|downline|upline|multi[- ]?level marketing|networking (business|income|opportunity)|recruit(ment)? (bonus|income|commission)|referral (bonus|income|commission)|(invite|recruit|refer) [0-9]+ (people|persons|friends|members|tao)|binary (plan|system)|matrix (plan|system)|pay[- ]?in|(^|[^a-z])mlm([^a-z]|$))/i;
+
+export type HoldReason = "promises_returns" | "recruitment_scheme";
+/** Plain words for moderators and the poster. */
+export const HOLD_REASONS: Record<HoldReason, string> = {
+  promises_returns: "Promises fixed, guaranteed or risk-free returns",
+  recruitment_scheme: "Pyramid, MLM or recruitment structure",
+};
+
+/** Why the database will hold this text for a moderator, or null. Same order as the database: returns first. */
+export function holdReason(body: string): HoldReason | null {
+  const investor = INVESTOR_RE.test(body);
+  if (RETURNS_RE.some((r) => r.test(body)) || (investor && (RISK_FREE_RE.test(body) || PCT_PERIOD_RE.test(body)))) return "promises_returns";
+  if (SCHEME_RE.test(body)) return "recruitment_scheme";
+  return null;
+}
 
 /** What the database will do with a post: mark it as an investor/funder post, or hold it for review. */
-export function classifyPost(body: string, kind: PostKind): { kind: PostKind; held: boolean } {
-  const investor = kind === "investor" || INVESTOR_RE.test(body);
-  return { kind: investor ? "investor" : kind, held: RETURNS_RE.test(body) || SCHEME_RE.test(body) };
+export function classifyPost(body: string, kind: PostKind, authorInvestor = false): { kind: PostKind; held: boolean } {
+  const investor = authorInvestor || kind === "investor" || INVESTOR_RE.test(body);
+  return { kind: investor ? "investor" : kind, held: holdReason(body) !== null };
 }
 
 export const linkCount = (t: string) => (t.match(/(https?:\/\/|www\.)/gi) ?? []).length;
