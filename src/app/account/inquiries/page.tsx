@@ -25,7 +25,7 @@ export default async function Inquiries({ searchParams }: { searchParams: Promis
     supabase.from("business_inquiries").select("*").eq("owner_id", user.id).order("created_at", { ascending: false }).limit(200),
   ]);
   const { data: stats } = biz
-    ? await supabase.from("business_stats").select("views, clicks").eq("business_id", biz.id).gte("day", new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10))
+    ? await supabase.from("business_stats").select("views, clicks").eq("business_id", biz.id).gte("day", new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)).limit(31)
     : { data: [] };
   const all = (data ?? []) as Inquiry[];
   const rows = all.filter((x) => (showArchived ? x.status === "archived" : x.status !== "archived") && (!kind || inquiryKind(x) === kind));

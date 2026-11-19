@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withWarning } from "@/lib/investor";
+import { fetchAll } from "@/lib/paging";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
 import { unsubscribeHeaders, unsubscribeUrl } from "@/lib/unsubscribe";
@@ -23,13 +24,14 @@ export async function GET(req: Request) {
   const weekAgo = new Date(Date.now() - 7 * 86400000);
   const weekAgoDay = weekAgo.toISOString().slice(0, 10);
   const [{ data: profiles }, { data: bizs }, { data: opps }, { data: deals }, { data: events }, { data: inquiries }, { data: stats }, extra] = await Promise.all([
-    admin.from("profiles").select("*").eq("consent_marketing", true).eq("status", "active"),
-    admin.from("businesses").select("id, owner_id, sector, province"),
-    admin.from("opportunities").select("*").eq("published", true),
-    admin.from("deals").select("id, title, deadline").eq("published", true).eq("status", "open"),
+    // Lists that grow with membership are read page by page (the database returns at most 1,000 rows per request).
+    fetchAll((a, b) => admin.from("profiles").select("*").eq("consent_marketing", true).eq("status", "active").order("id").range(a, b)).then((data) => ({ data })),
+    fetchAll((a, b) => admin.from("businesses").select("id, owner_id, sector, province").order("id").range(a, b)).then((data) => ({ data })),
+    admin.from("opportunities").select("*").eq("published", true).order("created_at", { ascending: false }).limit(500),
+    admin.from("deals").select("id, title, deadline").eq("published", true).eq("status", "open").limit(100),
     admin.from("events").select("title, starts_at, city, chapter_id").eq("published", true).eq("status", "scheduled").gte("starts_at", new Date().toISOString()).order("starts_at").limit(30),
-    admin.from("business_inquiries").select("owner_id").gte("created_at", weekAgo.toISOString()),
-    admin.from("business_stats").select("business_id, views").gte("day", weekAgoDay),
+    fetchAll((a, b) => admin.from("business_inquiries").select("owner_id").gte("created_at", weekAgo.toISOString()).order("created_at").range(a, b)).then((data) => ({ data })),
+    fetchAll((a, b) => admin.from("business_stats").select("business_id, views").gte("day", weekAgoDay).order("business_id").order("day").range(a, b)).then((data) => ({ data })),
     weekExtras(admin, weekAgo),
   ]);
 
@@ -104,7 +106,7 @@ async function weekExtras(admin: NonNullable<ReturnType<typeof createAdminClient
   const groupPosts = (posts ?? []) as { group_id: string; author_id: string; author_name: string | null; body: string; kind: string }[];
   const ids = [...new Set(groupPosts.map((g) => g.group_id))];
   const [{ data: groups }, { data: members }] = ids.length
-    ? await Promise.all([admin.from("community_groups").select("id, name").in("id", ids), admin.from("group_members").select("group_id, user_id").in("group_id", ids)])
+    ? await Promise.all([admin.from("community_groups").select("id, name").in("id", ids), fetchAll((a, b) => admin.from("group_members").select("group_id, user_id").in("group_id", ids).order("group_id").order("user_id").range(a, b)).then((data) => ({ data }))])
     : [{ data: [] }, { data: [] }];
   const groupsOf = new Map<string, Set<string>>();
   for (const m of (members ?? []) as { group_id: string; user_id: string }[]) groupsOf.set(m.user_id, (groupsOf.get(m.user_id) ?? new Set()).add(m.group_id));

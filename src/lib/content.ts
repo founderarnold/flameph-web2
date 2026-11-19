@@ -4,6 +4,8 @@ import { createPublicClient } from "@/lib/supabase/server";
 import { SUPABASE_URL } from "@/lib/env";
 
 type Query = { table: string; select?: string; filters?: Record<string, string | number | boolean | string[]>; order?: string; ascending?: boolean; limit?: number };
+/** Every public list is bounded. Pages that need more pass a limit (the database never returns more than 1,000). */
+export const LIST_DEFAULT_LIMIT = 200;
 
 /** Fetch published rows for public pages. Always returns an array; empty on error or when unconfigured. */
 export async function list<T = Record<string, unknown>>(q: Query): Promise<T[]> {
@@ -20,7 +22,7 @@ const cachedList = unstable_cache(
       req = Array.isArray(v) ? req.in(k, v) : req.eq(k, v);
     }
     if (q.order) req = req.order(q.order, { ascending: q.ascending ?? false });
-    if (q.limit) req = req.limit(q.limit);
+    req = req.limit(Math.min(q.limit ?? LIST_DEFAULT_LIMIT, 1000));
     const { data, error } = await req;
     if (error) return [];
     return data ?? [];

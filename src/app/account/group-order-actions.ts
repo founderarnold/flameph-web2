@@ -50,8 +50,10 @@ export async function sendGroupOrder(fd: FormData) {
     });
   }
   // Tell the members who joined (at most 100), never the organizer.
-  for (const m of ((joined ?? []) as { user_id: string; is_organizer: boolean }[]).filter((m) => !m.is_organizer).slice(0, 100)) {
-    await notify(m.user_id, "records", { title: "Your group order was sent to the supplier", body: title, url: `/group-order/${id}` });
+  // Ten at a time instead of one after another, so 100 members don't mean 100 waits in a row.
+  const members = ((joined ?? []) as { user_id: string; is_organizer: boolean }[]).filter((m) => !m.is_organizer).slice(0, 100);
+  for (let i = 0; i < members.length; i += 10) {
+    await Promise.all(members.slice(i, i + 10).map((m) => notify(m.user_id, "records", { title: "Your group order was sent to the supplier", body: title, url: `/group-order/${id}` })));
   }
   refresh();
   redirect(`/group-order/${id}?done=sent`);

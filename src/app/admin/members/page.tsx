@@ -44,7 +44,7 @@ export default async function Members({ searchParams }: { searchParams: Promise<
   let query = db.from("profiles").select("*").order("created_at", { ascending: false }).limit(200);
   if (q) query = query.or(`full_name.ilike.%${q.replace(/[%,()]/g, "")}%,member_code.ilike.%${q.replace(/[%,()]/g, "")}%,city.ilike.%${q.replace(/[%,()]/g, "")}%`);
   const [{ data: profiles }, { data: roleRows }, { data: chapters }, users] = await Promise.all([
-    query, db.from("roles").select("*"), db.from("chapters").select("id,name"), db.auth.admin.listUsers({ perPage: 1000 }),
+    query, db.from("roles").select("*").limit(1000), db.from("chapters").select("id,name").limit(500), db.auth.admin.listUsers({ perPage: 1000 }),
   ]);
   const emailOf = new Map((users.data?.users ?? []).map((u) => [u.id, { email: u.email, confirmed: Boolean(u.email_confirmed_at) }]));
   return (
