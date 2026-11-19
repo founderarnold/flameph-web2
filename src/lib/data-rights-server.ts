@@ -156,5 +156,7 @@ export async function runPrivacyJobs(admin: SupabaseClient) {
     const r = await eraseMember(admin, d.user_id, { requestId: d.request_id, why: d.why === "closed_1_year" ? "closed for 1 year" : "member's erasure request" });
     (r.ok ? erased : failed).push(d.request_id ?? "closed_1_year");
   }
-  return { retention: rErr ? { error: rErr.message } : retention, closed: closed.length, erased: erased.length, failed: failed.length };
+  // Phase 13: error reports 90 days, speed readings 30 days (0030). Missing before that update: ignored.
+  const { data: monitor } = await admin.rpc("release_monitor_cleanup");
+  return { retention: rErr ? { error: rErr.message } : retention, monitor: monitor ?? null, closed: closed.length, erased: erased.length, failed: failed.length };
 }

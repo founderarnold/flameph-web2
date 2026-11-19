@@ -20,6 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {isAdmin && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/records">Transaction records</Link></li>}
         {isAdmin && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/investors">Investor registrations</Link></li>}
         {isAdmin && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/privacy">Privacy and security</Link></li>}
+        {isAdmin && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/release">Release</Link></li>}
         {roles.includes("super_admin") && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/moderation/appeals">Appeals</Link></li>}
         {roles.includes("super_admin") && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/moderation/policy">Policy</Link></li>}
       </>}

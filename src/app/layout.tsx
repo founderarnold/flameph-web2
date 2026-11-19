@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { SiteMonitor } from "@/components/SiteMonitor";
 import "./globals.css";
 import "./ridesafe/ridesafe.css";
 import { Header } from "@/components/Header";
@@ -77,6 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <RegisterSW />
         <EmailLinkSignIn />
         <Analytics />
+        <SiteMonitor />
       </body>
     </html>
   );
