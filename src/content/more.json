@@ -128,6 +128,8 @@
         { "label": "Workshop gallery", "href": "/workshops/gallery" },
         { "label": "Join workshops as participant, speaker or venue", "href": "/workshops/join" },
         { "label": "Request a workshop in your area", "href": "/workshops/request" },
+        { "label": "Volunteer as resource speaker or mentor", "href": "/get-involved/speaker-mentor" },
+        { "label": "Join as partner or sponsor a workshop", "href": "/get-involved/workshop-partner" },
         { "label": "Trainings and webinars", "href": "/trainings-webinars" },
         { "label": "Expos and summits", "href": "/expos-summits" }
       ]

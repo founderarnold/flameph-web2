@@ -85,6 +85,8 @@ const STEPS: { title: string; text: string; href?: string }[] = [
   { title: "Gather your community", text: "Invite MSMEs, suppliers, professionals and leaders in your city or municipality." },
   { title: "Volunteer as Chapter Builder in Your City/Town", text: "Lead local workshops, group orders and meetups, with tools and support from FLAME PH.", href: "/get-involved/chapter-builder#builder" },
   { title: "Volunteer as FLAME PH Meetup Venue", text: "Own a café, store, office or function room? Host chapter meetups and workshops, and get your place known to local entrepreneurs.", href: "/get-involved/chapter-builder#venue" },
+  { title: "Volunteer as Resource Speaker/Mentor for MSMEs", text: "Share your know-how in your industry or field. Join the waitlist of speakers and mentors for workshops and chapters in your area.", href: "/get-involved/speaker-mentor" },
+  { title: "Join as Partner or Sponsor a Workshop", text: "LGUs, agencies, companies, schools and NGOs can co-host, fund or give in-kind support so more MSMEs can learn for free.", href: "/get-involved/workshop-partner" },
 ];
 
 function Tile({ f }: { f: Feature }) {
@@ -111,7 +113,7 @@ export function QuickLook() {
           <div>
             <p className="inline-block rounded-full bg-flame-soft px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-flame-strong">Quick look · Bago ka lang dito?</p>
             <h2 id="quick-look-h" className="mt-4 text-3xl font-extrabold leading-tight text-primary sm:text-4xl">
-              Pagaanin ang pagnenegosyo. <span className="text-[#e20b24]">Sama-sama.</span>
+              Pagaanin ang pagnenegosyo. <span className="text-[#e20b24]">Sama-sama sa pag-asenso.</span>
             </h2>
             <p className="mt-4 text-base leading-7 text-[#24324a] sm:text-lg">
               <strong>FLAME PH</strong> is a Filipino MSME ecosystem that lightens the weight of doing business. Instead of paying for many separate services alone, members learn together, order together, share costs and open doors as one community.
@@ -165,7 +167,7 @@ export function QuickLook() {
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link href="/join" className="btn rounded-full bg-[#c00a0a] px-7 text-lg text-white shadow-lg hover:bg-[#a30808]">Join FLAME PH Free →</Link>
-                <Link href="/workshops/request" className="btn h-auto rounded-full bg-[#c00a0a] px-7 py-3 text-left text-lg leading-snug text-white shadow-lg hover:bg-[#a30808]">Request to conduct a FLAME PH Workshop in our community/area →</Link>
+                <Link href="/workshops/request" className="btn h-auto rounded-full bg-[#c00a0a] px-7 py-3 text-left text-lg leading-snug text-white shadow-lg hover:bg-[#a30808]">Request workshop in our community/area →</Link>
                 <Link href="/get-involved/chapter-builder#builder" className="btn rounded-full bg-white/15 px-7 text-lg text-white hover:bg-white/25">Build a chapter in your area</Link>
                 <Link href="/get-involved/chapter-builder#venue" className="btn rounded-full bg-white/15 px-7 text-lg text-white hover:bg-white/25">Volunteer as Meetup Venue for MSMEs</Link>
               </div>

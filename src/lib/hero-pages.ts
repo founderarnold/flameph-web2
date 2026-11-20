@@ -55,6 +55,8 @@ const EXACT_SCENES: Record<string, HeroScene> = {
   "/fulfillment/waitlist": { sheet: 8, quadrant: "top-left", alt: "MSMEs packing and delivering local products together" },
   "/manager-ceo-training": { sheet: 10, quadrant: "top-left", alt: "An experienced entrepreneur mentoring a future manager" },
   "/get-involved/resource-speaker": { sheet: 12, quadrant: "top-left", alt: "A Filipino expert speaking at an MSME workshop" },
+  "/get-involved/speaker-mentor": { sheet: 12, quadrant: "top-left", alt: "A Filipino expert speaking at an MSME workshop" },
+  "/get-involved/workshop-partner": { sheet: 10, quadrant: "top-right", alt: "Organizations forming a trusted partnership for Filipino MSMEs" },
   "/get-involved/professional-services": { sheet: 12, quadrant: "top-right", alt: "Volunteer professionals helping a Filipino shop owner" },
 };
 
