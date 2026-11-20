@@ -107,5 +107,5 @@ test("all 28 goal cards are still on the front door, each with its image file an
     if (href.startsWith("/")) await access(new URL(`../src/app${href === "/" ? "" : href}/page.tsx`, import.meta.url)).catch(() => assert.fail(`${title}: ${href} has no page`));
     else assert.match(href, /^https:\/\//, title);
   }
-  for (const p of ["src/app/page.tsx", "src/app/start/page.tsx"]) assert.match(await read(p), /<EcosystemFrontDoor \/>/);
+  for (const p of ["src/app/page.tsx", "src/app/start/page.tsx"]) assert.match(await read(p), /<EcosystemFrontDoor(?: afterHero=\{<QuickLook \/>\})? \/>/);
 });

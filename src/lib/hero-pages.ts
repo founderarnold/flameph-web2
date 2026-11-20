@@ -15,6 +15,9 @@ const EXACT_SCENES: Record<string, HeroScene> = {
   "/volunteering": { sheet: 2, quadrant: "bottom-right", alt: "Volunteers helping Filipino small business owners" },
   "/academy": { sheet: 3, quadrant: "top-left", alt: "Entrepreneurs learning practical skills at a business academy" },
   "/workshops": { sheet: 3, quadrant: "top-right", alt: "A hands-on workshop for small business owners" },
+  "/workshops/gallery": { sheet: 3, quadrant: "top-right", alt: "A hands-on workshop for small business owners" },
+  "/workshops/join": { sheet: 10, quadrant: "top-left", alt: "An experienced entrepreneur mentoring a Filipino small-business owner" },
+  "/workshops/request": { sheet: 3, quadrant: "top-left", alt: "Entrepreneurs learning practical skills at a business academy" },
   "/trainings-webinars": { sheet: 3, quadrant: "bottom-left", alt: "An engaging hybrid training and webinar" },
   "/expos-summits": { sheet: 3, quadrant: "bottom-right", alt: "A vibrant Philippine MSME expo" },
   "/bizconsult-ai": { sheet: 4, quadrant: "top-left", alt: "A friendly AI business assistant helping a Filipino shop owner" },
@@ -48,7 +51,12 @@ const EXACT_SCENES: Record<string, HeroScene> = {
   "/get-involved/poverty-alleviation": { sheet: 11, quadrant: "top-right", alt: "Volunteers helping a Filipino family build a small-business livelihood" },
   "/get-involved/affiliate": { sheet: 11, quadrant: "bottom-left", alt: "An affiliate creator promoting Filipino member products" },
   "/get-involved/chapter-leader": { sheet: 11, quadrant: "bottom-right", alt: "A local entrepreneur leading a welcoming chapter meeting" },
+  "/get-involved/chapter-builder": { sheet: 11, quadrant: "bottom-right", alt: "A local entrepreneur leading a welcoming chapter meeting" },
+  "/fulfillment/waitlist": { sheet: 8, quadrant: "top-left", alt: "MSMEs packing and delivering local products together" },
+  "/manager-ceo-training": { sheet: 10, quadrant: "top-left", alt: "An experienced entrepreneur mentoring a future manager" },
   "/get-involved/resource-speaker": { sheet: 12, quadrant: "top-left", alt: "A Filipino expert speaking at an MSME workshop" },
+  "/get-involved/speaker-mentor": { sheet: 12, quadrant: "top-left", alt: "A Filipino expert speaking at an MSME workshop" },
+  "/get-involved/workshop-partner": { sheet: 10, quadrant: "top-right", alt: "Organizations forming a trusted partnership for Filipino MSMEs" },
   "/get-involved/professional-services": { sheet: 12, quadrant: "top-right", alt: "Volunteer professionals helping a Filipino shop owner" },
 };
 

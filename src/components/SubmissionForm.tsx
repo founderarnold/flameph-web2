@@ -5,7 +5,8 @@ import type { FormDef } from "@/lib/forms";
 import { Turnstile } from "@/components/Turnstile";
 
 /** Renders any form from lib/forms. Drafts are saved locally so a dropped connection doesn't lose typing. */
-export function SubmissionForm({ def, context, title, compact = false, doneHref }: { def: FormDef; context?: Record<string, string>; title?: string; compact?: boolean; doneHref?: string }) {
+/** `defaults` pre-fills fields, e.g. the award picked on the home page (?award=). Only allowed option values are used. */
+export function SubmissionForm({ def, context, title, compact = false, doneHref, defaults }: { def: FormDef; context?: Record<string, string>; title?: string; compact?: boolean; doneHref?: string; defaults?: Record<string, string> }) {
   const key = `flameph-draft:${def.type}:${context?.event_id ?? ""}`;
   const formRef = useRef<HTMLFormElement>(null);
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
@@ -87,7 +88,7 @@ export function SubmissionForm({ def, context, title, compact = false, doneHref 
             {f.type === "textarea" ? (
               <textarea id={id} name={f.name} required={f.required} placeholder={f.placeholder} rows={4} maxLength={4000} className="input" />
             ) : f.type === "select" ? (
-              <select id={id} name={f.name} required={f.required} className="input" defaultValue="">
+              <select id={id} name={f.name} required={f.required} className="input" defaultValue={defaults?.[f.name] && f.options?.includes(defaults[f.name]) ? defaults[f.name] : ""}>
                 <option value="" disabled>Pumili…</option>
                 {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
               </select>

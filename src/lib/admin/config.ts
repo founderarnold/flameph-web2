@@ -96,11 +96,11 @@ export const ADMIN_TABLES: AdminTable[] = [
     fields: [
       { name: "title", label: "Title", type: "text", required: true },
       { name: "type", label: "Type", type: "select", options: ["workshop", "training", "webinar", "expo", "summit", "talk"], required: true },
-      { name: "description", label: "Description", type: "textarea" },
+      { name: "description", label: "Description", type: "textarea", help: "For past workshops this shows in the Workshop gallery. Mention partner LGUs, agencies and institutions, e.g. \"In partnership with the Municipality of Bacolor and DTI Pampanga.\"" },
       { name: "starts_at", label: "Starts", type: "datetime", required: true },
       { name: "ends_at", label: "Ends", type: "datetime" },
       { name: "venue", label: "Venue", type: "text" }, { name: "city", label: "City", type: "text" }, { name: "province", label: "Province", type: "text" },
-      { name: "online_url", label: "Online link", type: "url" },
+      { name: "online_url", label: "Online link", type: "url", help: "For a past workshop, paste its YouTube video link here to show the video in the public Workshop gallery." },
       { name: "status", label: "Status", type: "select", options: ["draft", "scheduled", "completed", "cancelled"], required: true },
       { name: "capacity", label: "Capacity", type: "number" },
       { name: "registration_open", label: "Registration open", type: "bool" },

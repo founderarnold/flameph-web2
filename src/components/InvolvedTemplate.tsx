@@ -3,7 +3,7 @@ import { SubmissionForm } from "./SubmissionForm";
 import { FORMS } from "@/lib/forms";
 import type { InvolvedPage } from "@/content/involved";
 
-export function InvolvedTemplate({ page, children }: { page: InvolvedPage; children?: React.ReactNode }) {
+export function InvolvedTemplate({ page, children, defaults }: { page: InvolvedPage; children?: React.ReactNode; defaults?: Record<string, string> }) {
   return (
     <>
       <PageHero status={page.status} fil={page.fil} title={page.title} intro={page.intro} path={`/get-involved/${page.slug}`} />
@@ -21,7 +21,7 @@ export function InvolvedTemplate({ page, children }: { page: InvolvedPage; child
             {page.note && <Notice>{page.note}</Notice>}
             {children}
           </div>
-          <div><SubmissionForm def={FORMS[page.form]} /></div>
+          <div id="form" className="scroll-mt-24"><SubmissionForm def={FORMS[page.form]} defaults={defaults} /></div>
         </div>
       </Section>
     </>

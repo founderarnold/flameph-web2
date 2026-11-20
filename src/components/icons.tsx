@@ -15,3 +15,9 @@ export const IconMic = () => <svg {...P}><path d="M12 3a3 3 0 013 3v6a3 3 0 01-6
 export const IconPos = () => <svg {...P}><path d="M5 3h14v18H5zM8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M16 11v4" /></svg>;
 export const IconAward = () => <svg {...P}><path d="M12 15a6 6 0 100-12 6 6 0 000 12zM8.5 14L7 21l5-3 5 3-1.5-7" /></svg>;
 export const IconHands = () => <svg {...P}><path d="M7 11V6a1.5 1.5 0 013 0v4M10 10V4.5a1.5 1.5 0 013 0V10M13 10V5.5a1.5 1.5 0 013 0V12M16 9a1.5 1.5 0 013 0v4a8 8 0 01-8 8c-3 0-4.5-1.5-6.5-4L3 14a1.5 1.5 0 012.3-2L7 13.5" /></svg>;
+export const IconCalc = () => <svg {...P}><path d="M6 3h12v18H6zM9 7h6M9 11h.01M12 11h.01M15 11h.01M9 14h.01M12 14h.01M15 14v3M9 17h.01M12 17h.01" /></svg>;
+export const IconChart = () => <svg {...P}><path d="M4 4v16h16M8 16v-4M12 16V8M16 16v-6" /></svg>;
+export const IconBox = () => <svg {...P}><path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5zM3 7.5l9 4.5 9-4.5M12 12v9" /></svg>;
+export const IconHome = () => <svg {...P}><path d="M3 11l9-7 9 7M5 9.5V20h14V9.5M10 20v-5h4v5" /></svg>;
+export const IconBriefcase = () => <svg {...P}><path d="M3 7h18v13H3zM8 7V4h8v3M3 13h18" /></svg>;
+export const IconGlobe = () => <svg {...P}><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3z" /></svg>;

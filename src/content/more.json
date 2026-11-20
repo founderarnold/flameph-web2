@@ -40,6 +40,7 @@
         { "label": "Group Order", "href": "/group-order" },
         { "label": "Buy together deals", "href": "/deals" },
         { "label": "Fulfillment", "href": "/fulfillment" },
+        { "label": "Micro Fulfillment waitlist", "href": "/fulfillment/waitlist" },
         { "label": "Growth path", "href": "/account/growth" },
         { "label": "Rewards", "href": "/account/rewards" },
         { "label": "Real Estate for MSMEs", "href": "/real-estate-for-msmes" },
@@ -53,7 +54,8 @@
       "items": [
         { "label": "FLAME Academy", "href": "/academy" },
         { "label": "Resources and guides", "href": "/resources" },
-        { "label": "Programs and ecosystem", "href": "/programs-ecosystem" }
+        { "label": "Programs and ecosystem", "href": "/programs-ecosystem" },
+        { "label": "Manager/CEO Training Program", "href": "/manager-ceo-training" }
       ]
     },
     {
@@ -115,13 +117,19 @@
       "items": [
         { "label": "Find a chapter", "href": "/chapters" },
         { "label": "About our chapters", "href": "/about/chapters" },
-        { "label": "Become a chapter leader", "href": "/get-involved/chapter-leader" }
+        { "label": "Become a chapter leader", "href": "/get-involved/chapter-leader" },
+        { "label": "Build a chapter or host meetups", "href": "/get-involved/chapter-builder" }
       ]
     },
     {
       "key": "events", "title": "Events",
       "items": [
         { "label": "Workshops", "href": "/workshops" },
+        { "label": "Workshop gallery", "href": "/workshops/gallery" },
+        { "label": "Join workshops as participant, speaker or venue", "href": "/workshops/join" },
+        { "label": "Request a workshop in your area", "href": "/workshops/request" },
+        { "label": "Volunteer as resource speaker or mentor", "href": "/get-involved/speaker-mentor" },
+        { "label": "Join as partner or sponsor a workshop", "href": "/get-involved/workshop-partner" },
         { "label": "Trainings and webinars", "href": "/trainings-webinars" },
         { "label": "Expos and summits", "href": "/expos-summits" }
       ]
