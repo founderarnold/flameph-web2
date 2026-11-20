@@ -60,6 +60,7 @@ export default async function Home() {
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/join" className="btn btn-flame text-lg">Join for Free Today!</Link>
               <Link href="/group-order" className="btn btn-primary text-lg">Join Group Ordering</Link>
+              <Link href="/deals" className="btn btn-primary text-lg">See Group Order Deals</Link>
             </div>
           </div>
           <PrincipleDiagram />
