@@ -8,8 +8,9 @@ const benefits = await readFile(new URL("../src/app/benefits/page.tsx", import.m
 const nav = await readFile(new URL("../src/content/nav.json", import.meta.url), "utf8");
 
 test("homepage uses the approved Filipino-first hero message", () => {
-  assert.match(frontDoor, /Ano Ang Gusto Mong Gawin Ngayon/);
-  assert.match(frontDoor, /For Your Business\?/);
+  assert.match(frontDoor, /Ano Ang Gusto Mong Gawin /);
+  assert.match(frontDoor, /For Your Business: Increase Sales and\/or Minimize Expenses\?/);
+  assert.match(frontDoor, /Micro Fulfillment by MSMEs/);
   assert.match(frontDoor, /Hindi mo kailangang mag-business nang mag-isa\./);
   assert.match(frontDoor, /Ang <strong>FLAME PH<\/strong> ang iyong digital workspace/);
 });
@@ -55,7 +56,7 @@ test("quick look sits right below the hero on the home page only, and links to r
   assert.match(quick, /Sugpuin ang Kahirapan Through Entrepreneurship/);
   assert.match(quick, /never holds your money/);
   assert.doesNotMatch(quick, /guarantee|returns|passive income/i);
-  for (const text of ["Volunteer as Meetup Venue for MSMEs", "Volunteer as Chapter Builder in Your City/Town", "Volunteer as FLAME PH Meetup Venue", "Core features of the FLAME PH ecosystem for MSMEs", "Manager/CEO Training Program", "Learn More to Earn More", "Teach people to fish", "Request to conduct a FLAME PH Workshop in our community/area", "consolidates group orders", "pasalo", "commissary"]) assert.ok(quick.includes(text), text);
+  for (const text of ["Volunteer as Meetup Venue for MSMEs", "Volunteer as Chapter Builder in Your City/Town", "Volunteer as FLAME PH Meetup Venue", "Core features of the FLAME PH ecosystem for MSMEs", "Manager/CEO Training Program", "Learn More to Earn More", "Teach people to fish", "Request to conduct a FLAME PH Workshop in our community/area", "FLAME PH Authorized Partner", "consolidates group orders", "pasalo", "commissary"]) assert.ok(quick.includes(text), text);
 });
 
 test("new sign-up pages use the shared form system with plain-language help on every typed field", async () => {

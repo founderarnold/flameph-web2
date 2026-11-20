@@ -66,10 +66,10 @@ const FLAGSHIPS: Flagship[] = [
 ];
 
 const FEATURES: Feature[] = [
-  { title: "Group ordering", text: "Buy supplies together for better prices. Our partner MarketplacePH Online Store consolidates group orders, coordinates with suppliers and accepts downpayments for bulk orders, so one cancellation does not ruin the whole group order for other MSMEs. FLAME PH itself never holds your money.", href: "/deals", icon: <I.IconCart />, status: "live" },
-  { title: "Shared cost on common services", text: "Share the cost of services every MSME needs, like delivery, training and professional help.", href: "/benefits", icon: <I.IconHands /> },
-  { title: "MSME toolkits", text: "Free guides, templates and checklists, with links to the official agencies.", href: "/resources", icon: <I.IconFile />, status: "live" },
-  { title: "Business calculators", text: "Work out pricing, profit margin, break-even and more in seconds.", href: "/business-calculators", icon: <I.IconCalc />, status: "live" },
+  { title: "Group ordering", text: "Buy supplies together for better prices. A FLAME PH Authorized Partner consolidates group orders, coordinates with suppliers and accepts downpayments for bulk orders, so one cancellation does not ruin the whole group order for other MSMEs. FLAME PH itself never holds your money.", href: "/deals", icon: <I.IconCart />, status: "live" },
+  { title: "Shared cost on common services", text: "Share the cost of services every MSME needs: legal consultation and legal services, tax compliance, accounting and bookkeeping, logistics, trucking and shipping, digital marketing, online systems and other essentials for day-to-day operations.", href: "/benefits", icon: <I.IconHands /> },
+  { title: "MSME toolkits", text: "Free guides, templates, checklists and real samples you can copy, with ideas on tools and shortcuts that lighten your day-to-day workload, plus links to the official agencies.", href: "/resources", icon: <I.IconFile />, status: "live" },
+  { title: "Business calculators", text: "Work out pricing, margin, break-even, cash flow, payroll, inventory and more in seconds, with reminders on the numbers each department should watch to avoid losses.", href: "/business-calculators", icon: <I.IconCalc />, status: "live" },
   { title: "Free Basic POS", text: "Sell, track inventory and see your daily sales with FLAME POS.", href: "/pos", icon: <I.IconPos />, status: "live" },
   { title: "Digital dashboards", text: "Your business page, mini-website, inbox, leads and tools in one workspace.", href: "/workspace", icon: <I.IconChart />, members: true },
   { title: "AI Tools for Business", text: "Ask Ka-FLAME AI in Taglish, and join seminars on using AI for your business.", href: "/trainings-webinars", icon: <I.IconSpark />, status: "beta" },
