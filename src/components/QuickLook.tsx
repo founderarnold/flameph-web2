@@ -44,17 +44,29 @@ const FLAGSHIPS: Flagship[] = [
     text: "Free educational workshops on starting small, budgeting, pricing and selling, plus “AI Tools for Business” seminars that show simple AI and digital tools for marketing, customer service and planning.",
     href: "/workshops", icon: <I.IconMic />, status: "live",
     extra: (
+      <>
       <span className="mt-4 block rounded-xl border-l-4 border-flame bg-white/80 p-3">
         <span className="block text-sm font-extrabold text-flame-strong">The principle: FLAME PH “Learn More to Earn More”</span>
         <span className="mt-1 block text-sm italic leading-5 text-fg">“Teach people to fish to feed them for a lifetime, instead of just giving them a fish that will feed them for a day.”</span>
       </span>
+      <span className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Link href="/workshops/request" className="block rounded-xl bg-white/80 p-3 hover:ring-2 hover:ring-primary">
+          <span className="block text-sm font-extrabold text-primary">For LGUs and communities →</span>
+          <span className="mt-1 block text-sm leading-5 text-muted">Partner with FLAME PH to hold entrepreneurship workshops and trainings in your city, town or barangay.</span>
+        </Link>
+        <Link href="/workshops/join" className="block rounded-xl bg-white/80 p-3 hover:ring-2 hover:ring-primary">
+          <span className="block text-sm font-extrabold text-primary">For experts and seasoned entrepreneurs →</span>
+          <span className="mt-1 block text-sm leading-5 text-muted">Volunteer as a workshop speaker or mentor and share what you know from your industry.</span>
+        </Link>
+      </span>
+    </>
     ),
-    links: [{ href: "/workshops", label: "See workshops", primary: true }, { href: "/trainings-webinars", label: "AI Tools for Business seminars" }],
+    links: [{ href: "/workshops/gallery", label: "See the workshops", primary: true }, { href: "/trainings-webinars", label: "AI Tools for Business seminars" }],
   },
 ];
 
 const FEATURES: Feature[] = [
-  { title: "Group ordering", text: "Buy supplies together for better prices. Members pay the supplier directly; FLAME PH never holds your money.", href: "/deals", icon: <I.IconCart />, status: "live" },
+  { title: "Group ordering", text: "Buy supplies together for better prices. Our partner MarketplacePH Online Store consolidates group orders, coordinates with suppliers and accepts downpayments for bulk orders, so one cancellation does not ruin the whole group order for other MSMEs. FLAME PH itself never holds your money.", href: "/deals", icon: <I.IconCart />, status: "live" },
   { title: "Shared cost on common services", text: "Share the cost of services every MSME needs, like delivery, training and professional help.", href: "/benefits", icon: <I.IconHands /> },
   { title: "MSME toolkits", text: "Free guides, templates and checklists, with links to the official agencies.", href: "/resources", icon: <I.IconFile />, status: "live" },
   { title: "Business calculators", text: "Work out pricing, profit margin, break-even and more in seconds.", href: "/business-calculators", icon: <I.IconCalc />, status: "live" },
@@ -62,8 +74,8 @@ const FEATURES: Feature[] = [
   { title: "Digital dashboards", text: "Your business page, mini-website, inbox, leads and tools in one workspace.", href: "/workspace", icon: <I.IconChart />, members: true },
   { title: "AI Tools for Business", text: "Ask Ka-FLAME AI in Taglish, and join seminars on using AI for your business.", href: "/trainings-webinars", icon: <I.IconSpark />, status: "beta" },
   { title: "MarketplacePH.com", text: "List products and services, find customers, jobs and applicants.", href: goHref("marketplaceph", "/", "to sell and find customers"), icon: <I.IconStore /> },
-  { title: "NegosyoDepot.com", text: "Startup packages, franchises, suppliers and distributorships.", href: goHref("negosyodepot", "/", "to find packages and suppliers"), icon: <I.IconAward /> },
-  { title: "Real Estate for MSMEs", text: "Find a store, office or production space, with Corporate H.", href: "/real-estate-for-msmes", icon: <I.IconHome /> },
+  { title: "NegosyoDepot.com", text: "The go-to place for selling, buying or pasalo of a business; master franchisors and would-be franchisees; negosyo packages, distributorships and dealerships; and B2B suppliers and B2B services.", href: goHref("negosyodepot", "/", "to find packages and suppliers"), icon: <I.IconAward /> },
+  { title: "Real Estate for MSMEs", text: "Find store space, commercial areas, warehouses, buildings, and production or commissary spaces; lease, sell or buy property; and other real estate needs of MSMEs, with Corporate H.", href: "/real-estate-for-msmes", icon: <I.IconHome /> },
   { title: "Manager/CEO Training Program", text: "Apprenticeship and management trainee program for future managers and CEOs, through Manager's Pizza (www.managerspizza.com) and FLAME PH partners.", href: "/manager-ceo-training", icon: <I.IconId /> },
   { title: "More opportunities", text: "Grants, trade fairs, buyer requests and B2B partnerships for business owners, professionals and companies.", href: "/opportunities", icon: <I.IconBriefcase /> },
 ];
@@ -153,6 +165,7 @@ export function QuickLook() {
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link href="/join" className="btn rounded-full bg-[#c00a0a] px-7 text-lg text-white shadow-lg hover:bg-[#a30808]">Join FLAME PH Free →</Link>
+                <Link href="/workshops/request" className="btn h-auto rounded-full bg-[#c00a0a] px-7 py-3 text-left text-lg leading-snug text-white shadow-lg hover:bg-[#a30808]">Request to conduct a FLAME PH Workshop in our community/area →</Link>
                 <Link href="/get-involved/chapter-builder#builder" className="btn rounded-full bg-white/15 px-7 text-lg text-white hover:bg-white/25">Build a chapter in your area</Link>
                 <Link href="/get-involved/chapter-builder#venue" className="btn rounded-full bg-white/15 px-7 text-lg text-white hover:bg-white/25">Volunteer as Meetup Venue for MSMEs</Link>
               </div>

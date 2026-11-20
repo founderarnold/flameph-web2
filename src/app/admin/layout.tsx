@@ -37,6 +37,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/settings">Settings</Link></li>
       </>}
       <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Content</li>
+      {(isAdmin || roles.includes("editor")) && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/workshop-gallery">Workshop gallery</Link></li>}
       {tables.map((t) => <li key={t.table}><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href={`/admin/content/${t.table}`}>{t.label}</Link></li>)}
     </ul>
   );

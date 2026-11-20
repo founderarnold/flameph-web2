@@ -47,7 +47,7 @@ test("quick look sits right below the hero on the home page only, and links to r
   assert.match(start, /<EcosystemFrontDoor \/>/);
   assert.ok(frontDoor.indexOf("{afterHero}") > frontDoor.indexOf("flameph-msme-hero.png"));
   assert.ok(frontDoor.indexOf("{afterHero}") < frontDoor.indexOf('id="choose-a-goal"'));
-  for (const href of ["/deals", "/business-calculators", "/pos", "/fulfillment", "/workshops", "/real-estate-for-msmes", "/join", "/get-involved/chapter-builder#builder", "/get-involved/chapter-builder#venue", "/fulfillment/waitlist", "/manager-ceo-training", "/chapters"]) {
+  for (const href of ["/deals", "/business-calculators", "/pos", "/fulfillment", "/workshops", "/real-estate-for-msmes", "/join", "/get-involved/chapter-builder#builder", "/get-involved/chapter-builder#venue", "/fulfillment/waitlist", "/manager-ceo-training", "/workshops/gallery", "/workshops/join", "/workshops/request", "/chapters"]) {
     assert.match(quick, new RegExp(`"${href}"`));
   }
   assert.match(quick, /goHref\("marketplaceph"/);
@@ -55,12 +55,12 @@ test("quick look sits right below the hero on the home page only, and links to r
   assert.match(quick, /Sugpuin ang Kahirapan Through Entrepreneurship/);
   assert.match(quick, /never holds your money/);
   assert.doesNotMatch(quick, /guarantee|returns|passive income/i);
-  for (const text of ["Volunteer as Meetup Venue for MSMEs", "Volunteer as Chapter Builder in Your City/Town", "Volunteer as FLAME PH Meetup Venue", "Core features of the FLAME PH ecosystem for MSMEs", "Manager/CEO Training Program", "Learn More to Earn More", "Teach people to fish"]) assert.ok(quick.includes(text), text);
+  for (const text of ["Volunteer as Meetup Venue for MSMEs", "Volunteer as Chapter Builder in Your City/Town", "Volunteer as FLAME PH Meetup Venue", "Core features of the FLAME PH ecosystem for MSMEs", "Manager/CEO Training Program", "Learn More to Earn More", "Teach people to fish", "Request to conduct a FLAME PH Workshop in our community/area", "consolidates group orders", "pasalo", "commissary"]) assert.ok(quick.includes(text), text);
 });
 
 test("new sign-up pages use the shared form system with plain-language help on every typed field", async () => {
   const forms = await readFile(new URL("../src/lib/forms.ts", import.meta.url), "utf8");
-  for (const [type, page] of [["meetup-venue", "get-involved/chapter-builder"], ["fulfillment-waitlist", "fulfillment/waitlist"], ["manager-trainee", "manager-ceo-training"]]) {
+  for (const [type, page] of [["meetup-venue", "get-involved/chapter-builder"], ["fulfillment-waitlist", "fulfillment/waitlist"], ["manager-trainee", "manager-ceo-training"], ["workshop-join", "workshops/join"], ["workshop-request", "workshops/request"]]) {
     assert.match(forms, new RegExp(`"${type}": \\{`));
     const src = await readFile(new URL(`../src/app/${page}/page.tsx`, import.meta.url), "utf8");
     assert.match(src, /<SubmissionForm def=\{FORMS\[/);

@@ -125,6 +125,9 @@
       "key": "events", "title": "Events",
       "items": [
         { "label": "Workshops", "href": "/workshops" },
+        { "label": "Workshop gallery", "href": "/workshops/gallery" },
+        { "label": "Join workshops as participant, speaker or venue", "href": "/workshops/join" },
+        { "label": "Request a workshop in your area", "href": "/workshops/request" },
         { "label": "Trainings and webinars", "href": "/trainings-webinars" },
         { "label": "Expos and summits", "href": "/expos-summits" }
       ]
