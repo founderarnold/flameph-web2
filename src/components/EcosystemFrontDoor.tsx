@@ -71,7 +71,8 @@ function SmartLink({ action }: { action: Action }) {
   return action.external ? <a href={action.href} target="_blank" rel="noopener" className={cls}>{body}<span className="sr-only"> (opens in a new tab)</span></a> : <Link href={action.href} className={cls}>{body}</Link>;
 }
 
-export function EcosystemFrontDoor() {
+/** `afterHero` renders right below the hero (the home page puts its Quick look there); /start leaves it out. */
+export function EcosystemFrontDoor({ afterHero }: { afterHero?: React.ReactNode } = {}) {
   return (
     <>
       <section className="relative isolate min-h-[560px] overflow-hidden border-b border-line bg-[#eaf7ff] sm:min-h-[610px] lg:min-h-[640px]">
@@ -96,6 +97,8 @@ export function EcosystemFrontDoor() {
           </div>
         </div>
       </section>
+
+      {afterHero}
 
       <section id="choose-a-goal" className="bg-[#f4f8ff] py-10 sm:py-14">
         <div className="container-x">

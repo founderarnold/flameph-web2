@@ -39,3 +39,20 @@ test("every goal card uses a generated image and a Tagalog example", () => {
     assert.match(actionBlock, new RegExp(`title: "${title}"`));
   }
 });
+
+test("quick look sits right below the hero on the home page only, and links to real pages", async () => {
+  const quick = await readFile(new URL("../src/components/QuickLook.tsx", import.meta.url), "utf8");
+  const start = await readFile(new URL("../src/app/start/page.tsx", import.meta.url), "utf8");
+  assert.match(home, /<EcosystemFrontDoor afterHero=\{<QuickLook \/>\} \/>/);
+  assert.match(start, /<EcosystemFrontDoor \/>/);
+  assert.ok(frontDoor.indexOf("{afterHero}") > frontDoor.indexOf("flameph-msme-hero.png"));
+  assert.ok(frontDoor.indexOf("{afterHero}") < frontDoor.indexOf('id="choose-a-goal"'));
+  for (const href of ["/deals", "/business-calculators", "/pos", "/fulfillment", "/workshops", "/real-estate-for-msmes", "/join", "/get-involved/chapter-leader", "/chapters"]) {
+    assert.match(quick, new RegExp(`"${href}"`));
+  }
+  assert.match(quick, /goHref\("marketplaceph"/);
+  assert.match(quick, /goHref\("negosyodepot"/);
+  assert.match(quick, /Sugpuin ang Kahirapan Through Entrepreneurship/);
+  assert.match(quick, /never holds your money/);
+  assert.doesNotMatch(quick, /guarantee|returns|passive income/i);
+});

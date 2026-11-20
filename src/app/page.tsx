@@ -4,6 +4,7 @@ import { PrincipleDiagram } from "@/components/PrincipleDiagram";
 import { HowWeHelp } from "@/components/HowWeHelp";
 import { FeatureCard, Grid, Initials, Section } from "@/components/ui";
 import { EcosystemFrontDoor } from "@/components/EcosystemFrontDoor";
+import { QuickLook } from "@/components/QuickLook";
 import * as I from "@/components/icons";
 import { FOUNDERS, TAGLINES } from "@/lib/site";
 import { list, type EventRow } from "@/lib/content";
@@ -36,7 +37,7 @@ export default async function Home() {
 
   return (
     <>
-      <EcosystemFrontDoor />
+      <EcosystemFrontDoor afterHero={<QuickLook />} />
 
       <div className="container-x py-5 sm:py-7">
         <FlameAdSlot slot="HOME_AFTER_HERO" />
