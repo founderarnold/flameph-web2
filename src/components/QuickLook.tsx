@@ -227,8 +227,8 @@ export function QuickLook() {
           <p className="font-display text-sm font-extrabold uppercase tracking-[.12em] text-flame-strong">FLAME PH Spotlight</p>
           <h3 className="mt-1 text-2xl font-extrabold text-primary sm:text-3xl">Featured partners, MSMEs and volunteers</h3>
           <p className="mt-2 max-w-3xl text-muted">We celebrate the people and organizations who make the ecosystem work. Featured picks will appear here as they are announced. Join, partner or volunteer, and you could be next.</p>
-          <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {FEATURED.map((f) => (
+          <MoreCards
+            items={FEATURED.map((f) => (
               <li key={f.title} className="card flex h-full items-start gap-3 p-4">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-warn-soft text-warn [&>svg]:h-5 [&>svg]:w-5">{f.icon}</span>
                 <span className="min-w-0">
@@ -237,7 +237,7 @@ export function QuickLook() {
                 </span>
               </li>
             ))}
-          </ul>
+          />
         </div>
 
         {/* Annual awards */}
@@ -245,8 +245,8 @@ export function QuickLook() {
           <p className="font-display text-sm font-extrabold uppercase tracking-[.12em] text-flame-strong">Pagkilala sa galing</p>
           <h3 className="mt-1 text-2xl font-extrabold text-primary sm:text-3xl">FLAME PH Annual Awards for MSMEs and Partners</h3>
           <p className="mt-2 max-w-3xl text-[#24324a]">Every year, FLAME PH honors the MSMEs who show resilience and innovation, and the LGUs, brands, speakers, mentors and organizations who help them grow. Know someone who deserves it? Nominate them below.</p>
-          <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {AWARD_TYPES.map((a) => (
+          <MoreCards
+            items={AWARD_TYPES.map((a) => (
               <li key={a}>
                 <Link href={`/get-involved/nominate?award=${encodeURIComponent(a)}#form`} className="card group flex h-full items-start gap-3 p-4 transition-colors hover:border-primary">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gold/20 text-[#8a5a00] [&>svg]:h-5 [&>svg]:w-5"><I.IconAward /></span>
@@ -257,10 +257,30 @@ export function QuickLook() {
                 </Link>
               </li>
             ))}
-          </ul>
+          />
           <Link href="/awards" className="mt-5 inline-flex min-h-11 items-center font-semibold text-primary underline">About the Annual Awards →</Link>
         </div>
       </div>
     </section>
+  );
+}
+
+/** Shows the first `show` cards; the rest open with a "View more" button (works without JavaScript). */
+function MoreCards({ items, show = 3 }: { items: React.ReactNode[]; show?: number }) {
+  const grid = "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3";
+  const rest = items.slice(show);
+  return (
+    <>
+      <ul className={`mt-5 ${grid}`}>{items.slice(0, show)}</ul>
+      {rest.length > 0 && (
+        <details className="group mt-3">
+          <summary className="btn btn-outline min-h-11 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+            <span className="group-open:hidden">View more ({rest.length} more)</span>
+            <span className="hidden group-open:inline">View less</span>
+          </summary>
+          <ul className={`mt-3 ${grid}`}>{rest}</ul>
+        </details>
+      )}
+    </>
   );
 }

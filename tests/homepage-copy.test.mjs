@@ -80,3 +80,14 @@ test("award cards open the nominate form with the award already chosen", async (
   assert.match(forms, /name: "award", label: "Award you are nominating for", type: "select", options: AWARD_TYPES, required: true/);
   assert.match(nominate, /defaults=\{award \? \{ award \} : undefined\}/);
 });
+
+test("Featured and Awards show 3 cards with a View more button", async () => {
+  const ql = await readFile(new URL("../src/components/QuickLook.tsx", import.meta.url), "utf8");
+  assert.match(ql, /function MoreCards\(\{ items, show = 3 \}/);
+  assert.equal((ql.match(/<MoreCards/g) || []).length, 2);
+  assert.match(ql, /View more \(/);
+});
+
+test("FLAME Principle also links to the public Group Order deals", () => {
+  assert.match(home, /href="\/deals" className="btn btn-primary[^"]*">See Group Order Deals</);
+});
