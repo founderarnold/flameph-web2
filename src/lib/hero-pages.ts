@@ -48,6 +48,9 @@ const EXACT_SCENES: Record<string, HeroScene> = {
   "/get-involved/poverty-alleviation": { sheet: 11, quadrant: "top-right", alt: "Volunteers helping a Filipino family build a small-business livelihood" },
   "/get-involved/affiliate": { sheet: 11, quadrant: "bottom-left", alt: "An affiliate creator promoting Filipino member products" },
   "/get-involved/chapter-leader": { sheet: 11, quadrant: "bottom-right", alt: "A local entrepreneur leading a welcoming chapter meeting" },
+  "/get-involved/chapter-builder": { sheet: 11, quadrant: "bottom-right", alt: "A local entrepreneur leading a welcoming chapter meeting" },
+  "/fulfillment/waitlist": { sheet: 8, quadrant: "top-left", alt: "MSMEs packing and delivering local products together" },
+  "/manager-ceo-training": { sheet: 10, quadrant: "top-left", alt: "An experienced entrepreneur mentoring a future manager" },
   "/get-involved/resource-speaker": { sheet: 12, quadrant: "top-left", alt: "A Filipino expert speaking at an MSME workshop" },
   "/get-involved/professional-services": { sheet: 12, quadrant: "top-right", alt: "Volunteer professionals helping a Filipino shop owner" },
 };
