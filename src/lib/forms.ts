@@ -30,6 +30,8 @@ const message = (label = "Message", required = true): Field => ({ name: "message
 
 const STAGES = ["Discover (may idea pa lang)", "Start (bagong negosyo)", "Build", "Grow", "Scale"];
 const AWARD_CATEGORIES = ["Resilience", "Innovation", "Job generation", "Women-led", "Youth-led"];
+/** The FLAME PH Annual Awards for MSMEs and Partners. The home page Quick look links to each with ?award=. */
+export const AWARD_TYPES = ["MSME Awardee", "LGU Partner Awardee for NCR", "LGU Partner Awardee for North Luzon", "LGU Partner Awardee for Central Luzon", "LGU Partner Awardee for South Luzon", "LGU Partner Awardee for Visayas", "LGU Partner Awardee for Mindanao", "Brand Partner Awardee", "Resource Speaker Awardee", "FLAME PH Mentor Awardee", "International Organization Partner Awardee"];
 
 export const FORMS: Record<string, FormDef> = {
   contact: {
@@ -69,11 +71,13 @@ export const FORMS: Record<string, FormDef> = {
     success: "Salamat! Our team will get in touch to plan the program with you.",
   },
   nominate: {
-    type: "nominate", title: "Nominate an MSME awardee",
-    fields: [{ name: "nominee_name", label: "Nominee (owner) name", required: true }, { name: "nominee_business", label: "Business name", required: true },
-      { name: "nominee_city", label: "City / Province", required: true },
-      { name: "category", label: "Award category", type: "select", options: AWARD_CATEGORIES, required: true },
-      { name: "story", label: "Why should this MSME be recognized?", type: "textarea", required: true },
+    type: "nominate", title: "Nominate an awardee",
+    fields: [{ name: "award", label: "Award you are nominating for", type: "select", options: AWARD_TYPES, required: true, help: "Choose MSME Awardee for a business. The other awards are for partners: LGUs, brands, speakers, mentors and international organizations." },
+      { name: "nominee_name", label: "Nominee name (owner, person or head of office)", required: true },
+      { name: "nominee_business", label: "Business, LGU or organization name", required: true, help: "Example: Aling Rosa's Kakanin, Municipality of Bacolor, ABC Foods Inc." },
+      { name: "nominee_city", label: "City / Province (or country)", required: true },
+      { name: "category", label: "MSME award category (MSME nominations only)", type: "select", options: AWARD_CATEGORIES, help: "Skip this for partner awards." },
+      { name: "story", label: "Why should this nominee be recognized?", type: "textarea", required: true, help: "Tell their story: what they did, who they helped, and results you know of." },
       { name: "nominee_contact", label: "Nominee's email or mobile", required: true },
       { ...name, label: "Your name" }, { ...email, label: "Your email" },
       { name: "nominee_consent", label: "The nominee knows about and agrees to this nomination.", type: "checkbox", required: true }],

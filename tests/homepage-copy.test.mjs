@@ -72,3 +72,11 @@ test("new sign-up pages use the shared form system with plain-language help on e
 test("FLAME Principle has a blue Join Group Ordering button to the Group Order page", () => {
   assert.match(home, /href="\/group-order" className="btn btn-primary[^"]*">Join Group Ordering</);
 });
+
+test("award cards open the nominate form with the award already chosen", async () => {
+  const forms = await readFile(new URL("../src/lib/forms.ts", import.meta.url), "utf8");
+  const nominate = await readFile(new URL("../src/app/get-involved/nominate/page.tsx", import.meta.url), "utf8");
+  for (const a of ["MSME Awardee", "LGU Partner Awardee for NCR", "LGU Partner Awardee for Mindanao", "International Organization Partner Awardee"]) assert.ok(forms.includes(`"${a}"`), a);
+  assert.match(forms, /name: "award", label: "Award you are nominating for", type: "select", options: AWARD_TYPES, required: true/);
+  assert.match(nominate, /defaults=\{award \? \{ award \} : undefined\}/);
+});

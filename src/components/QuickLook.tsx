@@ -2,6 +2,7 @@ import Link from "next/link";
 import * as I from "@/components/icons";
 import { StatusBadge, type Status } from "@/components/StatusBadge";
 import { goHref } from "@/lib/ecosystem";
+import { AWARD_TYPES } from "@/lib/forms";
 
 /**
  * "Quick look" for first-time visitors, placed right below the home page hero.
@@ -88,6 +89,37 @@ const STEPS: { title: string; text: string; href?: string }[] = [
   { title: "Volunteer as Resource Speaker/Mentor for MSMEs", text: "Share your know-how in your industry or field. Join the waitlist of speakers and mentors for workshops and chapters in your area.", href: "/get-involved/speaker-mentor" },
   { title: "Join as Partner or Sponsor a Workshop", text: "LGUs, agencies, companies, schools and NGOs can co-host, fund or give in-kind support so more MSMEs can learn for free.", href: "/get-involved/workshop-partner" },
 ];
+
+const FEATURED: { title: string; text: string; icon: React.ReactNode }[] = [
+  { title: "Featured FLAME PH Partner of the Day", text: "A daily shout-out to a partner helping MSMEs save money, sell more or learn faster.", icon: <I.IconSpark /> },
+  { title: "Featured FLAME PH Partner of the Week", text: "A partner whose offer, service or support made a difference for members this week.", icon: <I.IconCalendar /> },
+  { title: "Featured FLAME PH Partner of the Month", text: "Our standout partner of the month, with the story of how they helped MSMEs grow.", icon: <I.IconHands /> },
+  { title: "Featured FLAME PH Partner of the Year", text: "The partner with the biggest year-long impact on Filipino MSMEs and chapters.", icon: <I.IconAward /> },
+  { title: "Featured MSME in Luzon", text: "A Luzon business whose products, grit and growth inspire other negosyantes.", icon: <I.IconStore /> },
+  { title: "Featured MSME in Visayas", text: "A Visayas business making its mark locally and beyond.", icon: <I.IconStore /> },
+  { title: "Featured MSME in Mindanao", text: "A Mindanao business proving that great products can come from anywhere.", icon: <I.IconStore /> },
+  { title: "Featured MSME Operating Overseas", text: "A Filipino-owned business serving customers abroad and carrying Filipino brands to the world.", icon: <I.IconGlobe /> },
+  { title: "Featured Resource Speaker", text: "A speaker whose talk helped workshop participants start or improve their business.", icon: <I.IconMic /> },
+  { title: "Featured FLAME PH Mentor for MSMEs", text: "A mentor who gave time and know-how to guide MSMEs to better decisions.", icon: <I.IconUsers /> },
+  { title: "Featured Partner LGU of the Month", text: "A city, municipality or barangay that opened its doors to workshops and chapters.", icon: <I.IconMap /> },
+  { title: "Featured NGA Partner of the Month", text: "A national government agency that brought programs, training or support to MSMEs.", icon: <I.IconId /> },
+  { title: "Featured NGO Partner of the Month", text: "A non-government organization or foundation that helped families earn through enterprise.", icon: <I.IconHeart /> },
+  { title: "Featured Brand Partner of the Month", text: "A brand that offered fair deals, sponsorships or market access to FLAME PH members.", icon: <I.IconCart /> },
+];
+
+const AWARD_TEXT: Record<string, string> = {
+  "MSME Awardee": "Recognize a small business for resilience, innovation, job creation, or women-led or youth-led enterprise.",
+  "LGU Partner Awardee for NCR": "A Metro Manila city or municipality that championed MSMEs and entrepreneurship programs.",
+  "LGU Partner Awardee for North Luzon": "An LGU in Ilocos, Cordillera or Cagayan Valley that opened doors for local MSMEs.",
+  "LGU Partner Awardee for Central Luzon": "A Central Luzon LGU that hosted workshops, chapters or livelihood programs.",
+  "LGU Partner Awardee for South Luzon": "An LGU in CALABARZON, MIMAROPA or Bicol that helped local businesses grow.",
+  "LGU Partner Awardee for Visayas": "A Visayas LGU that made it easier for its people to start and grow a business.",
+  "LGU Partner Awardee for Mindanao": "A Mindanao LGU that empowered entrepreneurs in its communities.",
+  "Brand Partner Awardee": "A brand that gave fair deals, sponsorships or market access to MSMEs.",
+  "Resource Speaker Awardee": "A speaker who shared practical knowledge that changed how participants do business.",
+  "FLAME PH Mentor Awardee": "A mentor who consistently guided MSMEs with time, patience and expertise.",
+  "International Organization Partner Awardee": "An international organization that supported Filipino MSMEs with programs, funding or markets.",
+};
 
 function Tile({ f }: { f: Feature }) {
   return (
@@ -188,6 +220,45 @@ export function QuickLook() {
               ))}
             </ol>
           </div>
+        </div>
+
+        {/* Featured spotlights */}
+        <div className="mt-12">
+          <p className="font-display text-sm font-extrabold uppercase tracking-[.12em] text-flame-strong">FLAME PH Spotlight</p>
+          <h3 className="mt-1 text-2xl font-extrabold text-primary sm:text-3xl">Featured partners, MSMEs and volunteers</h3>
+          <p className="mt-2 max-w-3xl text-muted">We celebrate the people and organizations who make the ecosystem work. Featured picks will appear here as they are announced. Join, partner or volunteer, and you could be next.</p>
+          <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {FEATURED.map((f) => (
+              <li key={f.title} className="card flex h-full items-start gap-3 p-4">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-warn-soft text-warn [&>svg]:h-5 [&>svg]:w-5">{f.icon}</span>
+                <span className="min-w-0">
+                  <span className="block font-bold leading-snug">{f.title}</span>
+                  <span className="mt-1 block text-sm leading-5 text-muted">{f.text}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Annual awards */}
+        <div className="mt-12 rounded-3xl bg-[#fff8e6] p-5 sm:p-8">
+          <p className="font-display text-sm font-extrabold uppercase tracking-[.12em] text-flame-strong">Pagkilala sa galing</p>
+          <h3 className="mt-1 text-2xl font-extrabold text-primary sm:text-3xl">FLAME PH Annual Awards for MSMEs and Partners</h3>
+          <p className="mt-2 max-w-3xl text-[#24324a]">Every year, FLAME PH honors the MSMEs who show resilience and innovation, and the LGUs, brands, speakers, mentors and organizations who help them grow. Know someone who deserves it? Nominate them below.</p>
+          <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {AWARD_TYPES.map((a) => (
+              <li key={a}>
+                <Link href={`/get-involved/nominate?award=${encodeURIComponent(a)}#form`} className="card group flex h-full items-start gap-3 p-4 transition-colors hover:border-primary">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gold/20 text-[#8a5a00] [&>svg]:h-5 [&>svg]:w-5"><I.IconAward /></span>
+                  <span className="min-w-0">
+                    <span className="block font-bold leading-snug group-hover:text-primary">Nominate {/^[AEIOU]/.test(a) ? "an" : a.startsWith("FLAME") ? "a" : /^(MSME|LGU)/.test(a) ? "an" : "a"} {a} →</span>
+                    <span className="mt-1 block text-sm leading-5 text-muted">{AWARD_TEXT[a]}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link href="/awards" className="mt-5 inline-flex min-h-11 items-center font-semibold text-primary underline">About the Annual Awards →</Link>
         </div>
       </div>
     </section>
