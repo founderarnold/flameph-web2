@@ -19,10 +19,11 @@ export default async function DirectoryAdmin({ searchParams }: { searchParams: P
   ]);
   // Vetting documents (Phase 8A): encrypted; opened one at a time through the server, which logs each view.
   const { data: vetDocs } = ownerIds.length
-    ? await db.from("vetting_documents").select("id,user_id,doc_type,file_name,uploaded_at").in("user_id", ownerIds).is("deleted_at", null).order("uploaded_at", { ascending: false })
+    ? await db.from("vetting_documents").select("*").in("user_id", ownerIds).is("deleted_at", null).order("uploaded_at", { ascending: false })
     : { data: [] };
   const vetByOwner = new Map<string, { id: string; doc_type: string; file_name: string; uploaded_at: string }[]>();
-  for (const d of vetDocs ?? []) vetByOwner.set(d.user_id, [...(vetByOwner.get(d.user_id) ?? []), d]);
+  // Partner application files (0031) are reviewed in Admin > Partners, not here.
+  for (const d of ((vetDocs ?? []) as { id: string; user_id: string; doc_type: string; file_name: string; uploaded_at: string; purpose?: string }[]).filter((x) => (x.purpose ?? "vetting") === "vetting")) vetByOwner.set(d.user_id, [...(vetByOwner.get(d.user_id) ?? []), d]);
   const ownerById = new Map((owners ?? []).map((owner) => [owner.id, owner]));
   const reportsByBusiness = new Map<string, typeof reports>();
   const assessmentByBusiness = new Map((assessments ?? []).map((assessment) => [assessment.business_id, assessment]));

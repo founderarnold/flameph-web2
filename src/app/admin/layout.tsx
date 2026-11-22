@@ -1,18 +1,25 @@
 import Link from "next/link";
-import { requireStaff } from "@/lib/auth";
+import { ALL_ROLES, requireStaff } from "@/lib/auth";
 import { ADMIN_TABLES } from "@/lib/admin/config";
 
 export const metadata = { title: "Admin", robots: { index: false } };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { roles } = await requireStaff();
+  // Partner roles (0031) may enter too; their menu shows only Partners.
+  const { roles } = await requireStaff(ALL_ROLES);
   const isAdmin = roles.includes("super_admin") || roles.includes("admin");
+  const partnerDesk = isAdmin || roles.includes("national_reviewer") || roles.includes("chapter_coordinator");
+  const siteStaff = roles.some((r) => ["super_admin", "admin", "editor", "chapter_leader"].includes(r));
   const isModerator = isAdmin || roles.includes("chapter_leader");
   const tables = ADMIN_TABLES.filter((t) => t.roles.some((r) => roles.includes(r)));
   const Menu = () => (
     <ul className="space-y-0.5 text-[15px]">
-      <li><Link className="block rounded-lg px-2 py-2 font-bold hover:bg-bg-soft" href="/admin">Dashboard</Link></li>
-      <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/design-system">Design system</Link></li>
+      {siteStaff && <li><Link className="block rounded-lg px-2 py-2 font-bold hover:bg-bg-soft" href="/admin">Dashboard</Link></li>}
+      {siteStaff && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/design-system">Design system</Link></li>}
+      {partnerDesk && <>
+        <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Partners</li>
+        <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners">Partner applications</Link></li>
+      </>}
       {isModerator && <>
         <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Moderation</li>
         <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/moderation">Moderation queue</Link></li>
@@ -36,7 +43,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/ai">Ka-FLAME AI review</Link></li>
         <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/settings">Settings</Link></li>
       </>}
-      <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Content</li>
+      {siteStaff && <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Content</li>}
       {(isAdmin || roles.includes("editor")) && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/workshop-gallery">Workshop gallery</Link></li>}
       {tables.map((t) => <li key={t.table}><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href={`/admin/content/${t.table}`}>{t.label}</Link></li>)}
     </ul>
