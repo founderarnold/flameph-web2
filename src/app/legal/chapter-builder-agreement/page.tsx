@@ -16,8 +16,8 @@ export default function Page() {
         intro={<>Version {v}. Every Chapter Builder accepts this agreement on the <Link href="/get-involved/chapter-builder#builder" className="font-semibold text-primary underline">Chapter Builder form</Link>.</>} />
       <Section>
         <article className="prose-flame max-w-3xl">
-          <p><strong>In short:</strong> as a Chapter Builder you will see member lists, plans and partner deals that are not public. Keep them private, use them only for your FLAME PH chapter, and do not use them to set up a competing group. You can still run your own business and join other organizations.</p>
-          <p lang="fil"><strong>Sa madaling salita:</strong> bilang Chapter Builder, makikita mo ang mga listahan ng member, plano at deal ng partners na hindi pampubliko. Panatilihin itong pribado, gamitin lang para sa iyong FLAME PH chapter, at huwag gamitin para magtayo ng kakumpitensyang grupo. Puwede mo pa ring patakbuhin ang sarili mong negosyo at sumali sa ibang organisasyon.</p>
+          <p><strong>In short:</strong> as a Chapter Builder you will learn how the FLAME PH ecosystem works: flameph.org, marketplaceph.com and negosyodepot.com, the FLAME Signature white-label branding strategy, Micro Fulfillment, Group Ordering, the free POS, and our member lists, plans and partner deals. Keep all of it private, even from your family and friends, use it only for your FLAME PH chapter, and do not copy it or help anyone else copy it. You can still run your own business and join other organizations.</p>
+          <p lang="fil"><strong>Sa madaling salita:</strong> bilang Chapter Builder, malalaman mo kung paano gumagana ang FLAME PH ecosystem: ang flameph.org, marketplaceph.com at negosyodepot.com, ang FLAME Signature white-label branding strategy, Micro Fulfillment, Group Ordering, ang libreng POS, at ang mga listahan ng member, plano at deal ng partners. Panatilihin itong lahat na pribado, kahit sa pamilya at mga kaibigan mo, gamitin lang para sa iyong FLAME PH chapter, at huwag itong kopyahin o tulungan ang iba na kopyahin ito. Puwede mo pa ring patakbuhin ang sarili mong negosyo at sumali sa ibang organisasyon.</p>
 
           <h2>1. Who this agreement is between</h2>
           <p>This agreement is between you, the <strong>Chapter Builder</strong>, and <strong>FLAME PH</strong>, formerly FAME Inc., SEC Reg. No. {ORG.secNo}, together with <strong>MarketplacePH Online Store</strong>, DTI-registered, Princeton St., Naga City, Camarines Sur, the Operator of flameph.org, marketplaceph.com and negosyodepot.com (together, &ldquo;FLAME PH&rdquo;, &ldquo;we&rdquo; or &ldquo;us&rdquo;).</p>
@@ -30,6 +30,10 @@ export default function Page() {
           <h2>3. What counts as confidential information</h2>
           <p>Confidential information is anything you receive or see because of your Chapter Builder role that is not public, in any form (spoken, written, on screen, in chats or files). For example:</p>
           <ul>
+            <li><strong>the FLAME PH ecosystem</strong>: how flameph.org, marketplaceph.com and negosyodepot.com work, connect and support each other, including their features, plans and anything not yet launched;</li>
+            <li><strong>the FLAME Signature white-label branding strategy</strong>, and how products are chosen, branded, made and sold under it;</li>
+            <li><strong>Micro Fulfillment</strong>, <strong>Group Ordering</strong> and the <strong>free POS</strong>: how they are set up, run, priced and offered to members;</li>
+            <li>the other systems, processes, business models and <strong>marketing strategies</strong> of FLAME PH and its ecosystem that are part and parcel of how it works;</li>
             <li>names, contact details, businesses and other personal data of members, applicants, suppliers, venues and partners;</li>
             <li>member lists, chapter group chats, attendance lists and sign-up sheets;</li>
             <li>group order prices, supplier terms, minimum order quantities and partner or sponsor deals;</li>
@@ -43,20 +47,27 @@ export default function Page() {
             <li>Use confidential information <strong>only</strong> for your FLAME PH chapter work.</li>
             <li>Do not share, sell, post, copy, export or download it, except as your chapter work needs and as FLAME PH allows.</li>
             <li>Share it only with FLAME PH staff and fellow Chapter Builders who need it for the same chapter work.</li>
+            <li><strong>Do not disclose it to anyone else</strong>: not to any other person, company, business partner or organization, and not to your spouse, relatives, siblings or friends. This applies to everything you learn during your time as a Chapter Builder.</li>
             <li>Keep it safe: use a strong password, do not leave lists in public group chats, and do not save member data on shared devices.</li>
             <li>Handle personal data as the <strong>Data Privacy Act of 2012 (RA 10173)</strong> requires and as the Privacy Notice describes.</li>
             <li>If information is lost, leaked or seen by the wrong person, tell our Data Protection Officer within <strong>24 hours</strong> of finding out: Mark Tomon, <a href={`mailto:${ORG.emailPrimary}`}>{ORG.emailPrimary}</a>.</li>
           </ul>
           <p>If a court or government office orders you to disclose confidential information, tell us first (unless the law forbids it), so we can respond, and disclose only what is required.</p>
 
-          <h2>5. Not competing with FLAME PH</h2>
-          <p>While you are a Chapter Builder and for <strong>12 months</strong> after your role ends, within the city or municipality where you built or helped build a chapter, you agree not to:</p>
+          <h2>5. Not competing with FLAME PH and not copying its systems</h2>
+          <p>You must accept this section before you can send the Chapter Builder application for an area or an industry. It protects the systems and strategies of FLAME PH from being copied and used by other companies.</p>
+          <p>While you are a Chapter Builder and for <strong>12 months</strong> after your role ends, anywhere in the Philippines and online, you agree not to, by yourself or through or for any other person, company or organization:</p>
           <ul>
-            <li>start, lead or organize another MSME network, association or chapter that offers members substantially the same things as FLAME PH (such as chapter meetups, group ordering and MSME referral groups), using FLAME PH confidential information, member lists, materials or contacts;</li>
-            <li>invite or move FLAME PH members, suppliers, venues, partners or sponsors that you met through your role into such a competing group;</li>
+            <li>copy, imitate or set up an ecosystem or web apps like flameph.org, marketplaceph.com or negosyodepot.com, or a system that combines their features, for a company or group other than FLAME PH;</li>
+            <li>copy or run a white-label branding program like FLAME Signature, or any similar branding activity, using what you learned from FLAME PH;</li>
+            <li>copy or run a micro fulfillment service, a group ordering system, a free POS offer for MSMEs, or another feature of flameph.org, marketplaceph.com or negosyodepot.com, using what you learned from FLAME PH;</li>
+            <li>help, advise, train, work for or invest in another company or group so that it can do any of the above;</li>
+            <li>start, lead or organize another MSME network, association or chapter that offers members substantially the same things as FLAME PH (such as chapter meetups, group ordering and MSME referral groups) in the area or industry of your chapter;</li>
+            <li>invite or move FLAME PH members, suppliers, venues, partners or sponsors that you met through your role to a competing company or group;</li>
             <li>present yourself, a group or an event as FLAME PH, or as connected with FLAME PH, without our written approval.</li>
           </ul>
-          <p><strong>What you remain free to do:</strong> run and grow your own business; work in your profession or trade; be a member or officer of chambers of commerce, cooperatives, trade associations, church, school, barangay and government programs; and take part in other organizations that do not use FLAME PH confidential information or members to compete with FLAME PH. This section is meant only to protect FLAME PH members and the chapters you help build. It is limited in time, place and activity so that it is fair and reasonable.</p>
+          <p>Using FLAME PH confidential information to copy its systems or strategies is never allowed, even after the 12 months, for as long as Section 8 keeps the information confidential.</p>
+          <p><strong>What you remain free to do:</strong> run and grow your own business, including selling your own products; work in your profession or trade; be a member or officer of chambers of commerce, cooperatives, trade associations, church, school, barangay and government programs; and use ordinary skills and public knowledge that did not come from FLAME PH confidential information. This section is limited in time, activity and purpose to what is needed to protect the FLAME PH ecosystem, so that it is fair and reasonable.</p>
 
           <h2>6. Name, logo and money</h2>
           <ul>
@@ -69,7 +80,7 @@ export default function Page() {
           <p>Chapter building is volunteer work. This agreement does not make you an employee, agent or partner of FLAME PH, and it does not entitle you to pay. You can stop being a Chapter Builder at any time by telling us. FLAME PH can also end the role, for example if this agreement or the Community Guidelines are not followed.</p>
 
           <h2>8. When your role ends</h2>
-          <p>Within <strong>7 days</strong> of your role ending, delete or return all confidential information you hold, including member lists and exported files, and leave or hand over FLAME PH chapter group chats you manage, as we ask. Sections 3 to 6 continue to apply after your role ends: confidentiality for <strong>3 years</strong> (and for personal data, for as long as the law protects it), and the non-compete for the 12 months in Section 5.</p>
+          <p>Within <strong>7 days</strong> of your role ending, delete or return all confidential information you hold, including member lists and exported files, and leave or hand over FLAME PH chapter group chats you manage, as we ask. Sections 3 to 6 continue to apply after your role ends: confidentiality for <strong>5 years</strong>; for the systems and strategies of the FLAME PH ecosystem, for as long as they are not public; for personal data, for as long as the law protects it; and the non-compete for the 12 months in Section 5.</p>
 
           <h2>9. If the agreement is broken</h2>
           <p>If this agreement is broken, FLAME PH may end your Chapter Builder role, remove your chapter access, take the steps in the Community Guidelines, and ask the courts for any remedy the law allows, including an order to stop the use or disclosure of confidential information. If a part of this agreement is found unenforceable, it applies to the extent the law allows and the rest stays in force.</p>
