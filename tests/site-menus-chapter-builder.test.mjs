@@ -70,3 +70,14 @@ test("Chapter Builder page has separate FAQs with perks for builders and venues"
   assert.match(page, /What do I get as a Chapter Builder or Chapter Leader\?/);
   assert.match(page, /What do I get as a Meetup Venue\?/);
 });
+
+test("Chapter Builder form asks about abroad, organizations, time and charity work", async () => {
+  const forms = await read("src/lib/forms.ts");
+  const api = await read("src/app/api/submit/route.ts");
+  const ui = await read("src/components/SubmissionForm.tsx");
+  for (const n of ["outside_ph", "country", "organizations", "holds_position", "manage_time", "charity"]) assert.match(forms, new RegExp(`name: "${n}"`), n);
+  assert.match(forms, /name: "country"[^}]*showIf: \{ field: "outside_ph", equals: "yes" \}/);
+  assert.match(forms, /name: "manage_time"[^}]*showIf: \{ field: "holds_position", equals: "Yes" \}/);
+  assert.match(api, /if \(f\.showIf && raw\[f\.showIf\.field\] !== f\.showIf\.equals\) continue;/);
+  assert.match(ui, /def\.fields\.filter\(shown\)/);
+});

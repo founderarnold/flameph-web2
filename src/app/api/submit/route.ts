@@ -23,6 +23,8 @@ export async function POST(req: Request) {
 
   const clean: Record<string, string> = {};
   for (const f of def.fields) {
+    // A follow-up field (showIf) counts only when its trigger has the matching answer.
+    if (f.showIf && raw[f.showIf.field] !== f.showIf.equals) continue;
     const v = typeof raw[f.name] === "string" ? (raw[f.name] as string).trim().slice(0, f.type === "textarea" ? 4000 : 300) : "";
     if (f.required && !v) return NextResponse.json({ error: `Please fill in: ${f.label}` }, { status: 400 });
     if (v && f.type === "email" && !EMAIL_RE.test(v)) return NextResponse.json({ error: "Please enter a valid email." }, { status: 400 });
