@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { adminContext } from "@/lib/admin/guard";
+import { getSession } from "@/lib/auth";
 import { Notice } from "@/components/ui";
 
 export default async function AdminHome({ searchParams }: { searchParams: Promise<{ denied?: string; error?: string }> }) {
   const sp = await searchParams;
+  // Members who hold only a partner role (0031) start at Admin > Partners.
+  const { roles } = await getSession();
+  if (roles.length && !roles.some((r) => ["super_admin", "admin", "editor", "chapter_leader"].includes(r))) redirect("/admin/partners");
   const { db, isAdmin } = await adminContext();
   const { data: stats } = await db.rpc("public_stats");
   const [newSubs, pending, thumbsDown, propertyInquiries, referralPartners, careerApplications] = await Promise.all([

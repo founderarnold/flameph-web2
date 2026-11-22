@@ -159,6 +159,8 @@
         { "label": "Mentors", "href": "/about/mentors" },
         { "label": "Our partners", "href": "/about/partners" },
         { "label": "Partners", "href": "/partners" },
+        { "label": "Become an Accredited Partner (suppliers, services, toll manufacturing)", "href": "/partner-us" },
+        { "label": "My partner applications", "href": "/partner-us/apply" },
         { "label": "Contact us", "href": "/contact" }
       ]
     },
@@ -187,6 +189,7 @@
     }
   ],
   "notListed": {
+    "/partner-us/apply/[id]": "One member's own partner application; opened from My partner applications (/partner-us/apply).",
     "/legal/chapter-builder-agreement": "Opened from the Chapter Builder and Meetup Venue forms only, next to the box members tick to accept it (owner, 22 Nov 2026).",
     "/get-involved/chapter-leader": "Forwards to /get-involved/chapter-builder, which is listed (one Chapter Builder page, owner 22 Nov 2026).",
     "/requests/new": "Opens from Requests and quotes, and from Send a request on a member's page.",

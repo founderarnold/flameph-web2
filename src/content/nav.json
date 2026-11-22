@@ -47,6 +47,7 @@
   { "key": "partners", "label": "Partner With Us", "fil": "Makipag-partner", "items": [
     { "label": "Why Partner With FLAME PH", "href": "/partners" },
     { "label": "Become a Strategic Partner", "href": "/get-involved/partner" },
+    { "label": "Become an Accredited Partner (Best Offer)", "href": "/partner-us" },
     { "label": "Sponsor an Event", "href": "/get-involved/sponsor-event" },
     { "label": "Sponsor a Community", "href": "/get-involved/sponsor-community" },
     { "label": "Support Poverty-Alleviation Programs", "href": "/get-involved/poverty-alleviation" },

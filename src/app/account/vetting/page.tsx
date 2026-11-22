@@ -5,7 +5,8 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { getConsents } from "@/lib/consents";
 import { CONSENTS } from "@/lib/policy";
 import { deleteVettingDoc, giveVettingConsent, uploadVettingDoc, withdrawVettingConsent } from "@/app/account/vetting-actions";
-import { DOC_KEYS, DOC_TYPES, MAX_DOCS_PER_TYPE, RETENTION_TEXT, VET_DONE, VET_ERRORS, type DocType } from "@/lib/vetting";
+import { ShrinkPhotoInput } from "@/components/ShrinkPhotoInput";
+import { DOC_KEYS, DOC_TYPES, MAX_DOC_BYTES, MAX_DOCS_PER_TYPE, RETENTION_TEXT, VET_DONE, VET_ERRORS, type DocType } from "@/lib/vetting";
 import { PAIR_CAP } from "@/lib/records";
 
 export const metadata = { title: "Business vetting", robots: { index: false } };
@@ -21,10 +22,11 @@ export default async function VettingPage({ searchParams }: { searchParams: Prom
   const [{ ready, state }, { data: biz }, { data: docs, error: docsErr }] = await Promise.all([
     getConsents(supabase, user.id),
     supabase.from("businesses").select("id, name, verified, verification_status, verification_note").eq("owner_id", user.id).order("created_at").limit(1).maybeSingle(),
-    supabase.from("vetting_documents").select("id, doc_type, file_name, size_bytes, uploaded_at").eq("user_id", user.id).is("deleted_at", null).order("uploaded_at", { ascending: false }),
+    supabase.from("vetting_documents").select("*").eq("user_id", user.id).is("deleted_at", null).order("uploaded_at", { ascending: false }),
   ]);
   const consent = Boolean(state.vetting?.granted);
-  const list = (docs ?? []) as Doc[];
+  // Partner application documents (0031) are listed on the partner application, not here.
+  const list = ((docs ?? []) as (Doc & { purpose?: string })[]).filter((d) => (d.purpose ?? "vetting") === "vetting");
   const vetted = Boolean(biz?.verified && biz.verification_status === "approved");
   const status = !biz ? "No business page yet" : vetted ? "Vetted ✓" : biz.verification_status === "pending" ? "Waiting for review" : biz.verification_status === "rejected" ? "Not approved yet" : "Not submitted";
   const err = sp.error ? VET_ERRORS[sp.error] ?? VET_ERRORS.failed : null;
@@ -75,7 +77,7 @@ export default async function VettingPage({ searchParams }: { searchParams: Prom
               </fieldset>
               <div>
                 <label htmlFor="file" className="label">File (PDF, JPG, PNG or WEBP, up to 4 MB)</label>
-                <input id="file" name="file" type="file" required accept="application/pdf,image/jpeg,image/png,image/webp" className="block min-h-11 w-full text-sm" />
+                <ShrinkPhotoInput id="file" maxBytes={MAX_DOC_BYTES} />
               </div>
               <SubmitButton className="btn btn-primary min-h-11 w-full" pendingText="Uploading…">Upload securely</SubmitButton>
             </form>

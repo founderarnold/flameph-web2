@@ -203,14 +203,25 @@ export async function reviewLegacyBusiness(fd: FormData) {
   redirect(`/admin/directory?all=1&${error ? "error=legacy-review" : "reviewed=1"}`);
 }
 
+/** Founders give or remove any role. Admins give or remove only the four partner roles (Partner Step 1). Audited. */
 export async function setRole(fd: FormData) {
-  const ctx = await adminContext(["super_admin"]);
+  const ctx = await adminContext(["super_admin", "admin"]);
   const userId = String(fd.get("user_id")); const role = String(fd.get("role")); const op = String(fd.get("op"));
-  if (!["super_admin", "admin", "editor", "chapter_leader"].includes(role)) return;
-  if (op === "add") await ctx.db.from("roles").upsert({ user_id: userId, role, chapter_id: role === "chapter_leader" ? (String(fd.get("chapter_id") || "") || null) : null });
-  else await ctx.db.from("roles").delete().eq("user_id", userId).eq("role", role);
-  await ctx.audit(`role_${op}`, "roles", userId, { role });
+  const SITE = ["super_admin", "admin", "editor", "chapter_leader"];
+  const PARTNER = ["chapter_coordinator", "chapter_tester", "national_reviewer", "finance"];
+  const back = (r: string) => redirect(`/admin/members?role=${r}`);
+  if (!/^[0-9a-f-]{36}$/i.test(userId) || !["add", "remove"].includes(op) || ![...SITE, ...PARTNER].includes(role)) return back("failed");
+  if (SITE.includes(role) && !ctx.roles.includes("super_admin")) return back("denied");
+  const needsChapter = ["chapter_leader", "chapter_coordinator", "chapter_tester"].includes(role);
+  const chapterId = needsChapter ? (String(fd.get("chapter_id") || "") || null) : null;
+  if (op === "add" && ["chapter_coordinator", "chapter_tester"].includes(role) && !chapterId) return back("chapter");
+  const { error } = op === "add"
+    ? await ctx.db.from("roles").upsert({ user_id: userId, role, chapter_id: chapterId })
+    : await ctx.db.from("roles").delete().eq("user_id", userId).eq("role", role);
+  if (error) return back("failed");
+  await ctx.audit(`role_${op}`, "roles", userId, { role, chapter_id: chapterId });
   revalidatePath("/admin/members");
+  return back("ok");
 }
 
 export async function setMemberStatus(fd: FormData) {

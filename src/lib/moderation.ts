@@ -7,6 +7,10 @@ export const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
   chapter_leader: "Chapter head",
   editor: "Editor",
+  chapter_coordinator: "Chapter coordinator (partners)",
+  chapter_tester: "Chapter tester (partner samples)",
+  national_reviewer: "National reviewer (partners)",
+  finance: "Finance (partner figures)",
 };
 export const LEVEL_NAMES = ["Member", "Chapter head", "Admin", "Founder"] as const;
 export type ModLevel = 0 | 1 | 2 | 3;

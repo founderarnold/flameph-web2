@@ -147,7 +147,10 @@ test("vetting: separate consent, reviewers only, encrypted at rest, retention en
   assert.match(act, /contentType: "application\/octet-stream"/);
   // Viewing: reviewers only, never their own, logged, not cached.
   const route = await read("src/app/api/vetting/doc/[id]/route.ts");
-  assert.match(route, /\(Number\(lvl\) \|\| 0\) < 2\) return deny\(403\)/);
+  // Admins and founders (moderation level 2+); national reviewers (0031) only for partner documents.
+  assert.match(route, /const moderator = !lvlErr && \(Number\(lvl\) \|\| 0\) >= 2;/);
+  assert.match(route, /if \(!moderator && partnerReviewer !== true\) return deny\(403\);/);
+  assert.match(route, /if \(!moderator && doc\.purpose !== "partner"\) return deny\(403\);/);
   assert.match(route, /doc\.user_id === user\.id\) return deny\(403\)/);
   assert.match(route, /vetting_access_log"\)\.insert/);
   assert.match(route, /no-store/);

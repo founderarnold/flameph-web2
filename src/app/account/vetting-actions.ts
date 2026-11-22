@@ -62,9 +62,10 @@ export async function uploadVettingDoc(fd: FormData) {
   if (!mime) back("error=format");
   const { data: biz } = await supabase.from("businesses").select("id, verified, verification_status").eq("owner_id", user.id).order("created_at").limit(1).maybeSingle();
   if (!biz) back("error=no_business");
-  const { count, error: cErr } = await supabase.from("vetting_documents").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("doc_type", type as string).is("deleted_at", null);
+  const { data: same, error: cErr } = await supabase.from("vetting_documents").select("*").eq("user_id", user.id).eq("doc_type", type as string).is("deleted_at", null);
   if (cErr) back("error=unavailable");
-  if ((count ?? 0) >= MAX_DOCS_PER_TYPE) back("error=too_many");
+  // Partner application files (0031) don't count toward the 3 vetting files per document.
+  if (((same ?? []) as { purpose?: string }[]).filter((d) => (d.purpose ?? "vetting") === "vetting").length >= MAX_DOCS_PER_TYPE) back("error=too_many");
 
   const path = `vetting/${user.id}/${randomUUID()}.bin`;
   const { error: upErr } = await admin!.storage.from(VETTING_BUCKET).upload(path, encryptDoc(buf, k!.key), { contentType: "application/octet-stream", upsert: false });
@@ -86,8 +87,8 @@ export async function deleteVettingDoc(fd: FormData) {
   const admin = createAdminClient();
   if (!admin) back("error=failed");
   // Look it up as the member first (row level security: only their own), then delete with the server key.
-  const { data: mine } = await supabase.from("vetting_documents").select("id").eq("id", id).eq("user_id", user.id).is("deleted_at", null).maybeSingle();
-  if (!mine) back("error=failed");
+  const { data: mine } = await supabase.from("vetting_documents").select("*").eq("id", id).eq("user_id", user.id).is("deleted_at", null).maybeSingle();
+  if (!mine || ((mine as { purpose?: string }).purpose ?? "vetting") !== "vetting") back("error=failed");
   const { data: row } = await admin!.from("vetting_documents").select("id, file_path").eq("id", id).maybeSingle();
   await purgeDocs(admin!, row ? [row as { id: string; file_path: string }] : [], "member_removed");
   revalidatePath(BACK);

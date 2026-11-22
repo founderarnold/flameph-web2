@@ -42,6 +42,8 @@ const PARTS: Q[] = [
   { label: "ai_messages", table: "ai_messages", column: "user_id", select: "id, conversation_id, feature, question, answer, created_at" },
   { label: "ai_feedback", table: "ai_feedback", column: "user_id" },
   { label: "vetting_documents", table: "vetting_documents", column: "user_id", select: "id, doc_type, file_name, mime, size_bytes, uploaded_at, deleted_at, delete_reason" },
+  { label: "partner_applications", table: "partner_applications", column: "user_id", select: "id, category, status, revision, legal_name, trade_name, registration_type, registration_no, tin_last3, industry, website, rep_name, rep_position, biz_email, biz_phone, address_line, city, province, coverage, coverage_areas, details, privacy_ack_at, privacy_version, declaration_at, submitted_at, decided_at, decision_reasons, decision_note, created_at, updated_at" },
+  { label: "partner_profile", table: "partner_profiles", column: "user_id", select: "legal_name, categories, status, accredited_at" },
   { label: "investor_registration", table: "investor_registrations", column: "user_id" },
   { label: "reports_you_filed", table: "moderation_reports", column: "reporter_id", select: "id, target_type, reason, details, status, created_at, resolved_at, resolution" },
   { label: "moderation_actions_about_you", table: "moderation_actions", column: "target_owner_id", select: "id, action, note, until, created_at" },
@@ -121,7 +123,7 @@ export async function eraseMember(admin: SupabaseClient, userId: string, opts: {
   const { data: prep, error } = await admin.rpc("privacy_erase_prepare", { p_user: userId });
   if (error) return { ok: false, reason: /has_staff_role/.test(error.message) ? "has_staff_role" : "prepare_failed" };
   const counts: Record<string, number> = { ...(prep as Record<string, number>) };
-  counts.vetting_documents = await purgeMemberDocs(admin, userId, "member_removed");
+  counts.vetting_documents = await purgeMemberDocs(admin, userId, "member_removed", "all");
   counts.photos_and_media = await removeFolder(admin, "media", userId);
   counts.private_files = await removeFolder(admin, "private-docs", userId);
   const { error: delErr } = await admin.auth.admin.deleteUser(userId);

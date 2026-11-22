@@ -3,24 +3,37 @@ import { SyncedTableScroll } from "@/components/admin/SyncedTableScroll";
 import { deleteMember, setRole, setMemberStatus } from "../actions";
 import { ROLE_LABELS } from "@/lib/moderation";
 
-type RoleRow = { user_id: string; role: string };
+type RoleRow = { user_id: string; role: string; chapter_id?: string | null };
 type Chapter = { id: string; name: string };
 
-function RoleControls({ memberId, roles, chapters, isSuper }: { memberId: string; roles: RoleRow[]; chapters: Chapter[]; isSuper: boolean }) {
+const PARTNER_ROLE_OPTIONS: [string, string][] = [
+  ["national_reviewer", "National reviewer (reviews partner applications)"],
+  ["chapter_coordinator", "Chapter coordinator (recommends partners in a chapter)"],
+  ["chapter_tester", "Chapter tester (partner samples, Step 5)"],
+  ["finance", "Finance (partner figures, Step 4)"],
+];
+const PARTNER_ROLE_KEYS = PARTNER_ROLE_OPTIONS.map(([k]) => k);
+
+/** Founders can give or remove every role. Admins can give or remove only the four partner roles. Every change is in the audit log. */
+function RoleControls({ memberId, roles, chapters, isSuper, isAdmin }: { memberId: string; roles: RoleRow[]; chapters: Chapter[]; isSuper: boolean; isAdmin: boolean }) {
+  const canRemove = (role: string) => isSuper || (isAdmin && PARTNER_ROLE_KEYS.includes(role));
   return <>
     <div className="flex flex-wrap gap-1">
       {roles.map((role) => (
         <form key={role.role} action={setRole}>
           <input type="hidden" name="user_id" value={memberId} /><input type="hidden" name="role" value={role.role} /><input type="hidden" name="op" value="remove" />
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">{ROLE_LABELS[role.role] ?? role.role}{isSuper && <button className="min-h-6 min-w-6" aria-label={`Remove ${ROLE_LABELS[role.role] ?? role.role}`}>×</button>}</span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">{ROLE_LABELS[role.role] ?? role.role}{role.chapter_id && chapters.find((c) => c.id === role.chapter_id) ? ` · ${chapters.find((c) => c.id === role.chapter_id)!.name}` : ""}{canRemove(role.role) && <button className="min-h-6 min-w-6" aria-label={`Remove ${ROLE_LABELS[role.role] ?? role.role}`}>×</button>}</span>
         </form>
       ))}
     </div>
-    {isSuper && (
+    {(isSuper || isAdmin) && (
       <form action={setRole} className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
         <input type="hidden" name="user_id" value={memberId} /><input type="hidden" name="op" value="add" />
-        <select name="role" className="input min-h-10 py-1 text-sm" aria-label="Role"><option value="editor">Editor (content)</option><option value="chapter_leader">Chapter head (moderates their chapter)</option><option value="admin">Admin</option><option value="super_admin">Founder</option></select>
-        <select name="chapter_id" className="input min-h-10 py-1 text-sm" aria-label="Chapter (for chapter leaders)"><option value="">(chapter)</option>{chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.name}</option>)}</select>
+        <select name="role" className="input min-h-10 py-1 text-sm" aria-label="Role">
+          {isSuper && <optgroup label="Site roles (founder only)"><option value="editor">Editor (content)</option><option value="chapter_leader">Chapter head (moderates their chapter)</option><option value="admin">Admin</option><option value="super_admin">Founder</option></optgroup>}
+          <optgroup label="Partner roles">{PARTNER_ROLE_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</optgroup>
+        </select>
+        <select name="chapter_id" className="input min-h-10 py-1 text-sm" aria-label="Chapter (for chapter heads, coordinators and testers)"><option value="">(chapter, if the role needs one)</option>{chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{chapter.name}</option>)}</select>
         <button className="btn btn-outline min-h-10 px-3 py-1 text-sm sm:col-span-2 xl:col-span-1">Add role</button>
       </form>
     )}
@@ -37,10 +50,19 @@ function DeleteMemberControl({ id }: { id: string }) {
   return <details className="mt-3"><summary className="cursor-pointer text-xs font-semibold text-flame-strong">Delete member permanently…</summary><form action={deleteMember} className="mt-2 space-y-2"><input type="hidden" name="id" value={id} /><label className="block text-xs">Type DELETE to confirm<input name="confirmation" className="input mt-1 min-h-10 py-1 text-sm" autoComplete="off" /></label><button className="btn btn-flame min-h-10 w-full px-3 py-1 text-sm">Delete member and owned listings</button></form></details>;
 }
 
-export default async function Members({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q = "" } = await searchParams;
+const ROLE_RESULT: Record<string, string> = {
+  ok: "Role updated. The change is in the audit log.",
+  chapter: "Choose a chapter for a chapter head, coordinator or tester.",
+  denied: "Only the founder can give or remove that role.",
+  failed: "That didn't go through. Please try again.",
+};
+
+export default async function Members({ searchParams }: { searchParams: Promise<{ q?: string; role?: string }> }) {
+  const sp = await searchParams;
+  const { q = "" } = sp;
   const { db, roles: myRoles, user: adminUser } = await adminContext(["super_admin", "admin"]);
   const isSuper = myRoles.includes("super_admin");
+  const isAdmin = myRoles.includes("admin");
   let query = db.from("profiles").select("*").order("created_at", { ascending: false }).limit(200);
   if (q) query = query.or(`full_name.ilike.%${q.replace(/[%,()]/g, "")}%,member_code.ilike.%${q.replace(/[%,()]/g, "")}%,city.ilike.%${q.replace(/[%,()]/g, "")}%`);
   const [{ data: profiles }, { data: roleRows }, { data: chapters }, users] = await Promise.all([
@@ -54,6 +76,7 @@ export default async function Members({ searchParams }: { searchParams: Promise<
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download from a route handler */}
         <a href="/admin/export/members" className="btn btn-outline w-full sm:w-auto">Export CSV</a>
       </div>
+      {sp.role && <div role="status" className={`rounded-xl px-4 py-3 text-[15px] font-medium ${sp.role === "ok" ? "bg-ok-soft text-ok" : "bg-danger-soft text-danger"}`}>{ROLE_RESULT[sp.role] ?? ROLE_RESULT.failed}</div>}
       <form className="flex flex-col gap-2 sm:flex-row"><input name="q" defaultValue={q} placeholder="Search name, member ID or city" className="input min-w-0" aria-label="Search members" /><button className="btn btn-primary w-full sm:w-auto">Search</button></form>
       <div className="space-y-3 lg:hidden">
         {(profiles ?? []).map((profile) => {
@@ -69,7 +92,7 @@ export default async function Members({ searchParams }: { searchParams: Promise<
               <div><dt className="text-xs font-bold uppercase text-muted">Location</dt><dd>{[profile.city, profile.province].filter(Boolean).join(", ") || "—"}</dd></div>
               <div><dt className="text-xs font-bold uppercase text-muted">Tier</dt><dd className="capitalize">{profile.tier}</dd></div>
               <div><dt className="text-xs font-bold uppercase text-muted">Status</dt><dd className="mt-1"><StatusControl id={profile.id} status={profile.status} />{isSuper && profile.id !== adminUser.id && <DeleteMemberControl id={profile.id} />}</dd></div>
-              <div className="sm:col-span-2"><dt className="text-xs font-bold uppercase text-muted">Roles</dt><dd className="mt-1"><RoleControls memberId={profile.id} roles={memberRoles} chapters={(chapters ?? []) as Chapter[]} isSuper={isSuper} /></dd></div>
+              <div className="sm:col-span-2"><dt className="text-xs font-bold uppercase text-muted">Roles</dt><dd className="mt-1"><RoleControls memberId={profile.id} roles={memberRoles} chapters={(chapters ?? []) as Chapter[]} isSuper={isSuper} isAdmin={isAdmin} /></dd></div>
             </dl>
           </article>;
         })}
@@ -89,7 +112,7 @@ export default async function Members({ searchParams }: { searchParams: Promise<
                   <td className="break-words px-3 py-2">{[p.city, p.province].filter(Boolean).join(", ") || "—"}</td>
                   <td className="px-3 py-2 capitalize">{p.tier}</td>
                   <td className="px-3 py-2">
-                    <RoleControls memberId={p.id} roles={r as RoleRow[]} chapters={(chapters ?? []) as Chapter[]} isSuper={isSuper} />
+                    <RoleControls memberId={p.id} roles={r as RoleRow[]} chapters={(chapters ?? []) as Chapter[]} isSuper={isSuper} isAdmin={isAdmin} />
                   </td>
                   <td className="px-3 py-2">
                     <StatusControl id={p.id} status={p.status} />

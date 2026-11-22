@@ -15,10 +15,13 @@ export async function purgeDocs(admin: SupabaseClient, rows: { id: string; file_
   return e2 ? 0 : rows.length;
 }
 
-/** All of one member's documents (they turned off switch 4). */
-export async function purgeMemberDocs(admin: SupabaseClient, userId: string, reason: Reason = "consent_withdrawn") {
-  const { data } = await admin.from("vetting_documents").select("id, file_path").eq("user_id", userId).is("deleted_at", null).limit(100);
-  return purgeDocs(admin, (data ?? []) as { id: string; file_path: string }[], reason);
+/** One member's documents: only business-vetting ones when they turn off switch 4 (partner documents have their own
+ *  privacy notice, 0031), or all of them when the account is erased. */
+export async function purgeMemberDocs(admin: SupabaseClient, userId: string, reason: Reason = "consent_withdrawn", scope: "vetting" | "all" = "vetting") {
+  // "*" and a filter here (not in the query) so this also works before 0031 adds the purpose column.
+  const { data } = await admin.from("vetting_documents").select("*").eq("user_id", userId).is("deleted_at", null).limit(200);
+  const rows = ((data ?? []) as { id: string; file_path: string; purpose?: string }[]).filter((r) => scope === "all" || (r.purpose ?? "vetting") === "vetting");
+  return purgeDocs(admin, rows.slice(0, 100), reason);
 }
 
 /** Everything past its retention date or whose member withdrew consent (daily, from the scheduler). */

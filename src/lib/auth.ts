@@ -2,7 +2,11 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export type Role = "super_admin" | "admin" | "chapter_leader" | "editor";
+export type Role = "super_admin" | "admin" | "chapter_leader" | "editor"
+  // Partner accreditation (0031). They open only Admin > Partners; none of them is a moderator or content editor.
+  | "chapter_coordinator" | "chapter_tester" | "national_reviewer" | "finance";
+export const PARTNER_ROLES = ["chapter_coordinator", "chapter_tester", "national_reviewer", "finance"] as const;
+export const ALL_ROLES: Role[] = ["super_admin", "admin", "chapter_leader", "editor", ...PARTNER_ROLES];
 
 export async function getSession() {
   const supabase = await createClient();
@@ -24,7 +28,8 @@ export async function requireUser(next = "/account") {
 }
 
 export const isAdminRole = (roles: Role[]) => roles.some((r) => r === "super_admin" || r === "admin");
-export const isStaffRole = (roles: Role[]) => roles.length > 0;
+/** Shows the Admin link. Chapter testers and finance have nothing in Admin until Steps 5 and 4. */
+export const isStaffRole = (roles: Role[]) => roles.some((r) => r !== "chapter_tester" && r !== "finance");
 
 export async function requireStaff(allowed: Role[] = ["super_admin", "admin", "editor", "chapter_leader"]) {
   const s = await requireUser("/admin");
