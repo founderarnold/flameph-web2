@@ -13,6 +13,8 @@ export type Field = {
   link?: { href: string; text: string };
   /** Checkbox only: ticking it accepts this version of an agreement. The API stores `<name>_version` and `<name>_at`. */
   agreementVersion?: string;
+  /** Show (and require) this field only when another field has this value, e.g. a checkbox ticked ("yes"). */
+  showIf?: { field: string; equals: string };
 };
 
 export type FormDef = {
@@ -123,8 +125,18 @@ export const FORMS: Record<string, FormDef> = {
   "chapter-builder": {
     type: "chapter-builder", title: "Volunteer as Chapter Builder in Your City/Town", membersOnly: true,
     fields: [name, email, { ...mobile, help: "So our team can call or text you. We never share it publicly." },
-      { ...city, help: "The city or town where you want to start or help build a chapter." }, province,
+      { name: "outside_ph", label: "I live outside the Philippines and want to build a chapter abroad.", type: "checkbox" },
+      { name: "country", label: "Country", required: true, showIf: { field: "outside_ph", equals: "yes" }, help: "The country where you want to build a chapter, for example: United Arab Emirates, Japan, Canada." },
+      { ...city, help: "The city or town where you want to start or help build a chapter. If you are abroad, write the city in your country." },
+      { ...province, label: "Province (or state or region if abroad)" },
       { name: "business", label: "Your business or work", required: true, help: "What you do now, for example: bakery owner, accountant, barangay officer, student leader." },
+      { name: "organizations", label: "Organizations you are part of now: your position and what you accomplished there", type: "textarea", required: true,
+        help: "List each organization, your position, and one or two things you achieved. Example: Rotary Club of San Fernando, Secretary, organized 3 livelihood seminars. Write \"None\" if you are not part of any." },
+      { name: "holds_position", label: "Do you hold an officer or leadership position in another organization right now?", type: "select", required: true, options: ["Yes", "No"] },
+      { name: "manage_time", label: "How will you manage building a FLAME PH chapter alongside that position?", type: "textarea", required: true, showIf: { field: "holds_position", equals: "Yes" },
+        help: "Tell us how you will make time: for example, a co-builder who helps you, a set meetup schedule, or the hours you can give each month." },
+      { name: "charity", label: "Charity work and missions you have done to help other people", type: "textarea", required: true,
+        help: "For example: feeding programs, relief operations, medical or dental missions, scholarships, tree planting. Write when and what you did. Write \"None yet\" if you have not had the chance." },
       { name: "why", label: "Why do you want to build a FLAME PH chapter here?", type: "textarea", required: true, help: "In a few sentences: what local MSMEs need, and how you want to help." },
       { name: "network", label: "Who in your community could join you? (MSMEs, groups, barangay)", type: "textarea", help: "Optional. Groups or people you can invite, like a market vendors' association, a cooperative or a school." },
       NDA_FIELD],

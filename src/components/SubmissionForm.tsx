@@ -13,6 +13,14 @@ export function SubmissionForm({ def, context, title, compact = false, doneHref,
   const [error, setError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileReset, setTurnstileReset] = useState(0);
+  // Answers that decide whether a follow-up field (showIf) is shown.
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const readAnswers = () => {
+    if (!formRef.current) return;
+    const fd = new FormData(formRef.current);
+    setAnswers(Object.fromEntries(def.fields.filter((f) => f.showIf).map((f) => [f.showIf!.field, String(fd.get(f.showIf!.field) ?? "")])));
+  };
+  const shown = (f: FormDef["fields"][number]) => !f.showIf || answers[f.showIf.field] === f.showIf.equals;
 
   useEffect(() => {
     try {
@@ -23,7 +31,9 @@ export function SubmissionForm({ def, context, title, compact = false, doneHref,
         if (!el) continue;
         if (el.type === "checkbox") el.checked = v === "yes"; else el.value = v;
       }
+      readAnswers();
     } catch { /* storage unavailable */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
   const saveDraft = () => {
@@ -69,10 +79,10 @@ export function SubmissionForm({ def, context, title, compact = false, doneHref,
   }
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} onChange={saveDraft} className={`card space-y-4 ${compact ? "p-4" : "p-5 sm:p-6"}`} noValidate={false}>
+    <form ref={formRef} onSubmit={onSubmit} onChange={() => { saveDraft(); readAnswers(); }} className={`card space-y-4 ${compact ? "p-4" : "p-5 sm:p-6"}`} noValidate={false}>
       <h2 className="text-xl font-extrabold">{title ?? def.title}</h2>
       {def.intro && <p className="text-muted">{def.intro}</p>}
-      {def.fields.map((f) => {
+      {def.fields.filter(shown).map((f) => {
         const id = `${def.type}-${f.name}`;
         if (f.type === "checkbox") {
           return (
