@@ -1,17 +1,18 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, createEmailLinkClient } from "@/lib/supabase/browser";
 import { SUPABASE_URL } from "@/lib/env";
 import { EXTRA_FIELDS, SOCIALS } from "@/lib/listing";
-import { regionOf } from "@/content/ph-regions";
 import { businessStatusCopy, publicationStatusOf, type BusinessLifecycleStatus, type BusinessPublicationStatus } from "@/lib/business-lifecycle";
 import { ListingStrength } from "./ListingStrength";
 import type { AccountVerificationStatus } from "@/lib/account-verification";
 import { Turnstile } from "@/components/Turnstile";
 import { businessCompletion } from "@/lib/business-completion";
 import { MODERATION_FIELD_MESSAGES, safeModerationFields } from "@/lib/business-moderation-feedback";
+import { SIGNED_OUT_MESSAGE, friendlyDbError } from "@/lib/db-errors";
+import { saveBusinessListing } from "@/app/account/business/actions";
 
 type Biz = Record<string, unknown> & {
   id?: string;
@@ -28,7 +29,6 @@ type Biz = Record<string, unknown> & {
   correction_count?: number;
 };
 
-const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 50);
 const FIELDS: { name: string; label: string; type?: string; textarea?: boolean; required?: boolean; help?: string }[] = [
   { name: "name", label: "Business name", required: true },
   { name: "description", label: "About your business", textarea: true, help: "Tip: FLAME AI's listing writer can help you write this." },
@@ -42,7 +42,18 @@ const FIELDS: { name: string; label: string; type?: string; textarea?: boolean; 
 ];
 
 const pub = (p: string) => p.startsWith("http") ? p : `${SUPABASE_URL}/storage/v1/object/public/media/${p}`;
-const missingColumn = (m: string) => /column|schema cache/i.test(m) && EXTRA_FIELDS.some((f) => m.includes(f));
+/** The fields a member edits; everything else on the listing is set by FLAME PH. */
+const fieldsOf = (biz: Biz): Record<string, unknown> => ({
+  name: biz.name, sector: biz.sector, description: biz.description, products: biz.products,
+  city: biz.city, province: biz.province,
+  contact_messenger: biz.contact_messenger, contact_viber: biz.contact_viber, contact_phone: biz.contact_phone,
+  contact_email: biz.contact_email, marketplaceph_url: biz.marketplaceph_url,
+  photos: biz.photos ?? [], verification_docs: biz.verification_docs ?? [],
+  verification_status: biz.verification_status === "pending" ? "pending" : (biz.verification_status ?? "none"),
+  ...Object.fromEntries(EXTRA_FIELDS.map((f) => [f, biz[f]])),
+});
+/** Unsaved details are kept in this browser if a save fails because the sign-in expired, and come back after logging in. */
+const draftKey = (userId: string) => `flameph-listing-draft:${userId}`;
 
 export function BusinessEditor({ userId, email, ownerName, verification, initial, sectors, provinces, supportsExtras = true }: { userId: string; email: string; ownerName: string; verification: AccountVerificationStatus; initial: Biz | null; sectors: string[]; provinces: string[]; supportsExtras?: boolean }) {
   const supabase = createClient();
@@ -55,16 +66,30 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
   const [submitBotToken, setSubmitBotToken] = useState("");
   const [submitBotReset, setSubmitBotReset] = useState(0);
   const [dirty, setDirty] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
   const completion = businessCompletion(biz, ownerName, verification.email_verified);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(draftKey(userId));
+      if (!saved) return;
+      localStorage.removeItem(draftKey(userId));
+      const draft = JSON.parse(saved) as Biz;
+      setBiz((b) => ({ ...b, ...draft, id: b.id, slug: b.slug }));
+      setDirty(true);
+      setMsg({ ok: true, text: "We brought back the details you typed before your sign-in expired. Press Save listing to keep them." });
+    } catch { /* storage blocked: nothing to restore */ }
+  }, [userId]);
   if (!supabase) return <p className="mt-4 text-warn">Listings open once the database is connected.</p>;
 
   const set = (k: string, v: unknown) => { setBiz((b) => ({ ...b, [k]: v })); setDirty(true); };
 
   async function upload(file: File, bucket: "media" | "private-docs") {
     if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5 MB).");
+    const { data: who } = await supabase!.auth.getUser();
+    if (who.user?.id !== userId) { setSignedOut(true); throw new Error(SIGNED_OUT_MESSAGE); }
     const path = `${userId}/${Date.now()}-${file.name.replace(/[^\w.-]/g, "_")}`;
     const { error } = await supabase!.storage.from(bucket).upload(path, file, { upsert: false });
-    if (error) throw error;
+    if (error) throw new Error(friendlyDbError(error, "this file"));
     return path;
   }
 
@@ -88,33 +113,23 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setMsg(null);
-    const payload: Record<string, unknown> = {
-      owner_id: userId,
-      name: biz.name, sector: biz.sector || null, description: biz.description || null, products: biz.products || null,
-      city: biz.city, province: biz.province || null, region: regionOf(String(biz.province ?? "")),
-      contact_messenger: biz.contact_messenger || null, contact_viber: biz.contact_viber || null, contact_phone: biz.contact_phone || null,
-      contact_email: biz.contact_email || null, marketplaceph_url: biz.marketplaceph_url || null,
-      photos: biz.photos ?? [], verification_docs: biz.verification_docs ?? [],
-      verification_status: biz.verification_status === "pending" ? "pending" : (biz.verification_status ?? "none"),
-    };
-    const extras = Object.fromEntries(EXTRA_FIELDS.map((f) => {
-      const v = typeof biz[f] === "string" ? String(biz[f]).trim() : "";
-      return [f, !v ? null : f.endsWith("_url") && !f.startsWith("logo") && !f.startsWith("cover") && !/^https?:\/\//i.test(v) ? `https://${v}` : v];
-    }));
-    const write = async (row: Record<string, unknown>) => {
-      if (biz.id) return (await supabase!.from("businesses").update(row).eq("id", biz.id)).error;
-      const slug = `${slugify(String(biz.name || "negosyo"))}-${Math.random().toString(36).slice(2, 6)}`;
-      const res = await supabase!.from("businesses").insert({ ...row, slug }).select("id, slug").single();
-      if (res.data) setBiz((b) => ({ ...b, ...res.data }));
-      return res.error;
-    };
-    let error = await write(supportsExtras ? { ...payload, ...extras } : payload);
-    let partial = false;
-    // Until the 0002 database update runs, the new columns don't exist: save everything else instead of failing.
-    if (error && missingColumn(error.message)) { error = await write(payload); partial = !error; }
+    const fields = fieldsOf(biz);
+    // Saved on the server as the member signed in right now, so an expired or switched browser sign-in can't cause a raw database error.
+    const res = await saveBusinessListing(fields, { id: biz.id, withExtras: supportsExtras }).catch((err: unknown) => ({ ok: false as const, error: friendlyDbError(err as Error, "your listing"), signedOut: false }));
     setBusy(false);
-    if (error) setMsg({ ok: false, text: error.message });
-    else { setDirty(false); setMsg({ ok: true, text: partial ? "Saved! Logo, hours and links will be saved once FLAME PH finishes a database update." : "Saved!" }); router.refresh(); }
+    if (!res.ok) {
+      if (res.signedOut) {
+        setSignedOut(true);
+        try { localStorage.setItem(draftKey(userId), JSON.stringify(fields)); } catch { /* storage blocked */ }
+      }
+      setMsg({ ok: false, text: res.error });
+      return;
+    }
+    setSignedOut(false);
+    setBiz((b) => ({ ...b, id: res.id, slug: res.slug }));
+    setDirty(false);
+    setMsg({ ok: true, text: res.partial ? "Saved! Logo, hours and links will be saved once FLAME PH finishes a database update." : "Saved!" });
+    router.refresh();
   }
 
   async function sendVerificationEmail() {
@@ -256,7 +271,7 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       {biz.id && completion.complete && !dirty && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
         <Turnstile action="business_submit" onToken={setSubmitBotToken} resetKey={submitBotReset} />
       )}
-      {msg && <p role="status" className={`rounded-lg p-3 font-semibold ${msg.ok ? "bg-ok-soft text-ok" : "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200"}`}>{msg.text}</p>}
+      {msg && <p role="status" className={`rounded-lg p-3 font-semibold ${msg.ok ? "bg-ok-soft text-ok" : "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200"}`}>{msg.text}{signedOut && !msg.ok && <> <a className="underline" href="/login?next=%2Faccount%2Fbusiness" onClick={() => { try { if (dirty) localStorage.setItem(draftKey(userId), JSON.stringify(fieldsOf(biz))); } catch { /* storage blocked */ } }}>Log in again</a></>}</p>}
       <div className="flex flex-wrap gap-2">
         <button className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Save listing"}</button>
         {biz.id && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (

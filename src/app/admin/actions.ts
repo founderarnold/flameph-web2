@@ -2,6 +2,7 @@
 import { log as ecosystemLog, notifySites } from "@/lib/ecosystem-sso";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { friendlyDbError } from "@/lib/db-errors";
 import { adminContext } from "@/lib/admin/guard";
 import { getAdminTable, PK, type AdminField } from "@/lib/admin/config";
 import { getRealEstateAdminSection } from "@/lib/real-estate-admin";
@@ -82,7 +83,7 @@ export async function saveRow(fd: FormData) {
   }
 
   const res = id === "new" ? await ctx.db.from(tableName).insert(row).select(pk).single() : await ctx.db.from(tableName).update(row).eq(pk, id).select(pk).single();
-  if (res.error) redirect(`/admin/content/${tableName}/${id}?error=${encodeURIComponent(res.error.message)}`);
+  if (res.error) redirect(`/admin/content/${tableName}/${id}?error=${encodeURIComponent(friendlyDbError(res.error, "this item"))}`);
   const newId = String((res.data as unknown as Record<string, unknown>)[pk]);
   await ctx.audit(id === "new" ? "create" : "update", tableName, newId, { fields: Object.keys(row) });
   revalidateTag("content"); revalidateTag("stats");
