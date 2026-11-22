@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { adminContext } from "@/lib/admin/guard";
 import { Notice } from "@/components/ui";
+import { PartnerTabs } from "@/components/admin/PartnerTabs";
 import { offerResult, OFFER_STATUS, PASS_MARK, PRODUCT_GROUPS, type OfferStatus, type ProductGroup, type ScoreRow } from "@/lib/offers";
 
 export const metadata = { title: "Supplier offers", robots: { index: false } };
@@ -36,10 +37,7 @@ export default async function SupplierOffersAdmin({ searchParams }: { searchPara
 
   return (
     <div className="space-y-4">
-      <nav aria-label="Partner sections" className="flex gap-2 overflow-x-auto">
-        <Link href="/admin/partners" className="chip shrink-0">Applications</Link>
-        <Link href="/admin/partners/offers" aria-current="page" className="chip shrink-0">Supplier offers</Link>
-      </nav>
+      <PartnerTabs current="offers" />
       <div>
         <h1 className="text-2xl font-extrabold text-primary">Supplier Best Offers</h1>
         <p className="text-sm text-muted">Offers from accredited suppliers. Only the national team sees them; chapter coordinators and testers never see prices or commissions. Pass mark {PASS_MARK}/100 plus the compliance gate.</p>
