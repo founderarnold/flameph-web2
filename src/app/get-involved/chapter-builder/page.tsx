@@ -19,16 +19,27 @@ const ROLES = [
   },
 ];
 
-const FAQ = [
+// Two FAQs (owner, 22 Nov 2026): one for Chapter Builders and Leaders, one for Meetup Venue volunteers, each with perks.
+const BUILDER_FAQ = [
   { q: "What is a FLAME PH chapter?", a: "A local group of entrepreneurs and supporters in one city or town. Members meet, learn together, buy supplies together and refer customers to each other, with tools and support from FLAME PH." },
+  { q: "What do I get as a Chapter Builder or Chapter Leader?", a: "Free training and coaching from the FLAME PH team, ready-made meetup and workshop materials, resource speakers for your workshops, and a chapter page on flameph.org with your name as builder or leader. You also get a certificate of recognition for active chapter building, a chance to be featured on the FLAME PH home page and social media, and a nomination path to the FLAME PH Annual Awards." },
+  { q: "Are there perks for my own business?", a: "Yes. You meet many local MSMEs, suppliers and partners first-hand, you are the first to hear about group orders, workshops and opportunities in your area, and your own business gains visibility as the person who brought FLAME PH to your town. Your free member mini-website and directory listing help people find you." },
   { q: "Do I need to own a big business to be a chapter builder?", a: "No. Small business owners, professionals, cooperative leaders, teachers and community organizers can all apply. What matters is that you care about local MSMEs and can gather a small core group." },
   { q: "How much time does it take?", a: "You decide. Most chapter builders start with one meetup a month and a few hours of messaging and planning. You can stop anytime by telling us." },
-  { q: "Is it paid?", a: "Chapter building is volunteer work. FLAME PH gives you training, materials, speakers for workshops and a chapter page on the website. There is no fee to become a chapter builder." },
+  { q: "Is it paid?", a: "Chapter building is volunteer work. There is no salary and no fee to become a chapter builder. The perks above are how FLAME PH thanks and supports you." },
+  { q: "Do I need to sign anything?", a: "Yes. Before you can send the form you accept the Chapter Builder and Meetup Venue Non-Disclosure and Non-Compete Agreement. You can read it from the form, next to the box you tick." },
   { q: "What happens after I apply?", a: "Our team contacts you for a short call, helps you form a core group of at least 5 people, and helps you plan your first meetup." },
+  { q: "Can overseas Filipinos build a chapter?", a: "Yes. Filipino communities abroad can apply. Write your city and country in the City and Province fields." },
+];
+
+const VENUE_FAQ = [
+  { q: "What do I get as a Meetup Venue?", a: "New customers and visibility. Every meetup brings local entrepreneurs, suppliers and their networks to your place, and many buy food, drinks or services while there. Your venue is introduced at the meetup and named in FLAME PH chapter event posts, and you get a certificate of appreciation as a FLAME PH Meetup Venue partner." },
+  { q: "Are there other perks for my business?", a: "Yes. Your venue can be featured on the FLAME PH home page and social media, you hear first about workshops and group orders in your area, and you can join the workshops held at your place for free. You may also be nominated for the FLAME PH Annual Awards as a partner. Your free member mini-website and directory listing help new customers find you." },
   { q: "What does a meetup venue need?", a: "A safe, clean space where 10 or more people can sit and talk, ideally with a table and an outlet. A TV or projector and Wi-Fi help but are not required." },
   { q: "Will I be charged anything as a venue? Will I be paid?", a: "No one charges you. You choose whether the space is free, free if participants buy food or drinks, or available for a small fee to cover costs. Any fee is agreed before the meetup." },
   { q: "Who is responsible for the meetup?", a: "The chapter builder runs the meetup and follows the FLAME PH code of conduct. The venue owner only provides the space and agrees on the rules of the place." },
-  { q: "Can overseas Filipinos build a chapter?", a: "Yes. Filipino communities abroad can apply. Write your city and country in the City and Province fields." },
+  { q: "How often will meetups happen at my place?", a: "You decide. Most venues host once a month. You can change the schedule or stop anytime by telling the chapter team." },
+  { q: "Do I need to sign anything?", a: "Yes. Before you can send the form you accept the Chapter Builder and Meetup Venue Non-Disclosure and Non-Compete Agreement. You can read it from the form, next to the box you tick." },
 ];
 
 // What a chapter builder or leader does (from the former Chapter Leader page, now part of this one page).
@@ -90,7 +101,10 @@ export default async function Page() {
           <div id="venue" className="scroll-mt-24">{user ? <SubmissionForm def={FORMS["meetup-venue"]} title="Volunteer as Meetup Venue for MSMEs" />
             : <SignInFirst id="venue" title="Volunteer as Meetup Venue for MSMEs" back="/get-involved/chapter-builder#venue" />}</div>
         </div>
-        <div className="mt-12 max-w-3xl"><Faq items={FAQ} /></div>
+        <div className="mt-12 grid gap-10 lg:grid-cols-2">
+          <section id="builder-faq" aria-label="Chapter Builder questions"><Faq title="Chapter Builder and Leader: questions and perks" items={BUILDER_FAQ} /></section>
+          <section id="venue-faq" aria-label="Meetup Venue questions"><Faq title="Meetup Venue: questions and perks" items={VENUE_FAQ} /></section>
+        </div>
         <p className="mt-6 text-sm text-muted">Want to see existing chapters first? <Link href="/chapters" className="font-semibold text-primary underline">Find a chapter near you</Link>.</p>
       </Section>
     </>

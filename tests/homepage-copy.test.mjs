@@ -65,7 +65,7 @@ test("new sign-up pages use the shared form system with plain-language help on e
     assert.match(forms, new RegExp(`"${type}": \\{`));
     const src = await readFile(new URL(`../src/app/${page}/page.tsx`, import.meta.url), "utf8");
     assert.match(src, /<SubmissionForm def=\{FORMS\[/);
-    assert.match(src, /<Faq items=\{FAQ\} \/>/);
+    assert.match(src, /<Faq (title="[^"]+" )?items=\{[A-Z_]*FAQ\} \/>/);
   }
 });
 

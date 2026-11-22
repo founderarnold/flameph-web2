@@ -62,3 +62,11 @@ test("NDA and non-compete: required box, linked page, version and time stored", 
   const agreement = await read("src/app/legal/chapter-builder-agreement/page.tsx");
   for (const s of ["San Fernando City, Pampanga", "7 years", "₱10,000,000", "FLAME Signature", "Micro Fulfillment", "spouse, relatives, siblings or friends", "free POS", "Data Privacy Act of 2012", "Mark Tomon", "What you remain free to do", "approved or disapproved", "terminated or discontinued"]) assert.ok(agreement.includes(s), s);
 });
+
+test("Chapter Builder page has separate FAQs with perks for builders and venues", async () => {
+  const page = await read("src/app/get-involved/chapter-builder/page.tsx");
+  assert.match(page, /<Faq title="Chapter Builder and Leader: questions and perks" items=\{BUILDER_FAQ\} \/>/);
+  assert.match(page, /<Faq title="Meetup Venue: questions and perks" items=\{VENUE_FAQ\} \/>/);
+  assert.match(page, /What do I get as a Chapter Builder or Chapter Leader\?/);
+  assert.match(page, /What do I get as a Meetup Venue\?/);
+});
