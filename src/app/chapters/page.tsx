@@ -30,7 +30,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
         </form>
         <div className="mt-6">
           {rows.length === 0 ? (
-            <EmptyState title={q ? `No chapter in "${q}" yet.` : "No chapter in your area yet."} text="Start one and lead your local MSME community." cta={{ href: "/get-involved/chapter-leader", label: "Become a chapter leader" }} />
+            <EmptyState title={q ? `No chapter in "${q}" yet.` : "No chapter in your area yet."} text="Start one and lead your local MSME community." cta={{ href: "/get-involved/chapter-builder#builder", label: "Become a chapter leader" }} />
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {rows.map((c) => (
@@ -46,7 +46,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
             </ul>
           )}
         </div>
-        {rows.length > 0 && <p className="mt-6">Hindi mo makita ang lugar mo? <Link className="font-semibold text-mph underline" href="/get-involved/chapter-leader">Start a chapter</Link>.</p>}
+        {rows.length > 0 && <p className="mt-6">Hindi mo makita ang lugar mo? <Link className="font-semibold text-mph underline" href="/get-involved/chapter-builder#builder">Start a chapter</Link>.</p>}
         <FlameAdSlot slot="FOOTER_SPONSOR" category="chapter-partner" region={q.toLowerCase().replace(/[^a-z0-9]+/g,"-") || undefined} className="mt-8" />
       </Section>
     </>

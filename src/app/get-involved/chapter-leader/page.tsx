@@ -1,10 +1,6 @@
-import { InvolvedTemplate } from "@/components/InvolvedTemplate";
-import { getInvolved } from "@/content/involved";
-import { meta } from "@/lib/meta";
+import { permanentRedirect } from "next/navigation";
 
-const page = getInvolved("chapter-leader");
-export const metadata = meta(page.title, page.description, "/get-involved/chapter-leader");
-
+// One Chapter Builder page (owner, 22 Nov 2026): the old Chapter Leader page forwards there, so old links keep working.
 export default function Page() {
-  return <InvolvedTemplate page={page} />;
+  permanentRedirect("/get-involved/chapter-builder#builder");
 }

@@ -11,7 +11,7 @@ export default async function Page() {
     <>
       <PageHero status="live" fil="Mga tampok na chapter" title="Featured Chapters" path="/about/chapters" intro="Local FLAME PH chapters doing great work in their communities." />
       <Section>
-        {rows.length === 0 ? <EmptyState title="Our first chapters are forming." text="Want to lead one in your city or municipality?" cta={{ href: "/get-involved/chapter-leader", label: "Become a chapter leader" }} /> : (
+        {rows.length === 0 ? <EmptyState title="Our first chapters are forming." text="Want to lead one in your city or municipality?" cta={{ href: "/get-involved/chapter-builder#builder", label: "Become a chapter leader" }} /> : (
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {rows.map((c) => (
               <li key={c.id} className="card p-5">

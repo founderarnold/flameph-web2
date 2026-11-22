@@ -61,11 +61,12 @@ export function choicesFrom(get: (name: string) => string | null | undefined): R
 
 /**
  * Chapter Builder Non-Disclosure and Non-Compete Agreement (page: /legal/chapter-builder-agreement).
- * Every Chapter Builder application stores the version accepted and the time (data.nda_accepted_version, data.nda_accepted_at).
+ * Every Chapter Builder and Meetup Venue application stores the version accepted and the time (data.nda_accepted_version, data.nda_accepted_at).
  * To publish new wording, change the version: the next applications record the new one. Lawyer review advised (owner, 22 Nov 2026).
  */
 export const CHAPTER_BUILDER_AGREEMENT = {
-  title: "Chapter Builder Non-Disclosure and Non-Compete Agreement",
+  title: "Chapter Builder and Meetup Venue Non-Disclosure and Non-Compete Agreement",
   href: "/legal/chapter-builder-agreement",
-  version: "1.0",
+  // 1.0 live 22 Nov 2026 (Chapter Builders). 1.1: also Meetup Venue volunteers; applies whether approved, rejected or ended.
+  version: "1.1",
 } as const;

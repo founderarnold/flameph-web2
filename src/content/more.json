@@ -117,8 +117,7 @@
       "items": [
         { "label": "Find a chapter", "href": "/chapters" },
         { "label": "About our chapters", "href": "/about/chapters" },
-        { "label": "Become a chapter leader", "href": "/get-involved/chapter-leader" },
-        { "label": "Build a chapter or host meetups", "href": "/get-involved/chapter-builder" }
+        { "label": "Build or lead a chapter, or host meetups", "href": "/get-involved/chapter-builder" }
       ]
     },
     {
@@ -179,8 +178,7 @@
       "items": [
         { "label": "Terms of Use", "href": "/legal/terms" },
         { "label": "Community Guidelines", "href": "/membership/terms" },
-        { "label": "Privacy Notice", "href": "/legal/privacy" },
-        { "label": "Chapter Builder NDA and Non-Compete Agreement", "href": "/legal/chapter-builder-agreement" }
+        { "label": "Privacy Notice", "href": "/legal/privacy" }
       ]
     },
     {
@@ -189,6 +187,8 @@
     }
   ],
   "notListed": {
+    "/legal/chapter-builder-agreement": "Opened from the Chapter Builder and Meetup Venue forms only, next to the box members tick to accept it (owner, 22 Nov 2026).",
+    "/get-involved/chapter-leader": "Forwards to /get-involved/chapter-builder, which is listed (one Chapter Builder page, owner 22 Nov 2026).",
     "/requests/new": "Opens from Requests and quotes, and from Send a request on a member's page.",
     "/more": "This page itself (the More tab).",
     "/login": "Sign-in page. Members are already signed in.",

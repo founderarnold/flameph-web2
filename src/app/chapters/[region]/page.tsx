@@ -59,7 +59,7 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
         <h2 className="mt-8 text-2xl font-extrabold">Chapters</h2>
         <div className="mt-4">
           {chapters.length === 0 ? (
-            <EmptyState title={`No chapter in ${r.name} yet.`} text="Start one and lead your local MSME community." cta={{ href: "/get-involved/chapter-leader", label: "Become a chapter leader" }} />
+            <EmptyState title={`No chapter in ${r.name} yet.`} text="Start one and lead your local MSME community." cta={{ href: "/get-involved/chapter-builder#builder", label: "Become a chapter leader" }} />
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {chapters.map((c) => {
@@ -86,7 +86,7 @@ export default async function RegionPage({ params }: { params: Promise<{ region:
           )}
         </div>
         {!member && <p className="mt-4 text-sm">Members can join a chapter group to get its posts in their feed. <Link href={`/login?next=${encodeURIComponent(back)}`} className="font-semibold text-mph underline">Sign in</Link> or <Link href="/join" className="font-semibold text-mph underline">join FLAME PH</Link>.</p>}
-        <p className="mt-4 text-sm text-muted">Provinces: {provinces.join(", ")}. Hindi mo makita ang lugar mo? <Link className="font-semibold text-mph underline" href="/get-involved/chapter-leader">Start a chapter</Link>.</p>
+        <p className="mt-4 text-sm text-muted">Provinces: {provinces.join(", ")}. Hindi mo makita ang lugar mo? <Link className="font-semibold text-mph underline" href="/get-involved/chapter-builder#builder">Start a chapter</Link>.</p>
       </Section>
 
       <Section title={`Events in ${r.name}`}>

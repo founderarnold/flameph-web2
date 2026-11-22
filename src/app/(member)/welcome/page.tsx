@@ -142,7 +142,7 @@ async function ChapterStep({ supabase, userId, p, where }: { supabase: Supa; use
               <span className="block text-sm text-muted">{[home.city, home.province].filter(Boolean).join(", ")}{home.status === "forming" ? " · Forming: be one of the first members" : ""}</span></span>
           </label>
         ) : (
-          <Notice tone="info">We couldn&apos;t find a chapter for {place} yet. <Link href="/get-involved/chapter-leader" className="underline">Start one in your area</Link>, or skip for now.</Notice>
+          <Notice tone="info">We couldn&apos;t find a chapter for {place} yet. <Link href="/get-involved/chapter-builder#builder" className="underline">Start one in your area</Link>, or skip for now.</Notice>
         )}
         {others.length > 0 && (
           <details className="rounded-xl border border-line p-3">
