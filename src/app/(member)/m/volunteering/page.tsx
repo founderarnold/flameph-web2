@@ -31,7 +31,7 @@ export default async function VolunteeringTab() {
         <section aria-labelledby="v-chapter" className="card border-2 border-flame p-4">
           <h2 id="v-chapter" className="text-lg font-bold">Your chapter needs a leader</h2>
           <p className="mt-1 text-sm text-muted">{chapter.name}{chapter.status === "forming" ? " is just forming." : " has no leader listed yet."} A chapter leader gathers local members and runs meetups with the FLAME PH team.</p>
-          <Link href="/get-involved/chapter-leader" className="btn btn-primary mt-3 min-h-11">Lead {chapter.name}</Link>
+          <Link href="/get-involved/chapter-builder#builder" className="btn btn-primary mt-3 min-h-11">Lead {chapter.name}</Link>
         </section>
       )}
 

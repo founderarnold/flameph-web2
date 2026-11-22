@@ -34,11 +34,15 @@ test("Chapter Builder form: members only, on the page and in the API", async () 
   const page = await read("src/app/get-involved/chapter-builder/page.tsx");
   const api = await read("src/app/api/submit/route.ts");
   const forms = await read("src/lib/forms.ts");
-  assert.match(page, /\{user \? <SubmissionForm def=\{FORMS\["chapter-builder"\]\} \/> : <SignInFirst \/>\}/);
+  assert.match(page, /\{user \? <SubmissionForm def=\{FORMS\["chapter-builder"\]\} \/>\s*: <SignInFirst id="builder"/);
+  assert.match(page, /\{user \? <SubmissionForm def=\{FORMS\["meetup-venue"\]\}[^}]*\/>\s*: <SignInFirst id="venue"/);
+  // The agreement is read inside the member forms, not from the sign-in box.
+  assert.doesNotMatch(page, /CHAPTER_BUILDER_AGREEMENT/);
   assert.match(page, /\/join\?next=\$\{next\}/);
   assert.match(page, /\/login\?next=\$\{next\}/);
-  // The Meetup Venue form stays open to everyone.
-  assert.match(page, /<SubmissionForm def=\{FORMS\["meetup-venue"\]\}/);
+  assert.match(forms, /type: "meetup-venue", title: "Volunteer as a FLAME PH Meetup Venue", membersOnly: true/);
+  // One page: the old Chapter Leader address forwards here.
+  assert.match(await read("src/app/get-involved/chapter-leader/page.tsx"), /permanentRedirect\("\/get-involved\/chapter-builder#builder"\)/);
   assert.match(forms, /type: "chapter-builder", title: "Volunteer as Chapter Builder in Your City\/Town", membersOnly: true/);
   assert.match(api, /if \(def\.membersOnly && !userId\) return NextResponse\.json\(\{ error: [^}]+\}, \{ status: 401 \}\)/);
 });
@@ -49,12 +53,12 @@ test("NDA and non-compete: required box, linked page, version and time stored", 
   const policy = await read("src/lib/policy.ts");
   const more = JSON.parse(await read("src/content/more.json"));
   assert.match(forms, /name: "nda_accepted", type: "checkbox", required: true, agreementVersion: CHAPTER_BUILDER_AGREEMENT\.version/);
+  assert.equal((forms.match(/NDA_FIELD\]/g) ?? []).length, 2, "Chapter Builder and Meetup Venue forms both require the agreement");
   assert.match(forms, /link: \{ href: CHAPTER_BUILDER_AGREEMENT\.href/);
-  assert.match(policy, /href: "\/legal\/chapter-builder-agreement",\s*version: "1\.0"/);
+  assert.match(policy, /href: "\/legal\/chapter-builder-agreement",[^}]*version: "1\.1"/);
   assert.match(api, /clean\[`\$\{f\.name\}_version`\] = f\.agreementVersion; clean\[`\$\{f\.name\}_at`\] = acceptedAt;/);
   assert.match(await read("src/components/SubmissionForm.tsx"), /f\.link && /);
-  const legal = more.groups.find((g) => g.key === "legal");
-  assert.ok(legal.items.some((i) => i.href === "/legal/chapter-builder-agreement"));
+  assert.ok(more.notListed["/legal/chapter-builder-agreement"]);
   const agreement = await read("src/app/legal/chapter-builder-agreement/page.tsx");
-  for (const s of ["San Fernando City, Pampanga", "7 years", "₱10,000,000", "FLAME Signature", "Micro Fulfillment", "spouse, relatives, siblings or friends", "free POS", "Data Privacy Act of 2012", "Mark Tomon", "What you remain free to do"]) assert.ok(agreement.includes(s), s);
+  for (const s of ["San Fernando City, Pampanga", "7 years", "₱10,000,000", "FLAME Signature", "Micro Fulfillment", "spouse, relatives, siblings or friends", "free POS", "Data Privacy Act of 2012", "Mark Tomon", "What you remain free to do", "approved or disapproved", "terminated or discontinued"]) assert.ok(agreement.includes(s), s);
 });

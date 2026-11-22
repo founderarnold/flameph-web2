@@ -5,9 +5,8 @@ import { Faq } from "@/components/Faq";
 import { FORMS } from "@/lib/forms";
 import { meta } from "@/lib/meta";
 import { getSession } from "@/lib/auth";
-import { CHAPTER_BUILDER_AGREEMENT } from "@/lib/policy";
 
-export const metadata = meta("Build a Chapter or Host Meetups", "Volunteer as a FLAME PH chapter builder in your city or town, or offer your place as a meetup venue for MSMEs.", "/get-involved/chapter-builder");
+export const metadata = meta("Build a Chapter or Host Meetups", "Volunteer as a FLAME PH chapter builder or chapter leader in your city or town, or offer your place as a meetup venue for MSMEs.", "/get-involved/chapter-builder");
 
 const ROLES = [
   {
@@ -32,17 +31,21 @@ const FAQ = [
   { q: "Can overseas Filipinos build a chapter?", a: "Yes. Filipino communities abroad can apply. Write your city and country in the City and Province fields." },
 ];
 
-const BACK = "/get-involved/chapter-builder#builder";
+// What a chapter builder or leader does (from the former Chapter Leader page, now part of this one page).
+const LEADER = [
+  { title: "Responsibilities", items: ["Gather local entrepreneurs and hold regular meetups", "Organize workshops with the FLAME PH team", "Represent the chapter and connect members with opportunities"] },
+  { title: "Requirements", items: ["A practicing entrepreneur or professional in the area", "Willing to volunteer time and follow FLAME PH's code of conduct", "Able to gather an initial core group", "A FLAME PH member who accepts the Non-Disclosure and Non-Compete Agreement in the form"] },
+  { title: "Steps to launch", items: ["Sign up or log in, then apply using the form below", "Talk with the FLAME PH team", "Form your core group", "Launch your chapter with a first meetup"] },
+];
 
-/** Visitors see what a Chapter Builder does, then sign up or log in. The form itself is for signed-in members only. */
-function SignInFirst() {
-  const next = encodeURIComponent(BACK);
+/** Visitors see what each role does, then sign up or log in. Both forms are for signed-in members only. */
+function SignInFirst({ id, title, back }: { id: string; title: string; back: string }) {
+  const next = encodeURIComponent(back);
   return (
-    <section aria-labelledby="builder-signin" className="card space-y-4 border-2 border-flame p-5 sm:p-6">
-      <h2 id="builder-signin" className="text-xl font-extrabold">Volunteer as Chapter Builder in Your City/Town</h2>
-      <p className="text-[15px] leading-6"><strong>The Chapter Builder form is for FLAME PH members.</strong> Sign up for free or log in, and this form opens for you right here.</p>
+    <section aria-labelledby={`${id}-signin`} className="card space-y-4 border-2 border-flame p-5 sm:p-6">
+      <h2 id={`${id}-signin`} className="text-xl font-extrabold">{title}</h2>
+      <p className="text-[15px] leading-6"><strong>This form is for FLAME PH members.</strong> Sign up for free or log in, and the form opens for you right here.</p>
       <p className="text-sm text-muted" lang="fil">Mag-sign up nang libre o mag-log in para mabuksan ang form.</p>
-      <p className="text-sm text-muted">Chapter Builders accept the <Link href={CHAPTER_BUILDER_AGREEMENT.href} className="font-semibold text-primary underline">{CHAPTER_BUILDER_AGREEMENT.title}</Link>. You can read it now.</p>
       <div className="flex flex-col gap-3 sm:flex-row">
         <Link href={`/join?next=${next}`} className="btn btn-flame w-full sm:w-auto">Sign up free</Link>
         <Link href={`/login?next=${next}`} className="btn btn-outline w-full sm:w-auto">Log in</Link>
@@ -55,10 +58,10 @@ export default async function Page() {
   const { user } = await getSession();
   return (
     <>
-      <PageHero status="live" fil="Itayo ang chapter sa inyong lugar" title="Build a Chapter or Host Meetups" path="/get-involved/chapter-builder"
-        intro="Help us build a FLAME PH chapter in every city and municipality, here and abroad. Volunteer as a chapter builder, offer your place as a meetup venue, or both.">
+      <PageHero status="live" fil="Itayo at pamunuan ang chapter sa inyong lugar" title="Build a Chapter or Host Meetups" path="/get-involved/chapter-builder"
+        intro="Help us build a FLAME PH chapter in every city and municipality, here and abroad. Volunteer as a chapter builder or leader, offer your place as a meetup venue, or both.">
         <a href="#builder" className="btn btn-flame rounded-full">Chapter Builder form ↓</a>
-        {/* The Chapter Builder form needs sign-in; the Meetup Venue form stays open to everyone. */}
+        {/* Both forms need sign-in (owner, 22 Nov 2026). */}
         <a href="#venue" className="btn btn-outline rounded-full">Meetup Venue form ↓</a>
       </PageHero>
       <Section>
@@ -70,9 +73,22 @@ export default async function Page() {
             </a>
           ))}
         </div>
+        <section aria-labelledby="leader-h" className="mt-10">
+          <h2 id="leader-h" className="text-2xl font-extrabold">Becoming a Chapter Builder or Chapter Leader</h2>
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            {LEADER.map((g) => (
+              <div key={g.title} className="card p-5">
+                <h3 className="font-extrabold text-primary">{g.title}</h3>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-[15px] leading-6 text-muted">{g.items.map((it) => <li key={it}>{it}</li>)}</ul>
+              </div>
+            ))}
+          </div>
+        </section>
         <div className="mt-10 grid gap-8 lg:grid-cols-2">
-          <div id="builder" className="scroll-mt-24">{user ? <SubmissionForm def={FORMS["chapter-builder"]} /> : <SignInFirst />}</div>
-          <div id="venue" className="scroll-mt-24"><SubmissionForm def={FORMS["meetup-venue"]} title="Volunteer as Meetup Venue for MSMEs" /></div>
+          <div id="builder" className="scroll-mt-24">{user ? <SubmissionForm def={FORMS["chapter-builder"]} />
+            : <SignInFirst id="builder" title="Volunteer as Chapter Builder in Your City/Town" back="/get-involved/chapter-builder#builder" />}</div>
+          <div id="venue" className="scroll-mt-24">{user ? <SubmissionForm def={FORMS["meetup-venue"]} title="Volunteer as Meetup Venue for MSMEs" />
+            : <SignInFirst id="venue" title="Volunteer as Meetup Venue for MSMEs" back="/get-involved/chapter-builder#venue" />}</div>
         </div>
         <div className="mt-12 max-w-3xl"><Faq items={FAQ} /></div>
         <p className="mt-6 text-sm text-muted">Want to see existing chapters first? <Link href="/chapters" className="font-semibold text-primary underline">Find a chapter near you</Link>.</p>

@@ -4,7 +4,8 @@ import { ORG } from "@/lib/site";
 import { meta } from "@/lib/meta";
 import { CHAPTER_BUILDER_AGREEMENT, POLICY_PAGES } from "@/lib/policy";
 
-export const metadata = meta(CHAPTER_BUILDER_AGREEMENT.title, "The non-disclosure and non-compete agreement every FLAME PH Chapter Builder accepts before applying.", CHAPTER_BUILDER_AGREEMENT.href);
+// Reached from the Chapter Builder and Meetup Venue forms, not from menus or search engines (owner, 22 Nov 2026).
+export const metadata = { ...meta(CHAPTER_BUILDER_AGREEMENT.title, "The non-disclosure and non-compete agreement every FLAME PH Chapter Builder and Meetup Venue volunteer accepts before applying.", CHAPTER_BUILDER_AGREEMENT.href), robots: { index: false } };
 
 // Drafted 22 Nov 2026 in line with Legal Pack v1.0, for the owner's approval before it goes live. Lawyer review advised.
 // Change the wording only together with a new CHAPTER_BUILDER_AGREEMENT.version in src/lib/policy.ts.
@@ -13,18 +14,19 @@ export default function Page() {
   return (
     <>
       <PageHero title={CHAPTER_BUILDER_AGREEMENT.title} path={CHAPTER_BUILDER_AGREEMENT.href} share={false}
-        intro={<>Version {v}. Every Chapter Builder accepts this agreement on the <Link href="/get-involved/chapter-builder#builder" className="font-semibold text-primary underline">Chapter Builder form</Link>.</>} />
+        intro={<>Version {v}. Every Chapter Builder and Meetup Venue volunteer accepts this agreement on the <Link href="/get-involved/chapter-builder#builder" className="font-semibold text-primary underline">Chapter Builder</Link> or <Link href="/get-involved/chapter-builder#venue" className="font-semibold text-primary underline">Meetup Venue</Link> form.</>} />
       <Section>
         <article className="prose-flame max-w-3xl">
-          <p><strong>In short:</strong> as a Chapter Builder you will learn how the FLAME PH ecosystem works: flameph.org, marketplaceph.com and negosyodepot.com, the FLAME Signature white-label branding strategy, Micro Fulfillment, Group Ordering, the free POS, and our member lists, plans and partner deals. Keep all of it private, even from your family and friends, use it only for your FLAME PH chapter, and do not copy it or help anyone else copy it. You can still run your own business and join other organizations.</p>
-          <p lang="fil"><strong>Sa madaling salita:</strong> bilang Chapter Builder, malalaman mo kung paano gumagana ang FLAME PH ecosystem: ang flameph.org, marketplaceph.com at negosyodepot.com, ang FLAME Signature white-label branding strategy, Micro Fulfillment, Group Ordering, ang libreng POS, at ang mga listahan ng member, plano at deal ng partners. Panatilihin itong lahat na pribado, kahit sa pamilya at mga kaibigan mo, gamitin lang para sa iyong FLAME PH chapter, at huwag itong kopyahin o tulungan ang iba na kopyahin ito. Puwede mo pa ring patakbuhin ang sarili mong negosyo at sumali sa ibang organisasyon.</p>
+          <p><strong>In short:</strong> as a Chapter Builder or Meetup Venue volunteer you will learn how the FLAME PH ecosystem works: flameph.org, marketplaceph.com and negosyodepot.com, the FLAME Signature white-label branding strategy, Micro Fulfillment, Group Ordering, the free POS, and our member lists, plans and partner deals. Keep all of it private, even from your family and friends, use it only for your FLAME PH chapter, and do not copy it or help anyone else copy it. This agreement stays in force whether your application is approved or not, and after your role is terminated or discontinued. You can still run your own business and join other organizations.</p>
+          <p lang="fil"><strong>Sa madaling salita:</strong> bilang Chapter Builder o Meetup Venue volunteer, malalaman mo kung paano gumagana ang FLAME PH ecosystem: ang flameph.org, marketplaceph.com at negosyodepot.com, ang FLAME Signature white-label branding strategy, Micro Fulfillment, Group Ordering, ang libreng POS, at ang mga listahan ng member, plano at deal ng partners. Panatilihin itong lahat na pribado, kahit sa pamilya at mga kaibigan mo, gamitin lang para sa iyong FLAME PH chapter, at huwag itong kopyahin o tulungan ang iba na kopyahin ito. May bisa pa rin ang kasunduang ito aprubado man o hindi ang application mo, at kahit natapos o itinigil na ang iyong role. Puwede mo pa ring patakbuhin ang sarili mong negosyo at sumali sa ibang organisasyon.</p>
 
           <h2>1. Who this agreement is between</h2>
-          <p>This agreement is between you, the <strong>Chapter Builder</strong>, and <strong>FLAME PH</strong>, formerly FAME Inc., SEC Reg. No. {ORG.secNo}, together with <strong>MarketplacePH Online Store</strong>, DTI-registered, Princeton St., Naga City, Camarines Sur, the Operator of flameph.org, marketplaceph.com and negosyodepot.com (together, &ldquo;FLAME PH&rdquo;, &ldquo;we&rdquo; or &ldquo;us&rdquo;).</p>
+          <p>This agreement is between you, the <strong>Chapter Builder</strong> or <strong>Meetup Venue volunteer</strong> (in this agreement, &ldquo;Chapter Builder&rdquo; includes Meetup Venue volunteers and Chapter Leaders, and &ldquo;your role&rdquo; means either role), and <strong>FLAME PH</strong>, formerly FAME Inc., SEC Reg. No. {ORG.secNo}, together with <strong>MarketplacePH Online Store</strong>, DTI-registered, Princeton St., Naga City, Camarines Sur, the Operator of flameph.org, marketplaceph.com and negosyodepot.com (together, &ldquo;FLAME PH&rdquo;, &ldquo;we&rdquo; or &ldquo;us&rdquo;).</p>
           <p>It adds to the <Link href={POLICY_PAGES.terms.href}>Terms of Use</Link>, the <Link href={POLICY_PAGES.guidelines.href}>Community Guidelines</Link> and the <Link href={POLICY_PAGES.privacy.href}>Privacy Notice</Link>. If they conflict on confidentiality or competition for Chapter Builders, this agreement applies.</p>
 
           <h2>2. When it starts and how you accept it</h2>
-          <p>You accept this agreement by ticking its box on the Chapter Builder form while signed in to your FLAME PH account. We record your account, the version you accepted and the date and time. It starts when you send the form and applies whether or not your application is approved, because you may receive confidential information while we review it.</p>
+          <p>You accept this agreement by ticking its box on the Chapter Builder form or the Meetup Venue form while signed in to your FLAME PH account. You cannot send either form without accepting it. We record your account, the version you accepted and the date and time. It starts when you send the form.</p>
+          <p><strong>It keeps applying no matter what happens to your application or role.</strong> This agreement, including the non-disclosure and non-compete sections, stays in force whether your application is <strong>approved or disapproved</strong>, and if your role as Chapter Builder or Meetup Venue is <strong>terminated or discontinued</strong> for any reason, by you or by FLAME PH. You may learn confidential information while we review your application, so it applies from the day you send the form.</p>
           <p>You must be at least 18 years old and able to enter into a binding agreement.</p>
 
           <h2>3. What counts as confidential information</h2>
@@ -55,7 +57,7 @@ export default function Page() {
           <p>If a court or government office orders you to disclose confidential information, tell us first (unless the law forbids it), so we can respond, and disclose only what is required.</p>
 
           <h2>5. Not competing with FLAME PH and not copying its systems</h2>
-          <p>You must accept this section before you can send the Chapter Builder application for an area or an industry. It protects the systems and strategies of FLAME PH from being copied and used by other companies.</p>
+          <p>You must accept this section before you can send the Chapter Builder application for an area or an industry, or the Meetup Venue application. It protects the systems and strategies of FLAME PH from being copied and used by other companies.</p>
           <p>While you are a Chapter Builder and for <strong>7 years</strong> after your role ends, anywhere in the Philippines and online, you agree not to, by yourself or through or for any other person, company or organization:</p>
           <ul>
             <li>copy, imitate or set up an ecosystem or web apps like flameph.org, marketplaceph.com or negosyodepot.com, or a system that combines their features, for a company or group other than FLAME PH;</li>
@@ -77,9 +79,10 @@ export default function Page() {
           </ul>
 
           <h2>7. Your role is volunteer work</h2>
-          <p>Chapter building is volunteer work. This agreement does not make you an employee, agent or partner of FLAME PH, and it does not entitle you to pay. You can stop being a Chapter Builder at any time by telling us. FLAME PH can also end the role, for example if this agreement or the Community Guidelines are not followed.</p>
+          <p>Chapter building and hosting meetups are volunteer work. This agreement does not make you an employee, agent or partner of FLAME PH, and it does not entitle you to pay. You can stop at any time by telling us. FLAME PH can also end the role, for example if this agreement or the Community Guidelines are not followed.</p>
 
           <h2>8. When your role ends</h2>
+          <p>This applies however your role ends: if your application is disapproved, or if your role as Chapter Builder or Meetup Venue is terminated or discontinued, the non-disclosure and non-compete in this agreement still stand.</p>
           <p>Within <strong>7 days</strong> of your role ending, delete or return all confidential information you hold, including member lists and exported files, and leave or hand over FLAME PH chapter group chats you manage, as we ask. Sections 3 to 6 continue to apply after your role ends: confidentiality for <strong>7 years</strong>; for the systems and strategies of the FLAME PH ecosystem, for as long as they are not public; for personal data, for as long as the law protects it; and the non-compete in Section 5 for <strong>7 years</strong>.</p>
           <p><strong>Non-compete after your role ends:</strong> for <strong>7 years</strong> after your role ends, for any reason, you remain bound by Section 5. You may not create, copy or help others create or copy the FLAME PH ecosystem, its web apps (flameph.org, marketplaceph.com, negosyodepot.com), the FLAME Signature white-label branding strategy, Micro Fulfillment, Group Ordering, the free POS or its marketing strategies, or run a similar competing activity.</p>
 

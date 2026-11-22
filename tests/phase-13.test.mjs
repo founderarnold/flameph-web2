@@ -43,7 +43,7 @@ test("live check scripts: read-only, the device matrix, More-vs-sitemap, and the
   assert.ok(live.includes("checkMoreAndSitemap"));
   assert.doesNotMatch(live, /SERVICE_ROLE|password|\.fill\(/i, "never signs in or fills a form on the live site");
   const shell = await read("scripts/release/member-shell.mjs");
-  assert.match(shell, /for \(const w of \[320, 360, 390, 768\]\)/);
+  assert.match(shell, /for \(const w of \[320, 360, 390, 740\]\)/);
   assert.match(shell, /b\.w >= 44 && b\.h >= 44/);
   assert.match(shell, /!b\.cut && b\.lines <= 1/);
   assert.match(shell, /top\.home === "\/home"/);

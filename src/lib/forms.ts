@@ -36,6 +36,13 @@ const province: Field = { name: "province", label: "Province", required: true };
 const org: Field = { name: "organization", label: "Organization / Business (if any)" };
 const message = (label = "Message", required = true): Field => ({ name: "message", label, type: "textarea", required });
 
+/** Required on the Chapter Builder and Meetup Venue forms: accepting the NDA and non-compete agreement (owner, 22 Nov 2026). */
+const NDA_FIELD: Field = {
+  name: "nda_accepted", type: "checkbox", required: true, agreementVersion: CHAPTER_BUILDER_AGREEMENT.version,
+  label: `I have read and accept the ${CHAPTER_BUILDER_AGREEMENT.title} (version ${CHAPTER_BUILDER_AGREEMENT.version}).`,
+  link: { href: CHAPTER_BUILDER_AGREEMENT.href, text: "Read the agreement" },
+};
+
 const STAGES = ["Discover (may idea pa lang)", "Start (bagong negosyo)", "Build", "Grow", "Scale"];
 const AWARD_CATEGORIES = ["Resilience", "Innovation", "Job generation", "Women-led", "Youth-led"];
 /** The FLAME PH Annual Awards for MSMEs and Partners. The home page Quick look links to each with ?award=. */
@@ -120,9 +127,7 @@ export const FORMS: Record<string, FormDef> = {
       { name: "business", label: "Your business or work", required: true, help: "What you do now, for example: bakery owner, accountant, barangay officer, student leader." },
       { name: "why", label: "Why do you want to build a FLAME PH chapter here?", type: "textarea", required: true, help: "In a few sentences: what local MSMEs need, and how you want to help." },
       { name: "network", label: "Who in your community could join you? (MSMEs, groups, barangay)", type: "textarea", help: "Optional. Groups or people you can invite, like a market vendors' association, a cooperative or a school." },
-      { name: "nda_accepted", type: "checkbox", required: true, agreementVersion: CHAPTER_BUILDER_AGREEMENT.version,
-        label: `I have read and accept the Chapter Builder Non-Disclosure and Non-Compete Agreement (version ${CHAPTER_BUILDER_AGREEMENT.version}).`,
-        link: { href: CHAPTER_BUILDER_AGREEMENT.href, text: "Read the agreement" } }],
+      NDA_FIELD],
     success: "Salamat! Our team will contact you to talk about building a chapter in your area.",
   },
   "resource-speaker": {
@@ -265,7 +270,7 @@ export const FORMS: Record<string, FormDef> = {
     success: "Salamat! You're on the waitlist. No payment is collected on this website.",
   },
   "meetup-venue": {
-    type: "meetup-venue", title: "Volunteer as a FLAME PH Meetup Venue",
+    type: "meetup-venue", title: "Volunteer as a FLAME PH Meetup Venue", membersOnly: true,
     intro: "Offer your space for free or low-cost MSME meetups, workshops or chapter meetings. You choose when and how often.",
     fields: [name, email, { ...mobile, required: true, help: "Our chapter team will call or text you to visit and plan the first meetup." },
       { name: "venue_name", label: "Name of the venue or business", required: true, help: "Example: Aling Nena's Café, Barangay San Jose Hall, ABC Co-working." },
@@ -276,7 +281,8 @@ export const FORMS: Record<string, FormDef> = {
       { name: "cost", label: "Is there a cost to use the space?", type: "select", required: true, options: ["Free", "Free if participants buy food or drinks", "Small fee to cover costs", "Let's discuss"], help: "Many venues host for free in exchange for new customers and visibility." },
       { name: "facilities", label: "What can you provide?", type: "textarea", help: "Optional. For example: tables and chairs, TV or projector, Wi-Fi, sound system, parking, PWD access." },
       { name: "photos_url", label: "Link to photos of the space (Facebook page, Google Maps)", type: "url", help: "Optional. Helps our team picture the space before visiting." },
-      { name: "host_ok", label: "I am the owner or am allowed to offer this venue for FLAME PH meetups.", type: "checkbox", required: true }],
+      { name: "host_ok", label: "I am the owner or am allowed to offer this venue for FLAME PH meetups.", type: "checkbox", required: true },
+      NDA_FIELD],
     success: "Salamat! A FLAME PH chapter team member will contact you to visit the venue and plan a meetup.",
   },
   "fulfillment-waitlist": {
