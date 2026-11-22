@@ -3,15 +3,19 @@
 /** The Home feed: the landing screen after sign-in and the place every finished action returns to. */
 export const FEED = "/home";
 
-export type Tab = { key: "group-order" | "fulfillment" | "new-post" | "pos" | "more"; href: string; label: string };
+export type Tab = { key: "group-order" | "fulfillment" | "new-post" | "pos" | "more"; href: string; label: string; visitorHref: string };
 
-/** Bottom bar, in the owner's order. Each is a top-level tab: the phone's back button from any of them returns to the feed. */
+/**
+ * Bottom bar, in the owner's order. Each is a top-level tab: the phone's back button from any of them returns to the feed.
+ * Phones show this bar to visitors too (owner, 22 Nov 2026). `visitorHref` is where a tab goes before sign-in: the public
+ * page when there is one, otherwise sign-up. Visitors' More opens the full site menu instead of a page.
+ */
 export const TABS: Tab[] = [
-  { key: "group-order", href: "/group-order", label: "Group Order" },
-  { key: "fulfillment", href: "/fulfillment", label: "Fulfillment" },
-  { key: "new-post", href: "/new-post", label: "New Post" },
-  { key: "pos", href: "/pos", label: "Flame POS" },
-  { key: "more", href: "/more", label: "More" },
+  { key: "group-order", href: "/group-order", label: "Group Order", visitorHref: "/deals" },
+  { key: "fulfillment", href: "/fulfillment", label: "Fulfillment", visitorHref: "/fulfillment" },
+  { key: "new-post", href: "/new-post", label: "New Post", visitorHref: "/join?next=%2Fnew-post" },
+  { key: "pos", href: "/pos", label: "Flame POS", visitorHref: "/pos" },
+  { key: "more", href: "/more", label: "More", visitorHref: "/more" },
 ];
 
 /** For signed-in members these public addresses show the member version (same URL; visitors keep the public page). */

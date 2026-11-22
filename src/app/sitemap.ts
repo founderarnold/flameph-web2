@@ -4,7 +4,7 @@ import { ORG } from "@/lib/site";
 import { list } from "@/lib/content";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const paths = new Set<string>(["/", "/join", "/login", "/get-involved", "/news", ...LEGAL_LINKS.map((l) => l.href)]);
+  const paths = new Set<string>(["/", "/join", "/login", "/get-involved", "/news", "/legal/chapter-builder-agreement", ...LEGAL_LINKS.map((l) => l.href)]);
   NAV.forEach((g) => g.items.forEach((i) => !i.external && paths.add(i.href)));
   const [posts, res] = await Promise.all([
     list<{ slug: string }>({ table: "posts", select: "slug" }),

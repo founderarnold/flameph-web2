@@ -1,5 +1,5 @@
 // Phase 13: member screens on a LOCAL copy, signed in as a sample member against scripts/release/mock-supabase.mjs.
-// Checks the bottom bar at 320px (five labels, no cut-off, no wrapping, tap targets >= 44px), the top bar (logo goes
+// Checks the bottom bar at 320-740px (phones and folding phones; from 768px the site header menus take over) (five labels, no cut-off, no wrapping, tap targets >= 44px), the top bar (logo goes
 // Home, Messages button shows its unread count) and that every member-only feature page renders.
 //
 //   1. Build and start the copy pointed at the stand-in:
@@ -92,7 +92,7 @@ async function memberPages(browser, engine, viewport) {
 for (const engine of WANT) {
   let browser;
   try { browser = await launch[engine](); } catch (e) { record({ device: NAME[engine] ?? engine, check: "browser start", pass: false, note: String(e.message).split("\n")[0] }); continue; }
-  for (const w of [320, 360, 390, 768]) await shell(browser, engine, w);
+  for (const w of [320, 360, 390, 740]) await shell(browser, engine, w);
   await memberPages(browser, engine, { width: 360, height: 740 });
   await memberPages(browser, engine, { width: 1366, height: 768 });
   await browser.close();

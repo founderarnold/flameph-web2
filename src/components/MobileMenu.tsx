@@ -8,9 +8,13 @@ import type { NavGroup } from "@/lib/nav";
 import type { Lang } from "@/lib/i18n";
 import { MEMBER_LINKS, isActive } from "@/lib/member-nav";
 
-type Labels = { menu: string; close: string; login: string; account: string; joinFree: string };
+export type MenuLabels = { menu: string; close: string; login: string; account: string; joinFree: string };
 
-export function MobileMenu({ groups, lang, signedIn, labels }: { groups: NavGroup[]; lang: Lang; signedIn: boolean; labels: Labels }) {
+/**
+ * The full site menu for phones. `trigger` is the button that opens it: by default the menu icon; the visitor bottom bar
+ * passes its "More" tab, so phones reach every page from the bar.
+ */
+export function MobileMenu({ groups, lang, signedIn, labels, trigger }: { groups: NavGroup[]; lang: Lang; signedIn: boolean; labels: MenuLabels; trigger?: (open: () => void, isOpen: boolean) => React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   useEffect(() => setOpen(false), [pathname]);
@@ -22,10 +26,12 @@ export function MobileMenu({ groups, lang, signedIn, labels }: { groups: NavGrou
   }, [open]);
 
   return (
-    <div className="lg:hidden">
-      <button type="button" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="mobile-drawer" className="btn btn-ghost h-11 w-11 p-0" aria-label={labels.menu}>
-        <svg aria-hidden width="24" height="24" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-      </button>
+    <div className="md:hidden">
+      {trigger ? trigger(() => setOpen(true), open) : (
+        <button type="button" onClick={() => setOpen(true)} aria-expanded={open} aria-controls="mobile-drawer" className="btn btn-ghost h-11 w-11 p-0" aria-label={labels.menu}>
+          <svg aria-hidden width="24" height="24" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+        </button>
+      )}
       {/* Portal to <body>: the header's backdrop-blur makes it the containing block for fixed children, which squashed the drawer to header height. */}
       {open && createPortal(
         <div id="mobile-drawer" role="dialog" aria-modal="true" aria-label={labels.menu} className="fixed inset-0 z-50 flex flex-col bg-bg">

@@ -78,7 +78,8 @@ export function SubmissionForm({ def, context, title, compact = false, doneHref,
           return (
             <label key={f.name} htmlFor={id} className="flex items-start gap-2">
               <input id={id} name={f.name} type="checkbox" value="yes" required={f.required} className="mt-1 h-5 w-5 shrink-0" />
-              <span>{f.label}{f.required && <span className="text-flame-strong"> *</span>}</span>
+              <span>{f.label}{f.required && <span className="text-flame-strong"> *</span>}
+                {f.link && <> <a href={f.link.href} target="_blank" rel="noopener" className="font-semibold text-primary underline">{f.link.text}<span className="sr-only"> (opens a new tab)</span></a></>}</span>
             </label>
           );
         }

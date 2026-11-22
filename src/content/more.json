@@ -179,7 +179,8 @@
       "items": [
         { "label": "Terms of Use", "href": "/legal/terms" },
         { "label": "Community Guidelines", "href": "/membership/terms" },
-        { "label": "Privacy Notice", "href": "/legal/privacy" }
+        { "label": "Privacy Notice", "href": "/legal/privacy" },
+        { "label": "Chapter Builder NDA and Non-Compete Agreement", "href": "/legal/chapter-builder-agreement" }
       ]
     },
     {

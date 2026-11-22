@@ -18,10 +18,12 @@ export function DesktopNav({ groups, lang }: { groups: NavGroup[]; lang: Lang })
   }, []);
 
   return (
-    <nav ref={ref} aria-label="Main" className="ml-3 hidden lg:block">
+    <nav ref={ref} aria-label="Main" className="order-last -mx-1 hidden w-full min-w-0 pb-1 md:block xl:order-none xl:mx-0 xl:ml-3 xl:w-auto xl:pb-0">
       <ul className="flex items-center gap-0.5">
-        {groups.map((g) => {
+        {groups.map((g, i) => {
           const isOpen = open === g.key;
+          // The last two menus open to the left, so they stay on screen on tablets.
+          const side = i >= groups.length - 2 ? "right-0" : "left-0";
           return (
             <li key={g.key} className="relative" onMouseLeave={() => isOpen && setOpen(null)}>
               <button
@@ -30,12 +32,12 @@ export function DesktopNav({ groups, lang }: { groups: NavGroup[]; lang: Lang })
                 aria-controls={`menu-${g.key}`}
                 onClick={() => setOpen(isOpen ? null : g.key)}
                 onMouseEnter={() => setOpen(g.key)}
-                className="flex min-h-11 items-center gap-1 rounded-lg px-1.5 text-sm font-semibold hover:bg-bg-soft xl:px-2.5"
+                className="flex min-h-11 items-center gap-1 whitespace-nowrap rounded-lg px-1.5 text-sm font-semibold hover:bg-bg-soft lg:px-2.5"
               >
                 {lang === "fil" ? g.fil : g.label}
                 <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" className={`transition-transform ${isOpen ? "rotate-180" : ""}`}><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" /></svg>
               </button>
-              <div id={`menu-${g.key}`} hidden={!isOpen} className="absolute left-0 top-full pt-2">
+              <div id={`menu-${g.key}`} hidden={!isOpen} className={`absolute ${side} top-full pt-2`}>
                 <ul className="card w-72 p-2 shadow-lg">
                   {g.items.map((it) => (
                     <li key={`${it.label}-${it.href}`}>

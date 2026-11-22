@@ -1,4 +1,6 @@
 // Every public form is defined here. The API validates submissions against these definitions.
+import { CHAPTER_BUILDER_AGREEMENT } from "@/lib/policy";
+
 export type Field = {
   name: string;
   label: string;
@@ -7,6 +9,10 @@ export type Field = {
   options?: string[];
   placeholder?: string;
   help?: string;
+  /** Checkbox only: a page the label links to, e.g. the agreement being accepted. */
+  link?: { href: string; text: string };
+  /** Checkbox only: ticking it accepts this version of an agreement. The API stores `<name>_version` and `<name>_at`. */
+  agreementVersion?: string;
 };
 
 export type FormDef = {
@@ -18,6 +24,8 @@ export type FormDef = {
   notificationAudience?: "general" | "real-estate";
   submitLabel?: string;
   success: string;
+  /** Only signed-in members can send it. The page shows sign up / log in instead, and the API refuses visitors. */
+  membersOnly?: boolean;
 };
 
 const name: Field = { name: "name", label: "Full name", required: true };
@@ -103,6 +111,19 @@ export const FORMS: Record<string, FormDef> = {
       { name: "why", label: "Why do you want to lead a FLAME PH chapter here?", type: "textarea", required: true, help: "In a few sentences: what local MSMEs need, and how you want to help." },
       { name: "network", label: "Who in your community could join you? (MSMEs, groups, barangay)", type: "textarea", help: "Optional. Groups or people you can invite, like a market vendors' association, a cooperative or a school." }],
     success: "Salamat! Our team will contact you to talk about starting a chapter.",
+  },
+  // Chapter Builder form on /get-involved/chapter-builder#builder: members only, with the NDA and non-compete agreement.
+  "chapter-builder": {
+    type: "chapter-builder", title: "Volunteer as Chapter Builder in Your City/Town", membersOnly: true,
+    fields: [name, email, { ...mobile, help: "So our team can call or text you. We never share it publicly." },
+      { ...city, help: "The city or town where you want to start or help build a chapter." }, province,
+      { name: "business", label: "Your business or work", required: true, help: "What you do now, for example: bakery owner, accountant, barangay officer, student leader." },
+      { name: "why", label: "Why do you want to build a FLAME PH chapter here?", type: "textarea", required: true, help: "In a few sentences: what local MSMEs need, and how you want to help." },
+      { name: "network", label: "Who in your community could join you? (MSMEs, groups, barangay)", type: "textarea", help: "Optional. Groups or people you can invite, like a market vendors' association, a cooperative or a school." },
+      { name: "nda_accepted", type: "checkbox", required: true, agreementVersion: CHAPTER_BUILDER_AGREEMENT.version,
+        label: `I have read and accept the Chapter Builder Non-Disclosure and Non-Compete Agreement (version ${CHAPTER_BUILDER_AGREEMENT.version}).`,
+        link: { href: CHAPTER_BUILDER_AGREEMENT.href, text: "Read the agreement" } }],
+    success: "Salamat! Our team will contact you to talk about building a chapter in your area.",
   },
   "resource-speaker": {
     type: "resource-speaker", title: "Volunteer as a resource speaker",

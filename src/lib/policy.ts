@@ -58,3 +58,14 @@ export const hasCurrentTerms = (s: ConsentState) => s.terms?.granted === true &&
 export function choicesFrom(get: (name: string) => string | null | undefined): Record<ConsentKey, boolean> {
   return Object.fromEntries(CONSENT_KEYS.map((k) => [k, get(`c_${k}`) === "1"])) as Record<ConsentKey, boolean>;
 }
+
+/**
+ * Chapter Builder Non-Disclosure and Non-Compete Agreement (page: /legal/chapter-builder-agreement).
+ * Every Chapter Builder application stores the version accepted and the time (data.nda_accepted_version, data.nda_accepted_at).
+ * To publish new wording, change the version: the next applications record the new one. Lawyer review advised (owner, 22 Nov 2026).
+ */
+export const CHAPTER_BUILDER_AGREEMENT = {
+  title: "Chapter Builder Non-Disclosure and Non-Compete Agreement",
+  href: "/legal/chapter-builder-agreement",
+  version: "1.0",
+} as const;
