@@ -7,7 +7,7 @@ export function KaFlameFab() {
   const p = usePathname();
   if (p.startsWith("/bizconsult-ai") || p.startsWith("/admin") || p.startsWith("/ridesafe")) return null;
   return (
-    <Link href="/bizconsult-ai" className="btn btn-flame fixed bottom-6 right-6 z-30 hidden rounded-full shadow-lg lg:inline-flex" aria-label="Open Biz Consult with FLAME AI">
+    <Link href="/bizconsult-ai" className="btn btn-flame fixed bottom-6 right-6 z-30 hidden rounded-full shadow-lg md:inline-flex" aria-label="Open Biz Consult with FLAME AI">
       💬 FLAME AI
     </Link>
   );

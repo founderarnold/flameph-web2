@@ -32,7 +32,7 @@ test("hero page sharing is rendered before the footer instead of inside the hero
 test("signed-out visitors can always reach Join free on desktop and mobile", () => {
   const header = read("src/components/Header.tsx");
   const mobile = read("src/components/MobileMenu.tsx");
-  assert.match(header, /!signedIn && <Link href="\/join"/);
+  assert.match(header, /\) : \(\s*<>\s*<Link href="\/login"[^\n]*\n\s*<Link href="\/join" className="btn btn-flame/);
   assert.match(mobile, /<Link href="\/join" className="btn btn-flame w-full">/);
   assert.match(mobile, /<Link href="\/login" className="btn btn-outline w-full">/);
 });

@@ -37,9 +37,9 @@ test("unread count: only the other member's newer messages count, and the Messag
   assert.equal(M.hasUnread(c, me), true);
   assert.equal(M.hasUnread({ ...c, a_read_at: "2026-11-17T10:01:00Z" }, me), false);
   assert.equal(M.hasUnread({ ...c, last_sender_id: "a" }, me), false);
-  const top = await read("src/components/shell/MemberTopBar.tsx");
+  const top = await read("src/components/Header.tsx");
   assert.match(top, /href="\/messages"/);
-  assert.match(top, /CountBadge count=\{unread\}/);
+  assert.match(top, /CountBadge count=\{member\.unread\}/);
   const layout = await read("src/app/layout.tsx");
   assert.match(layout, /unreadMessages\(\), inboxCount\(\)/);
   const data = await read("src/lib/member-shell-data.ts");

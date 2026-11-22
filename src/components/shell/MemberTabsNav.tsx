@@ -4,6 +4,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { FEED, TABS, activeTab } from "@/lib/member-shell";
 import { TabIcon } from "./TabIcon";
+import { MobileMenu, type MenuLabels } from "@/components/MobileMenu";
+import type { NavGroup } from "@/lib/nav";
+import type { Lang } from "@/lib/i18n";
 
 const GUARD = "flTabGuard";
 
@@ -40,21 +43,34 @@ function useTabClick() {
   };
 }
 
-/** Five-tab bottom bar for signed-in members (phones and tablets). Labels never wrap or cut off; each tap target is at least 56px tall. */
-export function MemberBottomBar() {
+const tabClass = (active: boolean) =>
+  `flex min-h-14 w-full flex-col items-center justify-center gap-0.5 text-[11px] font-semibold leading-tight tracking-tight whitespace-nowrap min-[360px]:text-xs ${active ? "text-primary" : "text-muted"}`;
+
+/** What a visitor's bottom bar needs to open the full site menu from its More tab. */
+export type VisitorMenu = { groups: NavGroup[]; lang: Lang; labels: MenuLabels };
+
+/**
+ * The five-tab bottom bar on phones and folding phones (below 768px), for members and visitors alike.
+ * Members: each tab opens its member page. Visitors (`visitor` set): tabs open the public page or sign-up, and More opens
+ * the full site menu. Labels never wrap or cut off; each tap target is at least 56px tall.
+ */
+export function MemberBottomBar({ visitor }: { visitor?: VisitorMenu } = {}) {
+  return visitor ? <VisitorBar menu={visitor} /> : <MemberBar />;
+}
+
+function MemberBar() {
   const pathname = usePathname();
   const onTab = useTabClick();
   useBackToFeed();
   const current = activeTab(pathname);
   return (
-    <nav aria-label="Member tabs" data-shell="bottom-bar" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/95 backdrop-blur lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <nav aria-label="Member tabs" data-shell="bottom-bar" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/95 backdrop-blur md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <ul className="grid grid-cols-5">
         {TABS.map((t) => {
           const active = current?.key === t.key;
           return (
             <li key={t.key} className="min-w-0">
-              <Link href={t.href} onClick={onTab(t.href)} aria-current={active ? "page" : undefined} data-tab={t.key}
-                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold leading-tight tracking-tight whitespace-nowrap min-[360px]:text-xs ${active ? "text-primary" : "text-muted"}`}>
+              <Link href={t.href} onClick={onTab(t.href)} aria-current={active ? "page" : undefined} data-tab={t.key} className={tabClass(active)}>
                 <TabIcon k={t.key} />
                 <span data-tab-label>{t.label}</span>
               </Link>
@@ -66,21 +82,32 @@ export function MemberBottomBar() {
   );
 }
 
-/** The same five tabs inline in the top bar on wide screens, where the bottom bar is hidden. */
-export function MemberTopTabs() {
+function VisitorBar({ menu }: { menu: VisitorMenu }) {
   const pathname = usePathname();
-  const onTab = useTabClick();
-  const current = activeTab(pathname);
+  const isOn = (href: string) => { const p = href.split("?")[0]; return pathname === p || pathname.startsWith(`${p}/`); };
   return (
-    <nav aria-label="Member tabs" className="hidden lg:block">
-      <ul className="flex items-center gap-1">
+    <nav aria-label="Quick links" data-shell="bottom-bar" data-visitor className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/95 backdrop-blur md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <ul className="grid grid-cols-5">
         {TABS.map((t) => {
-          const active = current?.key === t.key;
+          if (t.key === "more") {
+            return (
+              <li key={t.key} className="min-w-0">
+                <MobileMenu groups={menu.groups} lang={menu.lang} signedIn={false} labels={menu.labels}
+                  trigger={(open, isOpen) => (
+                    <button type="button" onClick={open} aria-expanded={isOpen} aria-controls="mobile-drawer" aria-haspopup="dialog" data-tab={t.key} className={tabClass(isOpen)}>
+                      <TabIcon k={t.key} />
+                      <span data-tab-label>{t.label}</span>
+                    </button>
+                  )} />
+              </li>
+            );
+          }
+          const active = !t.visitorHref.startsWith("/join") && isOn(t.visitorHref);
           return (
-            <li key={t.key}>
-              <Link href={t.href} onClick={onTab(t.href)} aria-current={active ? "page" : undefined}
-                className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-[15px] font-semibold whitespace-nowrap hover:bg-bg-soft ${active ? "bg-primary-soft text-primary" : "text-fg"}`}>
-                <TabIcon k={t.key} />{t.label}
+            <li key={t.key} className="min-w-0">
+              <Link href={t.visitorHref} aria-current={active ? "page" : undefined} data-tab={t.key} className={tabClass(active)}>
+                <TabIcon k={t.key} />
+                <span data-tab-label>{t.label}</span>
               </Link>
             </li>
           );

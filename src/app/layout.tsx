@@ -6,16 +6,15 @@ import "./ridesafe/ridesafe.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PageShareBar } from "@/components/PageShareBar";
-import { BottomBar } from "@/components/BottomBar";
 import { RegisterSW } from "@/components/RegisterSW";
 import { EmailLinkSignIn } from "@/components/EmailLinkSignIn";
 import { KaFlameFab } from "@/components/KaFlameFab";
-import { MemberTopBar } from "@/components/shell/MemberTopBar";
 import { MemberBottomBar } from "@/components/shell/MemberTabsNav";
 import { inboxCount, latestFeedAt, shellSession, unreadMessages } from "@/lib/member-shell-data";
 import { cookies } from "next/headers";
 import { getDict, getLang } from "@/lib/i18n";
 import { FOUNDERS, ORG, PURPOSE, TAGLINES } from "@/lib/site";
+import { NAV } from "@/lib/nav";
 
 export const metadata: Metadata = {
   metadataBase: new URL(ORG.url),
@@ -56,7 +55,8 @@ const jsonLd = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [lang, t, c] = await Promise.all([getLang(), getDict(), cookies()]);
   const signedIn = c.getAll().some((x) => x.name.startsWith("sb-") && x.name.includes("auth-token"));
-  // The fork: a signed-in member gets the member shell (Home top bar + five action tabs). Visitors keep the public header and bar exactly as before.
+  // One header and one five-tab phone bar for everyone (owner, 22 Nov 2026). Members get their Home button, Messages,
+  // Inbox and Account in the header; visitors' tabs open public pages or sign-up, and their More tab opens the site menu.
   const member = signedIn ? Boolean((await shellSession()).user) : false;
   const [unread, inbox, latest] = member ? await Promise.all([unreadMessages(), inboxCount(), latestFeedAt()]) : [0, 0, null];
   return (
@@ -68,11 +68,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       }}
     >
       <body className="min-h-screen font-sans antialiased">
-        {member ? <MemberTopBar unread={unread} inbox={inbox} latest={latest} accountLabel={t.account} /> : <Header />}
+        <Header member={member ? { unread, inbox, latest } : undefined} />
         <main id="main">{children}</main>
         <PageShareBar />
         <Footer />
-        {member ? <MemberBottomBar /> : <BottomBar labels={{ home: t.home, kaflame: t.kaflame, directory: t.directory, account: t.account }} />}
+        {member ? <MemberBottomBar /> : <MemberBottomBar visitor={{ groups: NAV, lang, labels: { menu: t.menu, close: t.close, login: t.login, account: t.account, joinFree: t.joinFree } }} />}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         {signedIn && <KaFlameFab />}
         <RegisterSW />

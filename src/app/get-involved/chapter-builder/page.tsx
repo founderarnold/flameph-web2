@@ -4,6 +4,8 @@ import { SubmissionForm } from "@/components/SubmissionForm";
 import { Faq } from "@/components/Faq";
 import { FORMS } from "@/lib/forms";
 import { meta } from "@/lib/meta";
+import { getSession } from "@/lib/auth";
+import { CHAPTER_BUILDER_AGREEMENT } from "@/lib/policy";
 
 export const metadata = meta("Build a Chapter or Host Meetups", "Volunteer as a FLAME PH chapter builder in your city or town, or offer your place as a meetup venue for MSMEs.", "/get-involved/chapter-builder");
 
@@ -30,12 +32,33 @@ const FAQ = [
   { q: "Can overseas Filipinos build a chapter?", a: "Yes. Filipino communities abroad can apply. Write your city and country in the City and Province fields." },
 ];
 
-export default function Page() {
+const BACK = "/get-involved/chapter-builder#builder";
+
+/** Visitors see what a Chapter Builder does, then sign up or log in. The form itself is for signed-in members only. */
+function SignInFirst() {
+  const next = encodeURIComponent(BACK);
+  return (
+    <section aria-labelledby="builder-signin" className="card space-y-4 border-2 border-flame p-5 sm:p-6">
+      <h2 id="builder-signin" className="text-xl font-extrabold">Volunteer as Chapter Builder in Your City/Town</h2>
+      <p className="text-[15px] leading-6"><strong>The Chapter Builder form is for FLAME PH members.</strong> Sign up for free or log in, and this form opens for you right here.</p>
+      <p className="text-sm text-muted" lang="fil">Mag-sign up nang libre o mag-log in para mabuksan ang form.</p>
+      <p className="text-sm text-muted">Chapter Builders accept the <Link href={CHAPTER_BUILDER_AGREEMENT.href} className="font-semibold text-primary underline">{CHAPTER_BUILDER_AGREEMENT.title}</Link>. You can read it now.</p>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Link href={`/join?next=${next}`} className="btn btn-flame w-full sm:w-auto">Sign up free</Link>
+        <Link href={`/login?next=${next}`} className="btn btn-outline w-full sm:w-auto">Log in</Link>
+      </div>
+    </section>
+  );
+}
+
+export default async function Page() {
+  const { user } = await getSession();
   return (
     <>
       <PageHero status="live" fil="Itayo ang chapter sa inyong lugar" title="Build a Chapter or Host Meetups" path="/get-involved/chapter-builder"
         intro="Help us build a FLAME PH chapter in every city and municipality, here and abroad. Volunteer as a chapter builder, offer your place as a meetup venue, or both.">
         <a href="#builder" className="btn btn-flame rounded-full">Chapter Builder form ↓</a>
+        {/* The Chapter Builder form needs sign-in; the Meetup Venue form stays open to everyone. */}
         <a href="#venue" className="btn btn-outline rounded-full">Meetup Venue form ↓</a>
       </PageHero>
       <Section>
@@ -48,7 +71,7 @@ export default function Page() {
           ))}
         </div>
         <div className="mt-10 grid gap-8 lg:grid-cols-2">
-          <div id="builder" className="scroll-mt-24"><SubmissionForm def={FORMS["chapter-leader"]} title="Volunteer as Chapter Builder in Your City/Town" /></div>
+          <div id="builder" className="scroll-mt-24">{user ? <SubmissionForm def={FORMS["chapter-builder"]} /> : <SignInFirst />}</div>
           <div id="venue" className="scroll-mt-24"><SubmissionForm def={FORMS["meetup-venue"]} title="Volunteer as Meetup Venue for MSMEs" /></div>
         </div>
         <div className="mt-12 max-w-3xl"><Faq items={FAQ} /></div>

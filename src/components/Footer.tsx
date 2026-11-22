@@ -13,7 +13,7 @@ export async function Footer() {
   const socials = Object.entries(settings.social_links ?? {}).filter(([, url]) => typeof url === "string" && url.startsWith("http"));
   const year = new Date().getFullYear();
   return (
-    <footer className="mt-16 border-t border-line bg-bg-soft pb-24 lg:pb-0">
+    <footer className="mt-16 border-t border-line bg-bg-soft pb-24 md:pb-0">
       <EcosystemFooter here="flameph" />
       <div className="container-x grid gap-10 py-12 lg:grid-cols-[1.2fr_1fr]">
         <div>

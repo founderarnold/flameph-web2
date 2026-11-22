@@ -18,7 +18,7 @@ const layout = await read("src/app/layout.tsx");
 const middleware = await read("src/middleware.ts");
 const tabsNav = await read("src/components/shell/MemberTabsNav.tsx");
 const homeButton = await read("src/components/shell/HomeButton.tsx");
-const topBar = await read("src/components/shell/MemberTopBar.tsx");
+const topBar = await read("src/components/Header.tsx");
 const actions = await read("src/app/account/actions.ts");
 const feed = await read("src/app/(member)/home/page.tsx");
 
@@ -78,9 +78,9 @@ test("finished actions return to the feed, scrolled to the result", async () => 
 test("signed-in members land on the feed; visitors keep the public site", () => {
   assert.match(middleware, /const MEMBER_HOME = FEED;/);
   assert.match(middleware, /NextResponse\.rewrite\(new URL\(memberTab/);
-  assert.match(layout, /member \? <MemberTopBar/);
-  assert.match(layout, /: <Header \/>/);
-  assert.match(layout, /member \? <MemberBottomBar \/> : <BottomBar/);
+  // One header and one phone bar for everyone (owner, 22 Nov 2026); members get their own items in them.
+  assert.match(layout, /<Header member=\{member \? \{ unread, inbox, latest \} : undefined\} \/>/);
+  assert.match(layout, /member \? <MemberBottomBar \/> : <MemberBottomBar visitor=/);
   // No Supabase call for visitors: the session is only checked when the sign-in cookie is there.
   assert.match(layout, /const member = signedIn \? Boolean\(\(await shellSession\(\)\)\.user\) : false;/);
 });
@@ -101,7 +101,7 @@ test("top bar: Home, search and Messages with an unread count; Home dot for unse
   assert.match(topBar, /<SiteSearch \/>/);
   assert.match(topBar, /href="\/messages"/);
   assert.match(topBar, /href="\/workspace\/inbox"/);
-  assert.match(topBar, /CountBadge count=\{unread\}/);
+  assert.match(topBar, /CountBadge count=\{member\.unread\}/);
   assert.match(topBar, /sticky top-0/);
   assert.match(homeButton, /UnseenDot/);
 });

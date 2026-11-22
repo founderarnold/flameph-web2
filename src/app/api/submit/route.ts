@@ -42,6 +42,13 @@ export async function POST(req: Request) {
 
   const supabase = await createClient();
   const userId = supabase ? (await supabase.auth.getUser()).data.user?.id ?? null : null;
+  if (def.membersOnly && !userId) return NextResponse.json({ error: "Please sign up or log in first. This form is for FLAME PH members." }, { status: 401 });
+
+  // Agreements ticked on the form: keep which version was accepted and when (server time, UTC).
+  const acceptedAt = new Date().toISOString();
+  for (const f of def.fields) {
+    if (f.agreementVersion && clean[f.name] === "yes") { clean[`${f.name}_version`] = f.agreementVersion; clean[`${f.name}_at`] = acceptedAt; }
+  }
 
   const { name, email, mobile, ...rest } = clean;
   const { error } = await admin.from("submissions").insert({
