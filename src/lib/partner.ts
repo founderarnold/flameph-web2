@@ -6,7 +6,7 @@ export const PARTNER_CATEGORIES = {
   supplier: {
     label: "Supplier", fil: "Supplier ng produkto",
     text: "You sell products (raw materials, packaging, goods for resale) that FLAME PH members buy, in bulk or through Group Orders.",
-    stage: "Pilot: Best Offer forms open next",
+    stage: "Pilot: Best Offer open to accredited suppliers",
   },
   service_provider: {
     label: "Service provider", fil: "Nagbibigay ng serbisyo",

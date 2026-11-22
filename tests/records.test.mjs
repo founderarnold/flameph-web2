@@ -150,7 +150,7 @@ test("vetting: separate consent, reviewers only, encrypted at rest, retention en
   // Admins and founders (moderation level 2+); national reviewers (0031) only for partner documents.
   assert.match(route, /const moderator = !lvlErr && \(Number\(lvl\) \|\| 0\) >= 2;/);
   assert.match(route, /if \(!moderator && partnerReviewer !== true\) return deny\(403\);/);
-  assert.match(route, /if \(!moderator && doc\.purpose !== "partner"\) return deny\(403\);/);
+  assert.match(route, /if \(!moderator && doc\.purpose !== "partner" && doc\.purpose !== "offer"\) return deny\(403\);/);
   assert.match(route, /doc\.user_id === user\.id\) return deny\(403\)/);
   assert.match(route, /vetting_access_log"\)\.insert/);
   assert.match(route, /no-store/);
