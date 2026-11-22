@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { SUPABASE_URL } from "@/lib/env";
 import { peso } from "@/lib/growth";
+import { SIGNED_OUT_MESSAGE, friendlyDbError } from "@/lib/db-errors";
 
 export type ProductRow = {
   id?: string; name: string; description: string | null; price: number | null; price_from: boolean; unit: string | null;
@@ -23,15 +24,24 @@ export function ProductsEditor({ userId, businessId, initial }: { userId: string
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   if (!supabase) return null;
 
+  /** The browser must still be signed in as this member, or the database refuses the write. */
+  async function stillSignedIn() {
+    const { data } = await supabase!.auth.getUser();
+    if (data.user?.id === userId) return true;
+    setMsg({ ok: false, text: SIGNED_OUT_MESSAGE });
+    return false;
+  }
+
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !draft) return;
     if (file.size > 5 * 1024 * 1024) return setMsg({ ok: false, text: "Photo too large (max 5 MB)." });
     setBusy(true);
+    if (!(await stillSignedIn())) return setBusy(false);
     const path = `${userId}/product-${Date.now()}-${file.name.replace(/[^\w.-]/g, "_")}`;
     const { error } = await supabase!.storage.from("media").upload(path, file);
     setBusy(false);
-    if (error) return setMsg({ ok: false, text: error.message });
+    if (error) return setMsg({ ok: false, text: friendlyDbError(error, "this photo") });
     setDraft({ ...draft, photo_path: path });
   }
 
@@ -39,6 +49,7 @@ export function ProductsEditor({ userId, businessId, initial }: { userId: string
     e.preventDefault();
     if (!draft) return;
     setBusy(true); setMsg(null);
+    if (!(await stillSignedIn())) return setBusy(false);
     const link = draft.link_url?.trim();
     const payload = {
       business_id: businessId, owner_id: userId, name: draft.name.trim(), description: draft.description?.trim() || null,
@@ -51,7 +62,7 @@ export function ProductsEditor({ userId, businessId, initial }: { userId: string
       : await supabase!.from("business_products").insert({ ...payload, sort: rows.length }).select("*").single();
     setBusy(false);
     if (res.error) {
-      return setMsg({ ok: false, text: /business_products/.test(res.error.message) ? "Products open once FLAME PH finishes a database update. Please try again later." : res.error.message });
+      return setMsg({ ok: false, text: friendlyDbError(res.error, "this product") });
     }
     const saved = res.data as ProductRow;
     setRows((r) => (draft.id ? r.map((x) => (x.id === draft.id ? saved : x)) : [...r, saved]));
@@ -63,9 +74,10 @@ export function ProductsEditor({ userId, businessId, initial }: { userId: string
   async function remove(id?: string) {
     if (!id) return;
     setBusy(true);
+    if (!(await stillSignedIn())) return setBusy(false);
     const { error } = await supabase!.from("business_products").delete().eq("id", id);
     setBusy(false);
-    if (error) return setMsg({ ok: false, text: error.message });
+    if (error) return setMsg({ ok: false, text: friendlyDbError(error, "this change") });
     setRows((r) => r.filter((x) => x.id !== id));
     router.refresh();
   }
