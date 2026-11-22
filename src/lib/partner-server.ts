@@ -32,20 +32,20 @@ export function openTin(enc: string | null, keyId: string | null): string | null
 
 /** One line in the applicant's Inbox (Workspace → Inbox) and an email. A decision on their application is a service
  *  message, so it is sent whatever their marketing choices are. Never throws. */
-export async function tellApplicant(userId: string, title: string, body: string, url: string) {
+export async function tellApplicant(userId: string, title: string, body: string, url: string, subject = "FLAME PH partner application") {
   const admin = createAdminClient();
   if (!admin) return;
   try {
     await admin.from("member_notifications").insert({ user_id: userId, kind: "notice", title: title.slice(0, 140), body: body.slice(0, 300), url });
     const { data } = await admin.auth.admin.getUserById(userId);
     const to = data.user?.email;
-    if (to) await sendEmail({ to: [to], subject: `FLAME PH partner application: ${title}`, text: `${body}\n\nOpen your application: ${ORG.url}${url}\n\n—\nFLAME PH Partner Accreditation. This is a message about your own application.` });
+    if (to) await sendEmail({ to: [to], subject: `${subject}: ${title}`, text: `${body}\n\nOpen it here: ${ORG.url}${url}\n\n—\nFLAME PH Partner Accreditation. This is a message about your own application or offer.` });
   } catch { /* the in-app notice is enough */ }
 }
 
-/** Total size of a member's partner files that still exist (the 50 MB cap). */
+/** Total size of a member's partner files that still exist, application documents and Best Offer files together (the 50 MB cap). */
 export async function partnerBytes(admin: SupabaseClient, userId: string): Promise<number> {
-  const { data } = await admin.from("vetting_documents").select("size_bytes").eq("user_id", userId).eq("purpose", "partner").is("deleted_at", null).limit(500);
+  const { data } = await admin.from("vetting_documents").select("size_bytes").eq("user_id", userId).in("purpose", ["partner", "offer"]).is("deleted_at", null).limit(500);
   return (data ?? []).reduce((n, r) => n + (Number(r.size_bytes) || 0), 0);
 }
 

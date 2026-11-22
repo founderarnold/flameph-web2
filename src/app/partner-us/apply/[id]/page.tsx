@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { Notice } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
 import { ShrinkPhotoInput } from "@/components/ShrinkPhotoInput";
+import { Select, Text } from "@/components/PartnerFields";
 import { INDUSTRY_NAMES } from "@/lib/industries";
 import { PROVINCES } from "@/content/ph-provinces";
 import {
@@ -22,30 +23,6 @@ const COLS = "id, category, status, revision, legal_name, trade_name, registrati
 const kb = (n: number) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 const when = (s: string) => new Date(s).toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" });
 const tone = (s: PartnerStatus) => ({ ok: "ok", warn: "warn", danger: "danger", info: "info" } as const)[STATUS[s].tone];
-
-/** A text field in the design-system style: label, Taglish or example help, and "needed to send" for required ones. */
-function Text({ name, label, value, help, need, type = "text", max, auto, placeholder }: { name: string; label: string; value?: string | null; help?: string; need?: boolean; type?: string; max: number; auto?: string; placeholder?: string }) {
-  return (
-    <div className="field">
-      <label htmlFor={name} className="label">{label}{need && <span className="ml-1 text-xs font-normal text-muted">(needed to send)</span>}</label>
-      <input id={name} name={name} type={type} defaultValue={value ?? ""} maxLength={max} autoComplete={auto} placeholder={placeholder} className="input" aria-describedby={help ? `${name}-help` : undefined} />
-      {help && <p id={`${name}-help`} className="field-help">{help}</p>}
-    </div>
-  );
-}
-
-function Select({ name, label, value, options, need, help }: { name: string; label: string; value?: string | null; options: [string, string][]; need?: boolean; help?: string }) {
-  return (
-    <div className="field">
-      <label htmlFor={name} className="label">{label}{need && <span className="ml-1 text-xs font-normal text-muted">(needed to send)</span>}</label>
-      <select id={name} name={name} defaultValue={value ?? ""} className="input" aria-describedby={help ? `${name}-help` : undefined}>
-        <option value="">Choose…</option>
-        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-      </select>
-      {help && <p id={`${name}-help`} className="field-help">{help}</p>}
-    </div>
-  );
-}
 
 function DetailInput({ f, value }: { f: DetailField; value?: string }) {
   const name = `d_${f.name}`;
@@ -277,7 +254,7 @@ export default async function ApplicationPage({ params, searchParams }: { params
             </form>
           ))}
           {!editable && a.status === "submitted" && <Notice tone="info">The national review team is checking your application. We will tell you in your Inbox and by email. You can&apos;t change it while it is being checked.</Notice>}
-          {!editable && a.status === "approved" && <Notice tone="ok">Your business is an accredited FLAME PH {cat.label.toLowerCase()}. {a.category === "supplier" ? "The Best Offer form opens in the next stage; we will tell you." : "We will tell you when your next form opens."}</Notice>}
+          {!editable && a.status === "approved" && <Notice tone="ok">Your business is an accredited FLAME PH {cat.label.toLowerCase()}. {a.category === "supplier" ? <>You can now send your Best Offer. <Link href="/partner-us/offers" className="font-bold underline">Go to My Best Offers</Link></> : "We will tell you when your next form opens."}</Notice>}
           {a.status === "withdrawn" && (
             <form action={reopenApplication}><input type="hidden" name="id" value={a.id} /><SubmitButton className="btn btn-primary min-h-11 w-full sm:w-auto" pendingText="Opening…">Open it again as a draft</SubmitButton></form>
           )}

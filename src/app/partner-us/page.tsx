@@ -21,7 +21,7 @@ const HOW = [
 ];
 
 const FAQ = [
-  { q: "What is an accredited partner?", a: "A supplier, service provider or toll manufacturer whose business papers were checked by the FLAME PH national team. Accredited suppliers can then send their Best Offer for members (the next step of this program), and members see that you were checked." },
+  { q: "What is an accredited partner?", a: "A supplier, service provider or toll manufacturer whose business papers were checked by the FLAME PH national team. Accredited suppliers can then send their Best Offer (prices for members, minimum orders, delivery areas) at My Best Offers, and the national team compares the offers side by side." },
   { q: "Is this the same as Partner With Us?", a: "No. Partner With Us (/partners) is for LGUs, schools, companies, NGOs and foundations that want to work with FLAME PH on programs. This page is for businesses that want to sell products or services to members." },
   { q: "How much does it cost?", a: "Applying is free. FLAME PH never asks for money to accredit you, and flameph.org never collects or holds money." },
   { q: "Who sees my documents and TIN?", a: "Only the national review team (founder, admins and national reviewers). Documents are encrypted, and every time one is opened it is logged. Chapter coordinators see only your business name, category, town and status. Nothing is shown publicly." },
@@ -47,6 +47,7 @@ export default async function PartnerUsPage() {
         intro="Offer your products and services to Filipino MSMEs through FLAME PH. Apply once, get checked by the national team, then send your best offer to members.">
         <a href="#apply" className="btn btn-flame">Apply now ↓</a>
         {user && mine.length > 0 && <Link href="/partner-us/apply" className="btn btn-outline">My applications</Link>}
+        {user && mine.some((m) => m.category === "supplier" && m.status === "approved") && <Link href="/partner-us/offers" className="btn btn-outline">My Best Offers</Link>}
       </PageHero>
 
       <Section id="apply" title="Choose what kind of partner you are" fil="Piliin ang uri ng partner" className="scroll-mt-24">
@@ -83,6 +84,7 @@ export default async function PartnerUsPage() {
                     <>
                       <p className="mb-2 text-sm">Your application: <strong>{STATUS[app.status].label}</strong></p>
                       <Link href={`/partner-us/apply/${app.id}`} className="btn btn-primary min-h-11 w-full">{app.status === "draft" || app.status === "needs_changes" ? "Continue" : "Open"}</Link>
+                      {k === "supplier" && app.status === "approved" && <Link href="/partner-us/offers" className="btn btn-flame mt-2 min-h-11 w-full">Send a Best Offer</Link>}
                     </>
                   ) : (
                     <form action={startApplication}>
@@ -111,7 +113,8 @@ export default async function PartnerUsPage() {
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <div className="card p-5">
             <h3 className="font-extrabold text-primary">After you are accredited</h3>
-            <p className="mt-2 text-[15px] leading-6 text-muted">Suppliers go first: you will be able to send your Best Offer (prices, minimum orders, delivery areas) for the national team to compare. Service providers and toll manufacturers follow. We will tell you when your form opens.</p>
+            <p className="mt-2 text-[15px] leading-6 text-muted">Suppliers go first: send your Best Offer (prices, minimum orders, delivery areas) for the national team to compare. Service providers and toll manufacturers follow. We will tell you when your form opens.</p>
+            <p className="mt-2 text-sm text-muted">Commission figures in an offer are proposals only. No money passes through flameph.org; MarketplacePH Online Store handles any payment.</p>
           </div>
           <div className="card p-5">
             <h3 className="font-extrabold text-primary">Your privacy</h3>

@@ -11,7 +11,8 @@ const deny = (status: number) => new NextResponse(status === 404 ? "Not found" :
 /**
  * Opens one vetting document for a reviewer (admins and founders only), never for other members and never for the
  * reviewer's own business. The file is decrypted on the server, sent with no-store, and every view is logged.
- * Partner documents (purpose 'partner', 0031) can also be opened by national reviewers.
+ * Partner documents (purpose 'partner', 0031) and supplier offer files (purpose 'offer', 0032) can also be opened by
+ * national reviewers.
  */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,7 +27,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!admin || !k) return deny(503);
   const { data: doc } = await admin.from("vetting_documents").select("*").eq("id", id).maybeSingle();
   if (!doc || doc.deleted_at) return deny(404);
-  if (!moderator && doc.purpose !== "partner") return deny(403);   // national reviewers open partner documents only
+  if (!moderator && doc.purpose !== "partner" && doc.purpose !== "offer") return deny(403);   // national reviewers open partner documents and offer files only
   if (doc.user_id === user.id) return deny(403);   // reviewers never review their own business
   if (doc.key_id !== k.id) return new NextResponse("This file was encrypted with an older key. Ask the member to upload it again.", { status: 409, headers: { "Cache-Control": "no-store" } });
   const { data: blob, error } = await admin.storage.from(VETTING_BUCKET).download(doc.file_path);

@@ -161,6 +161,7 @@
         { "label": "Partners", "href": "/partners" },
         { "label": "Become an Accredited Partner (suppliers, services, toll manufacturing)", "href": "/partner-us" },
         { "label": "My partner applications", "href": "/partner-us/apply" },
+        { "label": "My Best Offers (accredited suppliers)", "href": "/partner-us/offers" },
         { "label": "Contact us", "href": "/contact" }
       ]
     },

@@ -9,7 +9,7 @@ export const RETENTION: RetentionRule[] = [
   { key: "ai_chats", what: "Ka-FLAME AI chats and feedback", keep: "1 year", days: 365, how: "You can delete them any time in My account → FLAME AI." },
   { key: "moderation_cases", what: "Moderation cases (reports, actions, appeals)", keep: "3 years after the case closes", days: 1095, how: "Open cases are kept until they close." },
   { key: "vetting_documents", what: "Business vetting documents", keep: "until vetting is decided, plus 1 year", days: 365, how: "Deleted at once if you turn off switch 4." },
-  { key: "partner_documents", what: "Partner application documents", keep: "while you are an accredited partner; 1 year after an application is not approved or withdrawn", days: 365, how: "Deleted by the same daily job as vetting documents." },
+  { key: "partner_documents", what: "Partner application documents and Best Offer files", keep: "while you are an accredited partner; 1 year after an application is not approved, or an offer is not chosen, or either is withdrawn", days: 365, how: "Deleted by the same daily job as vetting documents." },
   { key: "records_unconfirmed", what: "Transaction records never confirmed", keep: "180 days", days: 180, how: "" },
   { key: "records_closed", what: "Cancelled or voided transaction records", keep: "1 year", days: 365, how: "Confirmed records stay while both accounts are open, because they make up each member's badge." },
   { key: "messages", what: "Private messages", keep: "2 years after the last message in the conversation", days: 730, how: "Messages under an open moderation report are kept until the case closes." },
