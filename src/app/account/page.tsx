@@ -128,6 +128,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             {biz ? (
               <>
                 <p className="mt-1">{biz.name} · {biz.published ? <Link href="https://pages.flameph.org/directory" className="text-mph underline">View Pages directory</Link> : "Not published"}{biz.verification_status === "pending" && " · Verification pending"}</p>
+                {!biz.published && biz.lifecycle_status === "draft" && <p className="mt-2 rounded-lg bg-warn-soft p-3 text-sm font-semibold text-warn">Your listing is saved but not sent yet. Open it and press <b>Submit for review</b> so FLAME PH can approve it and show it in the business directory.</p>}
+                {!biz.published && biz.lifecycle_status === "submitted" && <p className="mt-2 text-sm text-muted">Sent for review. It appears in the business directory once FLAME PH approves it.</p>}
                 <div className="mt-3"><ListingStrength biz={listing} supportsExtras={hasExtras(listing)} max={2} compact /></div>
               </>
             ) : <p className="mt-1 text-muted">You haven&apos;t listed a business yet.</p>}

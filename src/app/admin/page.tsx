@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { adminContext } from "@/lib/admin/guard";
 import { getSession } from "@/lib/auth";
 import { Notice } from "@/components/ui";
+import { WAITING_FILTER } from "@/lib/business-review-queue";
 
 export default async function AdminHome({ searchParams }: { searchParams: Promise<{ denied?: string; error?: string }> }) {
   const sp = await searchParams;
@@ -13,7 +14,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const { data: stats } = await db.rpc("public_stats");
   const [newSubs, pending, thumbsDown, propertyInquiries, referralPartners, careerApplications] = await Promise.all([
     db.from("submissions").select("id", { count: "exact", head: true }).eq("status", "new"),
-    db.from("businesses").select("id", { count: "exact", head: true }).eq("verification_status", "pending"),
+    db.from("businesses").select("id", { count: "exact", head: true }).or(WAITING_FILTER),
     db.from("ai_feedback").select("id", { count: "exact", head: true }).eq("helpful", false).eq("reviewed", false),
     db.from("property_inquiries").select("id", { count: "exact", head: true }),
     db.from("corporate_h_referral_partners").select("id", { count: "exact", head: true }),
@@ -28,7 +29,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       {isAdmin && (
         <div className="grid gap-3 sm:grid-cols-3">
           <Link href="/admin/submissions?status=new" className="card p-4 hover:border-primary"><p className="text-sm text-muted">New form submissions</p><p className="text-3xl font-extrabold">{newSubs.count ?? 0}</p></Link>
-          <Link href="/admin/directory" className="card p-4 hover:border-primary"><p className="text-sm text-muted">Businesses awaiting verification</p><p className="text-3xl font-extrabold">{pending.count ?? 0}</p></Link>
+          <Link href="/admin/directory" className="card p-4 hover:border-primary"><p className="text-sm text-muted">Businesses waiting for review</p><p className="text-3xl font-extrabold">{pending.count ?? 0}</p></Link>
           <Link href="/admin/ai" className="card p-4 hover:border-primary"><p className="text-sm text-muted">Unreviewed 👎 AI answers</p><p className="text-3xl font-extrabold">{thumbsDown.count ?? 0}</p></Link>
         </div>
       )}
