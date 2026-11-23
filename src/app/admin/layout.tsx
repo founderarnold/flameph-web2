@@ -9,7 +9,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { roles } = await requireStaff(ALL_ROLES);
   const isAdmin = roles.includes("super_admin") || roles.includes("admin");
   const partnerDesk = isAdmin || roles.includes("national_reviewer") || roles.includes("chapter_coordinator");
-  const partnerNational = isAdmin || roles.includes("national_reviewer");   // supplier offers (0032): national team only
+  const partnerNational = isAdmin || roles.includes("national_reviewer");   // supplier offers (0032) and territories (0033): national team only
   const siteStaff = roles.some((r) => ["super_admin", "admin", "editor", "chapter_leader"].includes(r));
   const isModerator = isAdmin || roles.includes("chapter_leader");
   const tables = ADMIN_TABLES.filter((t) => t.roles.some((r) => roles.includes(r)));
@@ -21,6 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Partners</li>
         <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners">Partner applications</Link></li>
         {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/offers">Supplier offers</Link></li>}
+        {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/territories">Territories</Link></li>}
       </>}
       {isModerator && <>
         <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Moderation</li>

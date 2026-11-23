@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { adminContext } from "@/lib/admin/guard";
 import { Notice } from "@/components/ui";
+import { PartnerTabs } from "@/components/admin/PartnerTabs";
 import { SubmitButton } from "@/components/SubmitButton";
 import { PartnerMoneyNotice } from "@/components/PartnerMoneyNotice";
 import { ROLE_LABELS } from "@/lib/moderation";
@@ -77,10 +78,7 @@ export default async function OfferReview({ params, searchParams }: { params: Pr
 
   return (
     <div className="space-y-4">
-      <nav aria-label="Partner sections" className="flex gap-2 overflow-x-auto">
-        <Link href="/admin/partners" className="chip shrink-0">Applications</Link>
-        <Link href="/admin/partners/offers" aria-current="page" className="chip shrink-0">Supplier offers</Link>
-      </nav>
+      <PartnerTabs current="offers" />
       <header>
         <p className="text-xs font-bold uppercase text-muted">{o.product_group ? PRODUCT_GROUPS[o.product_group] : "No product group"}{o.revision > 0 ? ` · version ${o.revision}` : ""}</p>
         <h1 className="break-words text-2xl font-extrabold text-primary">{o.title || "(no name yet)"}</h1>

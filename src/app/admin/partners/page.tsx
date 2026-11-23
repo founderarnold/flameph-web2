@@ -2,6 +2,7 @@ import Link from "next/link";
 import { adminContext } from "@/lib/admin/guard";
 import { createClient } from "@/lib/supabase/server";
 import { Notice } from "@/components/ui";
+import { PartnerTabs } from "@/components/admin/PartnerTabs";
 import { SubmitButton } from "@/components/SubmitButton";
 import { SyncedTableScroll } from "@/components/admin/SyncedTableScroll";
 import { PARTNER_CATEGORIES, STATUS, type PartnerCategory, type PartnerStatus } from "@/lib/partner";
@@ -62,10 +63,7 @@ export default async function PartnerAdmin({ searchParams }: { searchParams: Pro
       {flash && <Notice tone={sp.done ? "ok" : "danger"}>{flash}</Notice>}
 
       {national && <>
-        <nav aria-label="Partner sections" className="flex gap-2 overflow-x-auto">
-          <Link href="/admin/partners" aria-current="page" className="chip shrink-0">Applications</Link>
-          <Link href="/admin/partners/offers" className="chip shrink-0">Supplier offers</Link>
-        </nav>
+        <PartnerTabs current="applications" />
         <nav aria-label="Filter by status" className="flex gap-2 overflow-x-auto pb-1">
           {FILTERS.map(([k, l]) => (
             <Link key={k} href={`/admin/partners?status=${k}`} aria-current={k === status ? "page" : undefined} className="chip shrink-0">

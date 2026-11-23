@@ -25,6 +25,7 @@ const FAQ = [
   { q: "Is this the same as Partner With Us?", a: "No. Partner With Us (/partners) is for LGUs, schools, companies, NGOs and foundations that want to work with FLAME PH on programs. This page is for businesses that want to sell products or services to members." },
   { q: "How much does it cost?", a: "Applying is free. FLAME PH never asks for money to accredit you, and flameph.org never collects or holds money." },
   { q: "Who sees my documents and TIN?", a: "Only the national review team (founder, admins and national reviewers). Documents are encrypted, and every time one is opened it is logged. Chapter coordinators see only your business name, category, town and status. Nothing is shown publicly." },
+  { q: "How do territories work?", a: "After accreditation (usually after your Best Offer is chosen), the national team may appoint you to an area: the whole country, regions, provinces, or cities and towns, for one product or service category, exclusive or not, with set selling channels, dates and targets. Only the national team appoints. You can nominate a sub-partner inside your own area at My territories, but you cannot appoint one yourself." },
   { q: "Can a chapter approve me?", a: "No. Chapters can recommend and, later, test samples, but only the FLAME PH national team approves accreditation." },
   { q: "What if my application needs changes or is not approved?", a: "You will see the reasons in your application, in your Inbox and by email. Fix what is listed and send it again. Your saved answers and documents stay." },
   { q: "Kailangan ko bang tapusin agad?", a: "Hindi. Naka-save ang bawat screen. Bumalik lang sa page na ito at i-tap ang Continue." },
@@ -48,6 +49,7 @@ export default async function PartnerUsPage() {
         <a href="#apply" className="btn btn-flame">Apply now ↓</a>
         {user && mine.length > 0 && <Link href="/partner-us/apply" className="btn btn-outline">My applications</Link>}
         {user && mine.some((m) => m.category === "supplier" && m.status === "approved") && <Link href="/partner-us/offers" className="btn btn-outline">My Best Offers</Link>}
+        {user && mine.some((m) => m.status === "approved") && <Link href="/partner-us/territories" className="btn btn-outline">My territories</Link>}
       </PageHero>
 
       <Section id="apply" title="Choose what kind of partner you are" fil="Piliin ang uri ng partner" className="scroll-mt-24">
