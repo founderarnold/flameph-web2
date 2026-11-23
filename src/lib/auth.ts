@@ -28,8 +28,8 @@ export async function requireUser(next = "/account") {
 }
 
 export const isAdminRole = (roles: Role[]) => roles.some((r) => r === "super_admin" || r === "admin");
-/** Shows the Admin link. Chapter testers and finance have nothing in Admin until Steps 5 and 4. */
-export const isStaffRole = (roles: Role[]) => roles.some((r) => r !== "chapter_tester" && r !== "finance");
+/** Shows the Admin link. Chapter testers have nothing in Admin until Step 5; finance opens Admin > Partners > Commissions (Step 4). */
+export const isStaffRole = (roles: Role[]) => roles.some((r) => r !== "chapter_tester");
 
 export async function requireStaff(allowed: Role[] = ["super_admin", "admin", "editor", "chapter_leader"]) {
   const s = await requireUser("/admin");

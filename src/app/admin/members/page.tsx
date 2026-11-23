@@ -10,7 +10,7 @@ const PARTNER_ROLE_OPTIONS: [string, string][] = [
   ["national_reviewer", "National reviewer (reviews partner applications)"],
   ["chapter_coordinator", "Chapter coordinator (recommends partners in a chapter)"],
   ["chapter_tester", "Chapter tester (partner samples, Step 5)"],
-  ["finance", "Finance (partner figures, Step 4)"],
+  ["finance", "Finance (commission ledger and payouts)"],
 ];
 const PARTNER_ROLE_KEYS = PARTNER_ROLE_OPTIONS.map(([k]) => k);
 
