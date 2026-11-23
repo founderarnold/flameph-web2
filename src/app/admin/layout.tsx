@@ -24,6 +24,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/offers">Supplier offers</Link></li>}
         {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/territories">Territories</Link></li>}
         {commissionDesk && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/commissions">Commissions</Link></li>}
+        {partnerDesk && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/samples">Sample tests</Link></li>}
+        {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/complaints">Complaints</Link></li>}
+        {commissionDesk && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/penalties">Penalties</Link></li>}
+        {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/sanctions">Sanctions</Link></li>}
       </>}
       {isModerator && <>
         <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Moderation</li>

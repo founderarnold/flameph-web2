@@ -9,7 +9,7 @@ type Chapter = { id: string; name: string };
 const PARTNER_ROLE_OPTIONS: [string, string][] = [
   ["national_reviewer", "National reviewer (reviews partner applications)"],
   ["chapter_coordinator", "Chapter coordinator (recommends partners in a chapter)"],
-  ["chapter_tester", "Chapter tester (partner samples, Step 5)"],
+  ["chapter_tester", "Chapter tester (partner sample tests)"],
   ["finance", "Finance (commission ledger and payouts)"],
 ];
 const PARTNER_ROLE_KEYS = PARTNER_ROLE_OPTIONS.map(([k]) => k);

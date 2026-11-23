@@ -30,7 +30,7 @@ export default async function PartnerAdmin({ searchParams }: { searchParams: Pro
     return (
       <div className="space-y-3">
         <h1 className="text-2xl font-extrabold text-primary">Partners</h1>
-        <Notice tone="info">Your partner role has nothing to do here yet. Chapter testers get sample forms in Step 5. Finance works in Commissions.</Notice>
+        <Notice tone="info">Your partner role has nothing to do here. Chapter testers fill in sample tests on <Link href="/partner-us/samples" className="underline">Sample tests</Link>. Finance works in Commissions.</Notice>
       </div>
     );
   }
