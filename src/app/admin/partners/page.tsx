@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { adminContext } from "@/lib/admin/guard";
 import { createClient } from "@/lib/supabase/server";
 import { Notice } from "@/components/ui";
@@ -23,11 +24,13 @@ export default async function PartnerAdmin({ searchParams }: { searchParams: Pro
   const coordinator = ctx.roles.includes("chapter_coordinator");
   const flash = sp.done ? MSG[sp.done] : sp.error ? MSG[sp.error] ?? "That didn't go through." : null;
 
+  // Finance works only on commission figures (Step 4): it never sees applications or documents.
+  if (!national && !coordinator && ctx.roles.includes("finance")) redirect("/admin/partners/commissions");
   if (!national && !coordinator) {
     return (
       <div className="space-y-3">
         <h1 className="text-2xl font-extrabold text-primary">Partners</h1>
-        <Notice tone="info">Your partner role has nothing to do here yet. Chapter testers get sample forms in Step 5, and finance gets the figures in Step 4.</Notice>
+        <Notice tone="info">Your partner role has nothing to do here yet. Chapter testers get sample forms in Step 5. Finance works in Commissions.</Notice>
       </div>
     );
   }

@@ -10,6 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const isAdmin = roles.includes("super_admin") || roles.includes("admin");
   const partnerDesk = isAdmin || roles.includes("national_reviewer") || roles.includes("chapter_coordinator");
   const partnerNational = isAdmin || roles.includes("national_reviewer");   // supplier offers (0032) and territories (0033): national team only
+  const commissionDesk = partnerNational || roles.includes("finance");        // commissions (0034): national team and finance
   const siteStaff = roles.some((r) => ["super_admin", "admin", "editor", "chapter_leader"].includes(r));
   const isModerator = isAdmin || roles.includes("chapter_leader");
   const tables = ADMIN_TABLES.filter((t) => t.roles.some((r) => roles.includes(r)));
@@ -17,11 +18,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <ul className="space-y-0.5 text-[15px]">
       {siteStaff && <li><Link className="block rounded-lg px-2 py-2 font-bold hover:bg-bg-soft" href="/admin">Dashboard</Link></li>}
       {siteStaff && <li><Link className="block rounded-lg px-2 py-2 hover:bg-bg-soft" href="/admin/design-system">Design system</Link></li>}
-      {partnerDesk && <>
+      {(partnerDesk || commissionDesk) && <>
         <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Partners</li>
-        <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners">Partner applications</Link></li>
+        {partnerDesk && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners">Partner applications</Link></li>}
         {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/offers">Supplier offers</Link></li>}
         {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/territories">Territories</Link></li>}
+        {commissionDesk && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/commissions">Commissions</Link></li>}
       </>}
       {isModerator && <>
         <li className="px-2 pt-3 text-xs font-bold uppercase text-muted">Moderation</li>
