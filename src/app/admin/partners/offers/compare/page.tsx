@@ -24,11 +24,21 @@ export default async function CompareOffers({ searchParams }: { searchParams: Pr
   const ids = [...new Set((Array.isArray(sp.id) ? sp.id : sp.id ? [sp.id] : []).filter((v) => /^[0-9a-f-]{36}$/i.test(v)))].slice(0, 6);
   if (ids.length < 2) redirect("/admin/partners/offers?error=compare");
 
-  const [{ data: offerRows }, { data: itemRows }, { data: scoreRows }] = await Promise.all([
+  const [{ data: offerRows }, { data: itemRows }, { data: scoreRows }, { data: sampleRows }] = await Promise.all([
     ctx.db.from("supplier_offers").select(`user_id, ${OFFER_COLS}`).in("id", ids),
     ctx.db.from("supplier_offer_items").select(`offer_id, ${ITEM_COLS}`).in("offer_id", ids).order("position"),
     ctx.db.from("supplier_offer_scores").select("offer_id, reviewer_id, revision, total, compliance_pass").in("offer_id", ids),
+    ctx.db.from("partner_sample_tests").select("offer_id, total, safety_concern").in("offer_id", ids).in("status", ["submitted", "reviewed"]),
   ]);
+  // Chapter sample tests (Step 5) sent for these offers: average of the 5-to-25 totals, and any safety flags.
+  const tests = (sampleRows ?? []) as { offer_id: string; total: number | null; safety_concern: boolean }[];
+  const ratingOf = (id: string) => {
+    const t = tests.filter((x) => x.offer_id === id && x.total !== null);
+    if (t.length === 0) return <span className="text-muted">No tests sent yet</span>;
+    const avg = Math.round((t.reduce((n, x) => n + Number(x.total), 0) / t.length) * 10) / 10;
+    const flags = t.filter((x) => x.safety_concern).length;
+    return <>{avg} of 25 <span className="text-xs text-muted">({t.length} test{t.length > 1 ? "s" : ""})</span>{flags > 0 && <span className="block text-xs font-bold text-danger">{flags} safety concern{flags > 1 ? "s" : ""}</span>}</>;
+  };
   const offers = ((offerRows ?? []) as unknown as (OfferRow & { user_id: string })[]).sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
   if (offers.length < 2) redirect("/admin/partners/offers?error=compare");
   const items = (itemRows ?? []) as unknown as (ItemRow & { offer_id: string })[];
@@ -61,7 +71,7 @@ export default async function CompareOffers({ searchParams }: { searchParams: Pr
     { k: "Areas served", v: (o) => <span className="line-clamp-3">{o.serviceable_areas ?? "—"}</span> },
     { k: "Warranty and returns", v: (o) => <span className="line-clamp-3">{[o.warranty, o.returns_policy].filter(Boolean).join(" · ") || "—"}</span> },
     { k: "Samples", v: (o) => (o.sample_availability ? SAMPLES[o.sample_availability] : "—") },
-    { k: "Sample test ratings", v: () => <span className="text-muted">None yet (chapter sample tests come in Step 5)</span> },
+    { k: "Sample test ratings", v: (o) => ratingOf(o.id) },
     { k: "Certifications", v: (o) => o.certifications ?? "—" },
     { k: "Compliance gate", v: (o) => { const r = result.get(o.id)!; return r.compliance === "pass" ? <span className="font-bold text-ok">Passed</span> : r.compliance === "fail" ? <span className="font-bold text-danger">Failed</span> : <span className="text-muted">Not checked</span>; } },
     { k: "Proposed commission", v: (o) => (o.commission_pct !== null ? `${Number(o.commission_pct)}%` : "—") },

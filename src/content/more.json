@@ -164,6 +164,8 @@
         { "label": "My Best Offers (accredited suppliers)", "href": "/partner-us/offers" },
         { "label": "My territories (accredited partners)", "href": "/partner-us/territories" },
         { "label": "My commissions (accredited partners)", "href": "/partner-us/commissions" },
+        { "label": "Complain about a partner's order or service", "href": "/partner-us/complaints" },
+        { "label": "Sample tests (chapter testers)", "href": "/partner-us/samples" },
         { "label": "Contact us", "href": "/contact" }
       ]
     },
@@ -193,6 +195,7 @@
   ],
   "notListed": {
     "/partner-us/apply/[id]": "One member's own partner application; opened from My partner applications (/partner-us/apply).",
+    "/partner-us/complaints/new": "Starts a complaint; opened from the Complaints page (/partner-us/complaints), which is listed.",
     "/legal/chapter-builder-agreement": "Opened from the Chapter Builder and Meetup Venue forms only, next to the box members tick to accept it (owner, 22 Nov 2026).",
     "/get-involved/chapter-leader": "Forwards to /get-involved/chapter-builder, which is listed (one Chapter Builder page, owner 22 Nov 2026).",
     "/requests/new": "Opens from Requests and quotes, and from Send a request on a member's page.",
