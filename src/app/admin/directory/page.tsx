@@ -2,13 +2,16 @@ import Link from "next/link";
 import { adminContext } from "@/lib/admin/guard";
 import { moderateBusiness, reviewLegacyBusiness, verifyBusiness } from "../actions";
 import { DOC_TYPES, type DocType } from "@/lib/vetting";
+import { WAITING_FILTER, waitingLabel } from "@/lib/business-review-queue";
 
 export default async function DirectoryAdmin({ searchParams }: { searchParams: Promise<{ all?: string }> }) {
   const sp = await searchParams;
   const { db, roles } = await adminContext(["super_admin", "admin"]);
   const isSuper = roles.includes("super_admin");
   let q = db.from("businesses").select("*").order("updated_at", { ascending: false }).limit(200);
-  if (!sp.all) q = q.eq("verification_status", "pending");
+  // Waiting = documents to check, listings submitted for approval, and new listings the owner saved but has not
+  // submitted yet (so a stuck listing never goes unseen). Spam held as "needs correction" stays under "Show all".
+  if (!sp.all) q = q.or(WAITING_FILTER);
   const { data: rows } = await q;
   const ownerIds = [...new Set((rows ?? []).map((business) => business.owner_id))];
   const [{ data: owners }, { data: reports }, { data: assessments }, { data: moderationEvents }] = await Promise.all([
@@ -57,12 +60,25 @@ export default async function DirectoryAdmin({ searchParams }: { searchParams: P
       <p className="text-muted">Review verification documents, user reports, visibility, and member safety actions. Suspended members are automatically removed from the public directory.</p>
       {totals.total > 0 && <section className="card p-4" aria-labelledby="legacy-summary"><h2 id="legacy-summary" className="font-bold">Legacy listing safety review</h2><p className="mt-1 text-sm text-muted">No records were deleted. Every original publication state remains recorded for rollback and manual review.</p><dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4"><div><dt>Total</dt><dd className="font-bold">{totals.total}</dd></div><div><dt>Presumed legitimate</dt><dd className="font-bold">{totals.legitimate}</dd></div><div><dt>Incomplete</dt><dd className="font-bold">{totals.incomplete}</dd></div><div><dt>High suspicion</dt><dd className="font-bold">{totals.suspicious}</dd></div><div><dt>Uncertain</dt><dd className="font-bold">{totals.uncertain}</dd></div><div><dt>Duplicates</dt><dd className="font-bold">{totals.duplicates}</dd></div><div><dt>Manual review</dt><dd className="font-bold">{totals.manual}</dd></div></dl></section>}
       {sp.all && <p className="rounded-lg bg-primary-soft p-3 text-sm text-primary"><b>Moderation:</b> Hide is reversible. Ban suspends the member and hides all their listings. Permanent delete is available only to super admins.</p>}
-      <p><Link className="text-mph underline" href={sp.all ? "/admin/directory" : "/admin/directory?all=1"}>{sp.all ? "Show pending only" : "Show all listings"}</Link></p>
+      <p><Link className="text-mph underline" href={sp.all ? "/admin/directory" : "/admin/directory?all=1"}>{sp.all ? "Show waiting only" : "Show all listings"}</Link></p>
       {withLinks.length === 0 ? <p className="text-muted">No listings to review.</p> : withLinks.map((b) => (
         <div key={b.id} className="card p-4">
-          <p className="font-bold">{b.name} <span className="text-sm font-normal text-muted">· {b.sector} · {[b.city, b.province].filter(Boolean).join(", ")} · {b.published ? "published" : "hidden"} · {b.verification_status}{b.verified && " ✓"}</span></p>
+          <p className="font-bold">{b.name} <span className="text-sm font-normal text-muted">· {b.sector} · {[b.city, b.province].filter(Boolean).join(", ")} · {b.published ? "published" : "hidden"} · {String(b.lifecycle_status ?? "").replace(/_/g, " ")} · documents {b.verification_status}{b.verified && " ✓"}</span></p>
           <p className="mt-1 text-sm">Owner: <b>{b.owner?.full_name ?? "Unknown member"}</b> · {b.owner?.member_code ?? b.owner_id} · <span className={b.owner?.status === "suspended" ? "font-bold text-flame-strong" : "text-ok"}>{b.owner?.status ?? "unknown"}</span></p>
           {b.published && <Link href="https://pages.flameph.org/directory" className="text-sm text-mph underline">View Pages directory</Link>}
+          {waitingLabel(b) && (
+            <div className="mt-3 rounded-lg border border-ok bg-ok-soft p-3">
+              <p className="text-sm font-bold">{waitingLabel(b)}</p>
+              <p className="mt-1 text-sm text-muted">Approve and publish puts this business on the public business directory (pages.flameph.org/directory) and its profile page within about a minute.</p>
+              {b.owner?.status === "active" ? (
+                <form action={moderateBusiness} className="mt-2 flex flex-wrap gap-2">
+                  <input type="hidden" name="id" value={b.id} />
+                  <button name="moderation_action" value="approve_legitimate" className="btn btn-primary">Approve and publish</button>
+                  <button name="moderation_action" value="request_correction" className="btn btn-outline">Ask owner to correct</button>
+                </form>
+              ) : <p className="mt-2 text-sm font-semibold text-flame-strong">The owner&apos;s account is not active, so this listing can&apos;t be published.</p>}
+            </div>
+          )}
           {b.reports.length > 0 && <details className="mt-3 rounded-lg border border-flame bg-flame-soft p-3"><summary className="cursor-pointer font-bold text-flame-strong">⚑ {b.reports.length} member report{b.reports.length === 1 ? "" : "s"}</summary><ul className="mt-2 space-y-2 text-sm">{b.reports.map((report: { id: string; data: Record<string, string>; status: string; created_at: string }) => <li key={report.id} className="rounded bg-card p-2"><b>{report.data.reason?.replace(/_/g, " ")}</b> · {new Date(report.created_at).toLocaleString("en-PH", { timeZone: "Asia/Manila" })}<p className="whitespace-pre-line">{report.data.details}</p><span className="text-xs uppercase text-muted">{report.status}</span></li>)}</ul></details>}
           {b.assessment && <details className="mt-3 rounded-lg border border-line p-3"><summary className="cursor-pointer font-bold">Legacy assessment: {b.assessment.classification.replace(/_/g, " ")} · {b.assessment.review_state}</summary><p className="mt-2 text-sm text-muted">Signals: {(b.assessment.reason_codes as string[]).join(", ") || "none"} · Originally {b.assessment.was_published ? "published" : "private"}</p><form action={reviewLegacyBusiness} className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]"><input type="hidden" name="id" value={b.id} /><input name="note" className="input" placeholder="Review note" /><button name="legacy_decision" value="restore_public" className="btn btn-outline">Restore public</button><button name="legacy_decision" value="clear_review" className="btn btn-outline">Clear review</button><button name="legacy_decision" value="confirm_quarantine" className="btn btn-flame">Confirm quarantine</button></form></details>}
           {b.moderationHistory.length > 0 && <details className="mt-3 rounded-lg border border-line p-3"><summary className="cursor-pointer font-bold">Automatic moderation history ({b.moderationHistory.length})</summary><ul className="mt-2 space-y-2 text-sm">{b.moderationHistory.map((event: { id: number; risk_level: string; reason_categories: string[]; suspicious_fields: string[]; assessment_version: string; created_at: string }) => <li key={event.id}><b>{event.risk_level}</b> · {event.assessment_version} · {new Date(event.created_at).toLocaleString("en-PH", { timeZone: "Asia/Manila" })}<br/><span className="text-muted">{[...event.reason_categories, ...event.suspicious_fields].join(", ") || "No flags"}</span></li>)}</ul></details>}
@@ -71,7 +87,7 @@ export default async function DirectoryAdmin({ searchParams }: { searchParams: P
           <form action={verifyBusiness} className="mt-3 flex flex-wrap items-end gap-2">
             <input type="hidden" name="id" value={b.id} />
             <input name="note" placeholder="Note to record (e.g. DTI cert no. checked)" className="input flex-1" aria-label="Verification note" defaultValue={b.verification_note ?? ""} />
-            <button name="decision" value="approve" className="btn btn-primary">Approve</button>
+            <button name="decision" value="approve" className="btn btn-primary">Approve documents (Verified badge)</button>
             <button name="decision" value="reject" className="btn btn-outline">Reject</button>
             {b.published && <button name="decision" value="unpublish" className="btn btn-ghost">Unpublish</button>}
           </form>
