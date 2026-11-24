@@ -15,6 +15,8 @@ import {
 import {
   deleteDraftOffer, deleteItem, deleteOfferFile, reopenOffer, saveItem, saveOfferStep, submitOffer, uploadOfferFile, withdrawOffer,
 } from "../actions";
+import { SERVICE_COLS, type ServiceOfferRow } from "@/lib/service-offers";
+import { ServiceOffer } from "./ServiceOffer";
 
 export const metadata = { title: "Best Offer", robots: { index: false } };
 
@@ -57,12 +59,16 @@ export default async function OfferPage({ params, searchParams }: { params: Prom
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { supabase, user } = await requireUser(`/partner-us/offers/${id}`);
   const [{ data: row }, { data: itemRows }, { data: docRows }, { data: histRows }] = await Promise.all([
-    supabase.from("supplier_offers").select(OFFER_COLS).eq("id", id).eq("user_id", user.id).maybeSingle(),
+    supabase.from("supplier_offers").select(`${OFFER_COLS}, ${SERVICE_COLS}`).eq("id", id).eq("user_id", user.id).maybeSingle(),
     supabase.from("supplier_offer_items").select(ITEM_COLS).eq("offer_id", id).order("position"),
     supabase.from("vetting_documents").select("id, doc_type, item_id, file_name, size_bytes, uploaded_at").eq("offer_id", id).eq("user_id", user.id).is("deleted_at", null).order("uploaded_at"),
     supabase.from("supplier_offer_history").select("id, action, reasons, note, created_at, revision").eq("offer_id", id).order("created_at", { ascending: false }).limit(40),
   ]);
   if (!row) notFound();
+  // Step 6: a service provider's offer has its own screens (packages, standards, past clients).
+  if ((row as unknown as ServiceOfferRow).kind === "service") {
+    return <ServiceOffer o={row as unknown as ServiceOfferRow} docs={(docRows ?? []) as Doc[]} history={(histRows ?? []) as History[]} sp={sp} />;
+  }
   const o = row as unknown as OfferRow;
   const items = (itemRows ?? []) as unknown as ItemRow[];
   const docs = (docRows ?? []) as Doc[];

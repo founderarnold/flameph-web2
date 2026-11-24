@@ -1,4 +1,4 @@
-// Form fields used by the partner application (Step 1) and the Supplier Best Offer form (Step 2), in the design-system
+// Form fields used by the partner application (Step 1) and the Best Offer forms (Steps 2 and 6), in the design-system
 // style: label, Taglish or example help, and "(needed to send)" for answers required before sending.
 
 const Need = () => <span className="ml-1 text-xs font-normal text-muted">(needed to send)</span>;

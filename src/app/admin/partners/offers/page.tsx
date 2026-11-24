@@ -3,47 +3,52 @@ import { adminContext } from "@/lib/admin/guard";
 import { Notice } from "@/components/ui";
 import { PartnerTabs } from "@/components/admin/PartnerTabs";
 import { offerResult, OFFER_STATUS, PASS_MARK, PRODUCT_GROUPS, type OfferStatus, type ProductGroup, type ScoreRow } from "@/lib/offers";
+import { SERVICE_CATEGORIES, type ServiceCategory } from "@/lib/service-offers";
 
-export const metadata = { title: "Supplier offers", robots: { index: false } };
+export const metadata = { title: "Partner offers", robots: { index: false } };
 
-type Row = { id: string; user_id: string; status: OfferStatus; revision: number; title: string | null; product_group: ProductGroup | null; valid_until: string | null; submitted_at: string | null; commission_pct: number | null };
+type Row = { id: string; user_id: string; status: OfferStatus; revision: number; title: string | null; product_group: ProductGroup | null; service_category: ServiceCategory | null; valid_until: string | null; submitted_at: string | null; commission_pct: number | null };
 const FILTERS: [string, string][] = [["submitted", "Waiting for review"], ["selected", "Best Offers"], ["needs_changes", "Sent back"], ["not_selected", "Not chosen"], ["draft", "Drafts"], ["all", "All"]];
 const day = (s: string | null) => (s ? new Date(s).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" }) : "—");
-const MSG: Record<string, string> = { compare: "Tick 2 to 6 offers to compare them side by side.", missing: "That offer was not found." };
+const MSG: Record<string, string> = { compare: "Tick 2 to 6 offers to compare them side by side.", missing: "That offer was not found.", mixed: "Compare supplier offers with supplier offers, and service offers with service offers." };
 
-/** Every supplier offer for the national team, filtered by status and product group, with boxes to compare 2 to 6. */
-export default async function SupplierOffersAdmin({ searchParams }: { searchParams: Promise<{ status?: string; group?: string; error?: string }> }) {
+/** Every supplier offer (or, with ?kind=service, every service provider offer, Step 6) for the national team, filtered
+ *  by status and product group or kind of service, with boxes to compare 2 to 6. */
+export default async function SupplierOffersAdmin({ searchParams }: { searchParams: Promise<{ status?: string; group?: string; kind?: string; error?: string }> }) {
   const sp = await searchParams;
   const ctx = await adminContext(["super_admin", "admin", "national_reviewer"]);
+  const service = sp.kind === "service";
+  const kind = service ? "service" : "supplier";
   const status = FILTERS.some(([k]) => k === sp.status) ? sp.status! : "submitted";
-  const group = sp.group && sp.group in PRODUCT_GROUPS ? (sp.group as ProductGroup) : null;
-  let q = ctx.db.from("supplier_offers").select("id, user_id, status, revision, title, product_group, valid_until, submitted_at, commission_pct").order("submitted_at", { ascending: false, nullsFirst: false }).limit(300);
+  const GROUPS: Record<string, string> = service ? SERVICE_CATEGORIES : PRODUCT_GROUPS;
+  const group = sp.group && sp.group in GROUPS ? sp.group : null;
+  let q = ctx.db.from("supplier_offers").select("id, user_id, status, revision, title, product_group, service_category, valid_until, submitted_at, commission_pct").eq("kind", kind).order("submitted_at", { ascending: false, nullsFirst: false }).limit(300);
   if (status !== "all") q = q.eq("status", status);
-  if (group) q = q.eq("product_group", group);
-  const [{ data, error }, { data: all }] = await Promise.all([q, ctx.db.from("supplier_offers").select("status").limit(5000)]);
+  if (group) q = q.eq(service ? "service_category" : "product_group", group);
+  const [{ data, error }, { data: all }] = await Promise.all([q, ctx.db.from("supplier_offers").select("status").eq("kind", kind).limit(5000)]);
   const rows = (data ?? []) as Row[];
   const counts = (all ?? []).reduce((m, r) => ({ ...m, [r.status]: (m[r.status] ?? 0) + 1 }), {} as Record<string, number>);
   const ids = rows.map((r) => r.id);
   const users = [...new Set(rows.map((r) => r.user_id))];
   const [{ data: profs }, { data: items }, { data: scores }] = ids.length ? await Promise.all([
     ctx.db.from("partner_profiles").select("user_id, legal_name").in("user_id", users),
-    ctx.db.from("supplier_offer_items").select("offer_id").in("offer_id", ids),
+    ctx.db.from(service ? "service_offer_packages" : "supplier_offer_items").select("offer_id").in("offer_id", ids),
     ctx.db.from("supplier_offer_scores").select("offer_id, reviewer_id, revision, total, compliance_pass").in("offer_id", ids),
   ]) : [{ data: [] }, { data: [] }, { data: [] }];
   const nameOf = new Map((profs ?? []).map((p) => [p.user_id, p.legal_name as string]));
   const itemCount = (items ?? []).reduce((m, r) => m.set(r.offer_id, (m.get(r.offer_id) ?? 0) + 1), new Map<string, number>());
   const scoresOf = (id: string) => ((scores ?? []) as (ScoreRow & { offer_id: string })[]).filter((s) => s.offer_id === id);
-  const link = (k: string, g: ProductGroup | null) => `/admin/partners/offers?status=${k}${g ? `&group=${g}` : ""}`;
+  const link = (k: string, g: string | null) => `/admin/partners/offers?status=${k}${g ? `&group=${g}` : ""}${service ? "&kind=service" : ""}`;
 
   return (
     <div className="space-y-4">
-      <PartnerTabs current="offers" />
+      <PartnerTabs current={service ? "service_offers" : "offers"} />
       <div>
-        <h1 className="text-2xl font-extrabold text-primary">Supplier Best Offers</h1>
-        <p className="text-sm text-muted">Offers from accredited suppliers. Only the national team sees them; chapter coordinators and testers never see prices or commissions. Pass mark {PASS_MARK}/100 plus the compliance gate.</p>
+        <h1 className="text-2xl font-extrabold text-primary">{service ? "Service provider Best Offers" : "Supplier Best Offers"}</h1>
+        <p className="text-sm text-muted">Offers from accredited {service ? "service providers: packages, rates, qualifications, service levels and past clients" : "suppliers"}. Only the national team sees them; chapter coordinators and testers never see {service ? "rates" : "prices"} or commissions. Pass mark {PASS_MARK}/100 plus the compliance gate.</p>
       </div>
       {sp.error && <Notice tone="danger">{MSG[sp.error] ?? "That didn't go through."}</Notice>}
-      {error && <Notice tone="warn">Supplier offers open after the database update (0032).</Notice>}
+      {error && <Notice tone="warn">{service ? "Service offers open after the database update (0036)." : "Supplier offers open after the database update (0032)."}</Notice>}
 
       <nav aria-label="Filter by status" className="flex gap-2 overflow-x-auto pb-1">
         {FILTERS.map(([k, l]) => (
@@ -53,12 +58,12 @@ export default async function SupplierOffersAdmin({ searchParams }: { searchPara
         ))}
       </nav>
       <form method="get" className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <input type="hidden" name="status" value={status} />
+        <input type="hidden" name="status" value={status} />{service && <input type="hidden" name="kind" value="service" />}
         <div className="field sm:w-80">
-          <label htmlFor="group" className="label text-sm">Product group</label>
+          <label htmlFor="group" className="label text-sm">{service ? "Kind of service" : "Product group"}</label>
           <select id="group" name="group" defaultValue={group ?? ""} className="input">
-            <option value="">All product groups</option>
-            {Object.entries(PRODUCT_GROUPS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            <option value="">{service ? "All kinds of service" : "All product groups"}</option>
+            {Object.entries(GROUPS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
         <button type="submit" className="btn btn-outline min-h-11">Show</button>
@@ -75,10 +80,10 @@ export default async function SupplierOffersAdmin({ searchParams }: { searchPara
                     <input type="checkbox" name="id" value={r.id} className="check" aria-label={`Compare ${r.title ?? "offer"}`} />
                   </label>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold uppercase text-muted">{r.product_group ? PRODUCT_GROUPS[r.product_group] : "No product group"}</p>
+                    <p className="text-xs font-bold uppercase text-muted">{service ? (r.service_category ? SERVICE_CATEGORIES[r.service_category] : "Kind of service not chosen") : r.product_group ? PRODUCT_GROUPS[r.product_group] : "No product group"}</p>
                     <Link href={`/admin/partners/offers/${r.id}`} className="block break-words text-lg font-extrabold text-primary underline">{r.title || "(no name yet)"}</Link>
                     <p className="break-words text-sm">{nameOf.get(r.user_id) ?? "—"}</p>
-                    <p className="mt-1 text-sm"><strong>{OFFER_STATUS[r.status].label}</strong>{r.revision > 0 ? ` · version ${r.revision}` : ""} · {itemCount.get(r.id) ?? 0} product(s) · sent {day(r.submitted_at)}</p>
+                    <p className="mt-1 text-sm"><strong>{OFFER_STATUS[r.status].label}</strong>{r.revision > 0 ? ` · version ${r.revision}` : ""} · {itemCount.get(r.id) ?? 0} {service ? "package(s)" : "product(s)"} · sent {day(r.submitted_at)}</p>
                     <p className="text-sm text-muted">Score {res.average ?? "—"}{res.scores ? ` (${res.scores} reviewer${res.scores > 1 ? "s" : ""})` : ""} · compliance {res.compliance === "not_checked" ? "not checked" : res.compliance}</p>
                   </div>
                 </li>

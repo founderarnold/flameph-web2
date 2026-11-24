@@ -11,7 +11,7 @@ export const PARTNER_CATEGORIES = {
   service_provider: {
     label: "Service provider", fil: "Nagbibigay ng serbisyo",
     text: "You offer services to MSMEs: logistics, printing, accounting, marketing, repairs, training and the like.",
-    stage: "Application open",
+    stage: "Best Offer open to accredited service providers",
   },
   toll_manufacturer: {
     label: "Toll manufacturer", fil: "Gumagawa ng produkto para sa iba",
