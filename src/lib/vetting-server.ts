@@ -20,7 +20,7 @@ export async function purgeDocs(admin: SupabaseClient, rows: { id: string; file_
 export async function purgeMemberDocs(admin: SupabaseClient, userId: string, reason: Reason = "consent_withdrawn", scope: "vetting" | "all" = "vetting") {
   // "*" and a filter here (not in the query) so this also works before 0031 adds the purpose column.
   const { data } = await admin.from("vetting_documents").select("*").eq("user_id", userId).is("deleted_at", null).limit(200);
-  const rows = ((data ?? []) as { id: string; file_path: string; purpose?: string }[]).filter((r) => scope === "all" || (r.purpose ?? "vetting") === "vetting");
+  const rows = ((data ?? []) as { id: string; file_path: string; purpose?: string }[]).filter((r) => (scope === "all" && r.purpose !== "contract") || (r.purpose ?? "vetting") === "vetting");
   return purgeDocs(admin, rows.slice(0, 100), reason);
 }
 

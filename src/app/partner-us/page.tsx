@@ -56,6 +56,7 @@ export default async function PartnerUsPage() {
         {user && mine.some((m) => m.category === "toll_manufacturer" && m.status === "approved") && <Link href="/partner-us/signature" className="btn btn-outline">FLAME Signature</Link>}
         {user && mine.some((m) => m.status === "approved") && <Link href="/partner-us/territories" className="btn btn-outline">My territories</Link>}
         {user && mine.some((m) => m.status === "approved") && <Link href="/partner-us/commissions" className="btn btn-outline">My commissions</Link>}
+        {user && mine.some((m) => m.status === "approved") && <Link href="/partner-us/contracts" className="btn btn-outline">My contracts</Link>}
         {user && mine.some((m) => m.status === "approved") && <Link href="/partner-us/complaints" className="btn btn-outline">Complaints and notices</Link>}
         {user && <Link href="/partner-us/samples" className="btn btn-outline">Sample tests</Link>}
       </PageHero>

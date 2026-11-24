@@ -14,7 +14,8 @@ const deny = (status: number) => new NextResponse(status === 404 ? "Not found" :
  * Partner documents (purpose 'partner', 0031) and supplier offer files (purpose 'offer', 0032) can also be opened by
  * national reviewers. Sample photos (purpose 'sample', 0035) and FLAME Signature batch files (purpose 'batch', 0037) open for national reviewers; complaint evidence
  * (purpose 'complaint', 0035) opens for national reviewers and for the two sides of that complaint (the member who
- * complained and the partner), so the partner can see and answer the evidence.
+ * complained and the partner), so the partner can see and answer the evidence. Contract files (purpose 'contract', 0038:
+ * signed copies and proof of authority) open for the national team and for the partner of that contract once it was sent.
  */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,7 +29,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!admin || !k) return deny(503);
   const { data: doc } = await admin.from("vetting_documents").select("*").eq("id", id).maybeSingle();
   if (!doc || doc.deleted_at) return deny(404);
-  if (doc.purpose === "complaint") {
+  if (doc.purpose === "contract") {
+    // Contract files: the national team (never for their own business) and the contract's partner after it was sent.
+    const { data: kc } = doc.contract_id ? await admin.from("partner_contracts").select("partner_user_id, first_sent_at").eq("id", doc.contract_id).maybeSingle() : { data: null };
+    if (!kc) return deny(404);
+    const party = kc.partner_user_id === user.id && !!kc.first_sent_at;
+    if (!party && (partnerReviewer !== true || kc.partner_user_id === user.id)) return deny(403);
+  } else if (doc.purpose === "complaint") {
     // Complaint evidence: the national team, the member who complained, and the partner the complaint is about.
     const { data: c } = doc.complaint_id ? await admin.from("partner_complaints").select("complainant_id, partner_user_id, status").eq("id", doc.complaint_id).maybeSingle() : { data: null };
     if (!c) return deny(404);
