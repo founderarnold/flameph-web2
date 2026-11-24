@@ -2,7 +2,8 @@ import type { Status } from "@/components/StatusBadge";
 
 export type InvolvedPage = {
   slug: string; title: string; fil: string; status: Status; intro: string; description: string; form: string;
-  sections: { title: string; items: string[] }[]; note?: string;
+  /** `examples`: each item is "Skill — e.g. example" and is shown as a small card (name in bold, example below). */
+  sections: { title: string; items: string[]; intro?: string; examples?: boolean }[]; note?: string;
 };
 
 export const INVOLVED: InvolvedPage[] = [
@@ -58,10 +59,74 @@ export const INVOLVED: InvolvedPage[] = [
     intro: "Teach a topic at a FLAME PH workshop, training or webinar.",
     description: "Volunteer as a resource speaker for FLAME PH workshops and webinars.",
     sections: [{ title: "Topics we need", items: ["Business registration and permits", "Pricing and costing", "Bookkeeping and cash flow", "Online selling and social media", "Food safety and FDA requirements", "Financing options and loan readiness"] }] },
-  { slug: "professional-services", title: "Volunteer Professional Services", fil: "Ialok ang propesyon mo", status: "live", form: "professional-services",
-    intro: "Use your professional skills to help MSMEs who can't yet afford them.",
-    description: "Volunteer web, social media, tax, bookkeeping, accounting or advertising services for MSMEs.",
-    sections: [{ title: "Skills we need", items: ["Web and app development", "Social media management", "Tax and bookkeeping", "Accounting", "Advertising and design", "Legal guidance"] }] },
+  { slug: "professional-services", title: "Build Your Portfolio: Volunteer Professional Services", fil: "Ialok ang propesyon mo, buuin ang portfolio mo", status: "live", form: "professional-services",
+    intro: "Give value first. Volunteering your professional services for an MSME is proof of concept of your skills, talents, knowledge and experience. You gain hands-on experience and build a credible portfolio of real work. That work can open earning opportunities, such as upgraded (paid) services or freelance and job openings that employers and MSMEs can consider when you apply.",
+    description: "Build your portfolio by volunteering professional services for Filipino MSMEs: real projects, real results, and proof of your skills that employers and MSMEs can consider.",
+    sections: [
+      { title: "How it works", items: [
+        "Tell us your skills, experience and availability using the form",
+        "We match you with an MSME that needs your kind of help",
+        "Agree on a small, clear scope of work, usually 2 to 4 weeks",
+        "Deliver the work, then ask the MSME for feedback you can show in your portfolio",
+        "If both sides want to continue, you can discuss upgraded paid services directly. FLAME PH does not promise paid work or jobs",
+      ] },
+      { title: "Skills we need", examples: true,
+        intro: "Pick what you are good at. Each example is the kind of small, practical project an MSME may ask for.",
+        items: [
+          "Bookkeeping — e.g. setting up a simple sales and expense log for a sari-sari store",
+          "Accounting and tax — e.g. explaining which BIR forms a new small business files and when",
+          "Business registration and permits — e.g. a checklist for DTI, barangay, mayor's permit and BIR registration",
+          "Legal guidance — e.g. reviewing a simple supply or lease agreement before signing",
+          "Social media management — e.g. a 2-week posting plan for a carinderia's Facebook page",
+          "Digital marketing and ads — e.g. setting up a small, targeted boosted post with a clear budget",
+          "Graphic design — e.g. a menu board, price list or product label",
+          "Photography and video — e.g. clear product photos for an online shop using a phone",
+          "Copywriting and translation — e.g. product descriptions in English and Filipino",
+          "Web and app development — e.g. a one-page website with a map, hours and order button",
+          "E-commerce and online selling — e.g. listing 10 products on an online marketplace with good titles",
+          "IT support — e.g. setting up a shared Google Drive and backups for receipts",
+          "Pricing and costing — e.g. computing the food cost and selling price of a best-seller",
+          "Operations and inventory — e.g. a simple stock-count sheet to reduce spoilage",
+          "Human resources — e.g. a basic job description and hiring checklist for a first staff",
+          "Customer service — e.g. ready replies for common Messenger questions",
+          "Sales — e.g. a simple script and follow-up list for calling past customers",
+          "Training and tutoring — e.g. teaching a team how to use a free POS app",
+          "Logistics and delivery — e.g. a delivery zone map with fixed fees",
+          "Sustainability — e.g. ideas to cut packaging waste and electricity costs",
+        ] },
+      { title: "MSME industries you can help", examples: true,
+        intro: "MSMEs in every industry need help. Tell us which ones you know best.",
+        items: [
+          "Food and beverage — e.g. menu costing for a bakery or milk tea stall",
+          "Retail and sari-sari stores — e.g. a reorder list for fast-moving items",
+          "E-commerce and online selling — e.g. shop setup and order tracking",
+          "Agriculture and agribusiness — e.g. a harvest and sales record for a small farm",
+          "Manufacturing and crafts — e.g. costing a handmade product for wholesale",
+          "Services (salon, repair, laundry) — e.g. a price list and booking system",
+          "Tourism and hospitality — e.g. guest reviews and online booking listings",
+          "Logistics and delivery — e.g. rider schedules and delivery fee rules",
+          "Real estate — e.g. a clear property listing template (licensed help where required)",
+          "Construction and trades — e.g. a simple job quotation template",
+          "Health and wellness — e.g. appointment reminders and a client record sheet",
+          "Education and tutoring — e.g. class schedules and enrollment forms",
+          "Creative and media — e.g. a portfolio page and rate card",
+          "Tech and IT — e.g. a basic security and password checklist",
+          "Finance and accounting — e.g. a monthly cash-flow summary",
+          "Legal and compliance (DTI, BIR, permits) — e.g. a renewal calendar for permits",
+          "Human resources — e.g. a simple attendance and payroll sheet",
+          "Marketing and sales — e.g. a promo calendar for the next 3 months",
+          "Customer service — e.g. a complaint-handling guide",
+          "Operations — e.g. an opening and closing checklist",
+          "Sustainability — e.g. a waste-sorting and recycling plan",
+        ] },
+      { title: "What you can gain", items: [
+        "Hands-on experience with real MSME problems",
+        "Portfolio pieces and a testimonial, if the MSME agrees",
+        "Referrals within the FLAME PH community",
+        "A chance to offer upgraded (paid) services or be considered for freelance or job openings. Nothing is guaranteed",
+      ] },
+    ],
+    note: "Volunteers follow the FLAME PH code of conduct, keep MSME information confidential, and never ask an MSME to pay for volunteer work. Any paid follow-on work is a separate, direct agreement between you and the MSME." },
 ];
 
 export const getInvolved = (slug: string) => INVOLVED.find((p) => p.slug === slug)!;

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { FORMS } from "@/lib/forms";
+import { FORMS, MULTI_SEPARATOR } from "@/lib/forms";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { sendEmail, NOTIFY_TO, PARTNER_CC, REAL_ESTATE_NOTIFY_TO } from "@/lib/email";
 import { clientIpHash } from "@/lib/request";
@@ -25,10 +25,17 @@ export async function POST(req: Request) {
   for (const f of def.fields) {
     // A follow-up field (showIf) counts only when its trigger has the matching answer.
     if (f.showIf && raw[f.showIf.field] !== f.showIf.equals) continue;
-    const v = typeof raw[f.name] === "string" ? (raw[f.name] as string).trim().slice(0, f.type === "textarea" ? 4000 : 300) : "";
+    const v = typeof raw[f.name] === "string" ? (raw[f.name] as string).trim().slice(0, f.type === "textarea" || f.type === "multi" ? 4000 : 300) : "";
     if (f.required && !v) return NextResponse.json({ error: `Please fill in: ${f.label}` }, { status: 400 });
     if (v && f.type === "email" && !EMAIL_RE.test(v)) return NextResponse.json({ error: "Please enter a valid email." }, { status: 400 });
     if (v && f.type === "url" && !/^https?:\/\//i.test(v)) return NextResponse.json({ error: `${f.label} must start with http:// or https://` }, { status: 400 });
+    if (v && f.type === "multi") {
+      // Ticked options arrive joined with MULTI_SEPARATOR; every one must be an allowed option.
+      const picked = [...new Set(v.split(MULTI_SEPARATOR).map((o) => o.trim()).filter(Boolean))];
+      if (!picked.every((o) => f.options?.includes(o))) return NextResponse.json({ error: `Please choose valid options for ${f.label}` }, { status: 400 });
+      clean[f.name] = picked.join(MULTI_SEPARATOR);
+      continue;
+    }
     if (v && f.options && !f.options.includes(v)) return NextResponse.json({ error: `Please choose a valid option for ${f.label}` }, { status: 400 });
     if (v) clean[f.name] = v;
   }

@@ -4,7 +4,8 @@ import { CHAPTER_BUILDER_AGREEMENT } from "@/lib/policy";
 export type Field = {
   name: string;
   label: string;
-  type?: "text" | "email" | "tel" | "textarea" | "select" | "url" | "number" | "date" | "checkbox";
+  /** "multi" = a group of tick boxes; the API stores the ticked options joined with "; ". */
+  type?: "text" | "email" | "tel" | "textarea" | "select" | "url" | "number" | "date" | "checkbox" | "multi";
   required?: boolean;
   options?: string[];
   placeholder?: string;
@@ -15,6 +16,8 @@ export type Field = {
   agreementVersion?: string;
   /** Show (and require) this field only when another field has this value, e.g. a checkbox ticked ("yes"). */
   showIf?: { field: string; equals: string };
+  /** Starts a new numbered group ("Step 1 of 5 · About you") on long forms. Fields after it belong to it. */
+  section?: string;
 };
 
 export type FormDef = {
@@ -28,7 +31,12 @@ export type FormDef = {
   success: string;
   /** Only signed-in members can send it. The page shows sign up / log in instead, and the API refuses visitors. */
   membersOnly?: boolean;
+  /** Label fields that are not required as "(optional)". Used on long forms so people know what they can skip. */
+  markOptional?: boolean;
 };
+
+/** The value separator for "multi" fields. Options must not contain it. */
+export const MULTI_SEPARATOR = "; ";
 
 const name: Field = { name: "name", label: "Full name", required: true };
 const email: Field = { name: "email", label: "Email", type: "email", required: true };
@@ -49,6 +57,10 @@ const STAGES = ["Discover (may idea pa lang)", "Start (bagong negosyo)", "Build"
 const AWARD_CATEGORIES = ["Resilience", "Innovation", "Job generation", "Women-led", "Youth-led"];
 /** The FLAME PH Annual Awards for MSMEs and Partners. The home page Quick look links to each with ?award=. */
 export const AWARD_TYPES = ["MSME Awardee", "LGU Partner Awardee for NCR", "LGU Partner Awardee for North Luzon", "LGU Partner Awardee for Central Luzon", "LGU Partner Awardee for South Luzon", "LGU Partner Awardee for Visayas", "LGU Partner Awardee for Mindanao", "Brand Partner Awardee", "Resource Speaker Awardee", "FLAME PH Mentor Awardee", "International Organization Partner Awardee"];
+
+/** Skills for the Build Your Portfolio (professional services) form. Keep the wording short; no ";" in options. */
+const PRO_SKILLS = ["Bookkeeping", "Accounting and tax", "Business registration and permits", "Legal guidance", "Social media management", "Digital marketing and ads", "Graphic design", "Photography and video", "Copywriting and translation", "Web and app development", "E-commerce and online selling", "IT support", "Pricing and costing", "Operations and inventory", "Human resources", "Customer service", "Sales", "Training and tutoring", "Logistics and delivery", "Sustainability", "Other"];
+const PRO_INDUSTRIES = ["Food and beverage", "Retail and sari-sari stores", "E-commerce and online selling", "Agriculture and agribusiness", "Manufacturing and crafts", "Services (salon, repair, laundry)", "Tourism and hospitality", "Logistics and delivery", "Real estate", "Construction and trades", "Health and wellness", "Education and tutoring", "Creative and media", "Tech and IT", "Finance and accounting", "Legal and compliance (DTI, BIR, permits)", "Human resources", "Marketing and sales", "Customer service", "Operations", "Sustainability"];
 
 export const FORMS: Record<string, FormDef> = {
   contact: {
@@ -152,11 +164,46 @@ export const FORMS: Record<string, FormDef> = {
   },
   "professional-services": {
     type: "professional-services", title: "Volunteer your professional services",
-    fields: [name, email, mobile, city,
-      { name: "service", label: "Service you can offer", type: "select", required: true, options: ["Web / app development", "Social media", "Tax", "Bookkeeping", "Accounting", "Advertising", "Legal", "Design", "Other"] },
-      { name: "experience", label: "Experience and credentials", type: "textarea", required: true },
-      { name: "hours", label: "Hours you can give per month", type: "select", options: ["1–2", "3–5", "6–10", "More than 10"] }],
-    success: "Salamat! Our team will match you with MSMEs who need your help.",
+    intro: "About 10 minutes. Only fields marked * are required. Your answers are saved on this phone while you type, so you can finish later.",
+    submitLabel: "Send my volunteer profile",
+    markOptional: true,
+    fields: [
+      { ...name, section: "About you" }, email, mobile, city,
+      { name: "province", label: "Province" },
+      { name: "profession", label: "Profession or job title", required: true, placeholder: "e.g. Bookkeeper, Graphic designer, CPA, Web developer" },
+      { name: "years_experience", label: "Years of experience in this field", type: "select", required: true, options: ["Less than 1 year", "1–2 years", "3–5 years", "6–10 years", "More than 10 years"] },
+      { name: "education", label: "Highest education completed", type: "select", options: ["High school", "Senior high school", "Vocational / TESDA", "College undergraduate", "College graduate", "Master's degree or higher"] },
+
+      { name: "service", label: "Primary skill you can offer", type: "select", required: true, section: "Your skills",
+        options: PRO_SKILLS, help: "The one thing you do best." },
+      { name: "secondary_skills", label: "Other skills you can offer", type: "multi", options: PRO_SKILLS, help: "Tick any that apply." },
+      { name: "industries", label: "MSME industries you have served or know well", type: "multi", options: PRO_INDUSTRIES },
+      { name: "tools", label: "Tools and software you use well", placeholder: "e.g. Excel, Canva, QuickBooks, WordPress, Meta Business Suite" },
+      { name: "languages", label: "Languages you can work in", type: "multi", options: ["English", "Filipino", "Bisaya / Cebuano", "Ilocano", "Hiligaynon", "Kapampangan", "Bikolano", "Waray", "Pangasinense", "Other"] },
+
+      { name: "value_pitch", label: "What value can you deliver in your first 2–4 weeks?", type: "textarea", required: true, section: "Proof of your work",
+        help: "Two or three sentences. Example: I can set up a simple sales and expense sheet, teach the owner to use it daily, and give a 1-page monthly summary." },
+      { name: "experience", label: "Experience and credentials", type: "textarea", required: true, help: "Where you have worked or what you have done, most recent first." },
+      { name: "portfolio_links", label: "Sample work or portfolio links", type: "textarea", help: "One link per line: Google Drive, Behance, GitHub, website or LinkedIn. Make sure anyone with the link can open it." },
+      { name: "certifications", label: "Certifications or licenses", placeholder: "e.g. PRC license (CPA), TESDA NC II Bookkeeping, Google Ads certificate", help: "List the license or certificate name. Do not type license numbers here; we will ask if needed." },
+
+      { name: "hours", label: "Hours you can give per week", type: "select", required: true, section: "Availability",
+        options: ["1–2 hours", "3–5 hours", "6–10 hours", "More than 10 hours"] },
+      { name: "days", label: "Days you are usually available", type: "multi", options: ["Weekdays", "Weekday evenings", "Saturdays", "Sundays"] },
+      { name: "start_date", label: "Earliest start date", type: "date" },
+      { name: "work_setup", label: "How do you prefer to work?", type: "select", required: true, options: ["Remote / online", "On-site (in person)", "Hybrid", "Any"] },
+      { name: "engagement_length", label: "Preferred length of one engagement", type: "select", options: ["One-time task (1 week or less)", "2–4 weeks", "1–3 months", "Ongoing, a few hours a month"] },
+
+      { name: "hoped_gain", label: "What do you hope to gain?", type: "multi", section: "Goals and agreements",
+        options: ["Portfolio pieces", "A testimonial", "Referrals", "Possible paid follow-on work", "Experience in a new industry", "Helping my community"] },
+      { name: "references", label: "References", type: "textarea", help: "Optional. Name, relationship and email or mobile of 1–2 people who can vouch for your work. List only people who agreed to be contacted." },
+      { name: "references_consent", label: "The people I listed as references agreed to be contacted by FLAME PH.", type: "checkbox" },
+      { name: "conduct_accepted", type: "checkbox", required: true,
+        label: "I will follow the FLAME PH code of conduct: be respectful and honest, deliver what I agree to, and never ask an MSME to pay for volunteer work." },
+      { name: "confidentiality_accepted", type: "checkbox", required: true,
+        label: "I will keep the MSME's business information, records and customer data confidential and use them only for the agreed work." },
+    ],
+    success: "Salamat! Our team will review your volunteer profile and match you with MSMEs who need your help. Matching depends on MSME needs in your area and skills.",
   },
   "workshop-request": {
     type: "workshop-request", title: "Request a free workshop for your LGU or barangay", partnership: true,
