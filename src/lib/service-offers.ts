@@ -6,8 +6,9 @@
 
 import { parseCount, parseMoney, withVat, type OfferRow, type VatBasis } from "./offers";
 
-export type OfferKind = "supplier" | "service";
-export const isKind = (v: unknown): v is OfferKind => v === "supplier" || v === "service";
+/** The three kinds of Best Offer on the shared table: supplier (Step 2), service (Step 6), FLAME Signature (Step 7). */
+export type OfferKind = "supplier" | "service" | "manufacturer";
+export const isKind = (v: unknown): v is OfferKind => v === "supplier" || v === "service" || v === "manufacturer";
 
 export const SERVICE_CATEGORIES = {
   accounting_tax: "Accounting, bookkeeping and tax",

@@ -21,7 +21,7 @@ const HOW = [
 ];
 
 const FAQ = [
-  { q: "What is an accredited partner?", a: "A supplier, service provider or toll manufacturer whose business papers were checked by the FLAME PH national team. Accredited suppliers can then send their Best Offer (prices for members, minimum orders, delivery areas), and accredited service providers their service offer (packages, member rates, scope of work, service levels, past clients), at My Best Offers. The national team compares the offers side by side." },
+  { q: "What is an accredited partner?", a: "A supplier, service provider or toll manufacturer whose business papers were checked by the FLAME PH national team. Accredited suppliers can then send their Best Offer (prices for members, minimum orders, delivery areas), accredited service providers their service offer (packages, member rates, scope of work, service levels, past clients), and accredited toll manufacturers their FLAME Signature proposal (products made for FLAME PH's own brand), at My Best Offers. The national team compares the offers side by side." },
   { q: "Is this the same as Partner With Us?", a: "No. Partner With Us (/partners) is for LGUs, schools, companies, NGOs and foundations that want to work with FLAME PH on programs. This page is for businesses that want to sell products or services to members." },
   { q: "How much does it cost?", a: "Applying is free. FLAME PH never asks for money to accredit you, and flameph.org never collects or holds money." },
   { q: "Who sees my documents and TIN?", a: "Only the national review team (founder, admins and national reviewers). Documents are encrypted, and every time one is opened it is logged. Chapter coordinators see only your business name, category, town and status. Nothing is shown publicly." },
@@ -52,7 +52,8 @@ export default async function PartnerUsPage() {
         intro="Offer your products and services to Filipino MSMEs through FLAME PH. Apply once, get checked by the national team, then send your best offer to members.">
         <a href="#apply" className="btn btn-flame">Apply now ↓</a>
         {user && mine.length > 0 && <Link href="/partner-us/apply" className="btn btn-outline">My applications</Link>}
-        {user && mine.some((m) => (m.category === "supplier" || m.category === "service_provider") && m.status === "approved") && <Link href="/partner-us/offers" className="btn btn-outline">My Best Offers</Link>}
+        {user && mine.some((m) => (m.category === "supplier" || m.category === "service_provider" || m.category === "toll_manufacturer") && m.status === "approved") && <Link href="/partner-us/offers" className="btn btn-outline">My Best Offers</Link>}
+        {user && mine.some((m) => m.category === "toll_manufacturer" && m.status === "approved") && <Link href="/partner-us/signature" className="btn btn-outline">FLAME Signature</Link>}
         {user && mine.some((m) => m.status === "approved") && <Link href="/partner-us/territories" className="btn btn-outline">My territories</Link>}
         {user && mine.some((m) => m.status === "approved") && <Link href="/partner-us/commissions" className="btn btn-outline">My commissions</Link>}
         {user && mine.some((m) => m.status === "approved") && <Link href="/partner-us/complaints" className="btn btn-outline">Complaints and notices</Link>}
@@ -95,6 +96,7 @@ export default async function PartnerUsPage() {
                       <Link href={`/partner-us/apply/${app.id}`} className="btn btn-primary min-h-11 w-full">{app.status === "draft" || app.status === "needs_changes" ? "Continue" : "Open"}</Link>
                       {k === "supplier" && app.status === "approved" && <Link href="/partner-us/offers" className="btn btn-flame mt-2 min-h-11 w-full">Send a Best Offer</Link>}
                       {k === "service_provider" && app.status === "approved" && <Link href="/partner-us/offers" className="btn btn-flame mt-2 min-h-11 w-full">Send a service offer</Link>}
+                      {k === "toll_manufacturer" && app.status === "approved" && <Link href="/partner-us/offers" className="btn btn-flame mt-2 min-h-11 w-full">Send a FLAME Signature proposal</Link>}
                     </>
                   ) : (
                     <form action={startApplication}>
@@ -123,7 +125,7 @@ export default async function PartnerUsPage() {
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <div className="card p-5">
             <h3 className="font-extrabold text-primary">After you are accredited</h3>
-            <p className="mt-2 text-[15px] leading-6 text-muted">Suppliers send a Best Offer (prices, minimum orders, delivery areas). Service providers send a service offer (packages, member rates, scope of work, service levels and past clients). The national team compares offers side by side. Toll manufacturers follow; we will tell you when your form opens.</p>
+            <p className="mt-2 text-[15px] leading-6 text-muted">Suppliers send a Best Offer (prices, minimum orders, delivery areas). Service providers send a service offer (packages, member rates, scope of work, service levels and past clients). Toll manufacturers send a FLAME Signature proposal (plants with FDA licences, products with toll price, MOQ and shelf life, batch records and recall plan); a regulatory review and a legal review are done before any product may carry the FLAME Signature mark. The national team compares offers side by side.</p>
             <p className="mt-2 text-sm text-muted">Commission figures in an offer are proposals only. No money passes through flameph.org; MarketplacePH Online Store handles any payment.</p>
           </div>
           <div className="card p-5">

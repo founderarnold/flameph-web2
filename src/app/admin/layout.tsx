@@ -23,6 +23,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {partnerDesk && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners">Partner applications</Link></li>}
         {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/offers">Supplier offers</Link></li>}
         {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/offers?kind=service">Service offers</Link></li>}
+        {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/offers?kind=manufacturer">FLAME Signature offers</Link></li>}
+        {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/signature">FLAME Signature licences and batches</Link></li>}
         {partnerNational && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/territories">Territories</Link></li>}
         {commissionDesk && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/commissions">Commissions</Link></li>}
         {partnerDesk && <li><Link className="block rounded-lg px-2 py-2 font-semibold hover:bg-bg-soft" href="/admin/partners/samples">Sample tests</Link></li>}

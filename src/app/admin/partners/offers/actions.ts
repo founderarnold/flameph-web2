@@ -5,9 +5,11 @@ import { adminContext } from "@/lib/admin/guard";
 import { tellApplicant } from "@/lib/partner-server";
 import { cleanScore, isOfferReason, offerResult, SCORE_PARTS, type ScoreRow } from "@/lib/offers";
 import { isServiceReason } from "@/lib/service-offers";
+import { canClear, isReviewType, isSignatureReason, REVIEW_ITEMS, reviewState, type ReviewRow } from "@/lib/signature";
 
-// Admin > Partners > Supplier offers and Service offers (Step 6 reuses every action here; service offers add reference
-// checks). Only the national team (founder, admin, national reviewer) declares conflicts,
+// Admin > Partners > Supplier offers, Service offers and FLAME Signature proposals (Steps 6 and 7 reuse every action
+// here; service offers add reference checks; FLAME Signature proposals add the regulatory and legal reviews and the
+// approval of each product). Only the national team (founder, admin, national reviewer) declares conflicts,
 // scores and decides. Chapter coordinators, testers and finance have no access to commercial offers. Every step is in
 // supplier_offer_history and the audit log, and the database checks the same rules again (0032).
 
@@ -21,7 +23,7 @@ async function loadOffer(id: string | null) {
   const { data: offer } = await ctx.db.from("supplier_offers").select("id, user_id, status, revision, title, kind").eq("id", id!).maybeSingle();
   if (!offer) redirect("/admin/partners/offers?error=missing");
   if (offer!.user_id === ctx.user.id) redirect(page(id!, "error=own"));   // nobody reviews their own offer
-  return { ctx, offer: offer as { id: string; user_id: string; status: string; revision: number; title: string | null; kind: "supplier" | "service" } };
+  return { ctx, offer: offer as { id: string; user_id: string; status: string; revision: number; title: string | null; kind: "supplier" | "service" | "manufacturer" } };
 }
 
 async function myDeclaration(ctx: Awaited<ReturnType<typeof adminContext>>, offerId: string) {
@@ -92,13 +94,17 @@ export async function decideOffer(fd: FormData) {
   if (offer.status !== "submitted") back("error=status");
   const mine = await myDeclaration(ctx, offer.id);
   if (!mine || mine.has_conflict) back("error=coi_first");
-  const reasons = [...new Set(fd.getAll("reasons").map(String).filter(offer.kind === "service" ? isServiceReason : isOfferReason))].slice(0, 12);
+  const reasons = [...new Set(fd.getAll("reasons").map(String).filter(offer.kind === "manufacturer" ? isSignatureReason : offer.kind === "service" ? isServiceReason : isOfferReason))].slice(0, 14);
   const note = String(fd.get("note") ?? "").trim().slice(0, 2000) || null;
   const selection_reason = String(fd.get("selection_reason") ?? "").trim().slice(0, 2000) || null;
   if (decision === "selected") {
     if (!selection_reason) back("error=selection_reason");
     const { data: scores } = await ctx.db.from("supplier_offer_scores").select("reviewer_id, revision, total, compliance_pass").eq("offer_id", offer.id).eq("revision", offer.revision);
     if (!offerResult((scores ?? []) as ScoreRow[], offer.revision).canSelect) back("error=gate");
+    if (offer.kind === "manufacturer") {
+      const { data: rv } = await ctx.db.from("signature_reviews").select("revision, review_type, outcome, created_at").eq("offer_id", offer.id).eq("revision", offer.revision);
+      if (!reviewState((rv ?? []) as ReviewRow[], offer.revision).cleared) back("error=reviews");
+    }
   } else {
     if (reasons.length === 0) back("error=reasons");
     if (reasons.includes("other") && !note) back("error=note");
@@ -113,9 +119,9 @@ export async function decideOffer(fd: FormData) {
     offer_id: offer.id, actor_id: ctx.user.id, action: decision, revision: offer.revision,
     reasons: decision === "selected" ? [] : reasons, note: decision === "selected" ? selection_reason : note,
   });
-  await ctx.audit(`${offer.kind === "service" ? "service" : "supplier"}_offer_${decision}`, "supplier_offers", offer.id, { revision: offer.revision, reasons });
+  await ctx.audit(`${offer.kind === "service" ? "service_offer" : offer.kind === "manufacturer" ? "signature_offer" : "supplier_offer"}_${decision}`, "supplier_offers", offer.id, { revision: offer.revision, reasons });
   const t = DECISION_TEXT[decision as keyof typeof DECISION_TEXT];
-  await tellApplicant(offer.user_id, offer.kind === "service" ? t.title.replace("Your offer", "Your service offer") : t.title, `${t.body} (${offer.title ?? "your offer"})`, `/partner-us/offers/${offer.id}`, "FLAME PH Best Offer");
+  await tellApplicant(offer.user_id, offer.kind === "service" ? t.title.replace("Your offer", "Your service offer") : offer.kind === "manufacturer" ? t.title.replace("Your offer", "Your FLAME Signature proposal") : t.title, `${t.body} (${offer.title ?? "your offer"})`, `/partner-us/offers/${offer.id}`, "FLAME PH Best Offer");
   revalidatePath("/admin/partners/offers"); revalidatePath(`/admin/partners/offers/${offer.id}`);
   back("done=decided");
 }
@@ -154,4 +160,57 @@ export async function checkReference(fd: FormData) {
   await ctx.audit("service_offer_reference_checked", "service_offer_references", refId!, { offer_id: offer.id, result, client_rating });
   revalidatePath(`/admin/partners/offers/${offer.id}`);
   back("done=reference");
+}
+
+/** FLAME Signature proposals (Step 7): a regulatory or legal review of the current version. Append-only: a new review
+ *  replaces the earlier one of the same kind. "Cleared" needs every item ticked; "not cleared" needs a note saying what
+ *  is missing. Only a reviewer who declared no conflict; the database checks the same (0037). */
+export async function saveSignatureReview(fd: FormData) {
+  const { ctx, offer } = await loadOffer(uuid(fd.get("id")));
+  const back = (q: string): never => redirect(page(offer.id, q, "#reviews"));
+  if (offer.kind !== "manufacturer") back("error=failed");
+  if (offer.status !== "submitted") back("error=status");
+  const mine = await myDeclaration(ctx, offer.id);
+  if (!mine || mine.has_conflict) back("error=coi_first");
+  const type = fd.get("review_type");
+  if (!isReviewType(type)) back("error=failed");
+  const t = type as keyof typeof REVIEW_ITEMS;
+  const ticked = [...new Set(fd.getAll("checklist").map(String).filter((k) => k in REVIEW_ITEMS[t]))];
+  const outcome = String(fd.get("outcome") ?? "");
+  if (!["cleared", "not_cleared"].includes(outcome)) back("error=review_outcome");
+  if (outcome === "cleared" && !canClear(t, ticked)) back("error=review");
+  const note = String(fd.get("note") ?? "").trim().slice(0, 2000);
+  if (note.length < 5) back("error=review_note");
+  const { error } = await ctx.db.from("signature_reviews").insert({ offer_id: offer.id, revision: offer.revision, review_type: t, outcome, checklist: ticked, note, reviewer_id: ctx.user.id });
+  if (error) back("error=failed");
+  await ctx.audit(`signature_${t}_review`, "supplier_offers", offer.id, { revision: offer.revision, outcome, ticked: ticked.length });
+  revalidatePath(`/admin/partners/offers/${offer.id}`);
+  back("done=review");
+}
+
+/** FLAME Signature proposals (Step 7): approves one product for the FLAME Signature mark, or marks it not approved.
+ *  Approval needs the regulatory review of this version cleared and the proposal under review or chosen. Only approved
+ *  products can go into a licence. */
+export async function decideProduct(fd: FormData) {
+  const { ctx, offer } = await loadOffer(uuid(fd.get("id")));
+  const back = (q: string): never => redirect(page(offer.id, q, "#sig-products"));
+  if (offer.kind !== "manufacturer") back("error=failed");
+  if (!["submitted", "selected"].includes(offer.status)) back("error=status");
+  const mine = await myDeclaration(ctx, offer.id);
+  if (!mine || mine.has_conflict) back("error=coi_first");
+  const productId = uuid(fd.get("product_id"));
+  const approval = String(fd.get("approval") ?? "");
+  if (!productId || !["approved", "not_approved"].includes(approval)) back("error=decision");
+  const note = String(fd.get("approval_note") ?? "").trim().slice(0, 1000) || null;
+  if (approval === "not_approved" && !note) back("error=product_note");
+  if (approval === "approved") {
+    const { data: rv } = await ctx.db.from("signature_reviews").select("revision, review_type, outcome, created_at").eq("offer_id", offer.id).eq("revision", offer.revision);
+    if (reviewState((rv ?? []) as ReviewRow[], offer.revision).regulatory !== "cleared") back("error=regulatory_first");
+  }
+  const { error } = await ctx.db.from("signature_products").update({ approval, approval_note: note, approved_by: ctx.user.id, approved_at: new Date().toISOString() })
+    .eq("id", productId!).eq("offer_id", offer.id);
+  if (error) back("error=failed");
+  await ctx.audit(`signature_product_${approval}`, "signature_products", productId!, { offer_id: offer.id });
+  revalidatePath(`/admin/partners/offers/${offer.id}`);
+  back("done=product");
 }
