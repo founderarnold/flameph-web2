@@ -25,7 +25,7 @@ const ERR: Record<string, string> = {
   second: "You wrote this rate. A second person on the national team must approve it.", coi: "Tick the box to declare that you have no conflict of interest.",
   reason: "Write the reason.", last_day: "Choose a last day inside the rate's dates.",
 };
-const DONE: Record<string, string> = { created: "Draft saved. A second person on the national team must approve it.", saved: "Saved.", approved: "Approved. It is in use from its first day.", cancelled: "Draft cancelled.", retired: "Retired. It still applies to sales up to its last day." };
+const DONE: Record<string, string> = { created: "Draft saved. A second person on the national team must approve it.", saved: "Saved.", approved: "Approved. It is in use from its first day.", cancelled: "Draft cancelled.", retired: "Retired. It still applies to sales up to its last day.", from_contract: "Draft agreement rate made from the signed contract (its number and signing date come from the contract). A second person on the national team must approve it." };
 
 /** One rate: its four-level split, dates and contract; a second national-team member approves it here. */
 export default async function RulePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ done?: string; error?: string; m?: string }> }) {
