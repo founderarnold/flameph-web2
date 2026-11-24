@@ -9,6 +9,7 @@ import {
   SHIPPING_TERMS, VAT_BASIS, withVat, type BaseUnit, type ItemRow, type OfferRow, type ScoreRow,
 } from "@/lib/offers";
 import { ServiceCompare } from "./ServiceCompare";
+import { SignatureCompare } from "./SignatureCompare";
 
 export const metadata = { title: "Compare offers", robots: { index: false } };
 
@@ -29,6 +30,8 @@ export default async function CompareOffers({ searchParams }: { searchParams: Pr
   const k = new Set((kinds ?? []).map((r) => r.kind as string));
   if (k.size > 1) redirect("/admin/partners/offers?error=mixed");
   if (k.has("service")) return <ServiceCompare ctx={ctx} ids={ids} />;
+  // Step 7: FLAME Signature proposals compare per 100 g or ml, plants, reviews and recall readiness.
+  if (k.has("manufacturer")) return <SignatureCompare ctx={ctx} ids={ids} />;
 
   const [{ data: offerRows }, { data: itemRows }, { data: scoreRows }, { data: sampleRows }] = await Promise.all([
     ctx.db.from("supplier_offers").select(`user_id, ${OFFER_COLS}`).in("id", ids),

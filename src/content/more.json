@@ -161,7 +161,8 @@
         { "label": "Partners", "href": "/partners" },
         { "label": "Become an Accredited Partner (suppliers, services, toll manufacturing)", "href": "/partner-us" },
         { "label": "My partner applications", "href": "/partner-us/apply" },
-        { "label": "My Best Offers (accredited suppliers and service providers)", "href": "/partner-us/offers" },
+        { "label": "My Best Offers (accredited suppliers, service providers and toll manufacturers)", "href": "/partner-us/offers" },
+        { "label": "FLAME Signature licences and batches (toll manufacturers)", "href": "/partner-us/signature" },
         { "label": "My territories (accredited partners)", "href": "/partner-us/territories" },
         { "label": "My commissions (accredited partners)", "href": "/partner-us/commissions" },
         { "label": "Complain about a partner's order or service", "href": "/partner-us/complaints" },
@@ -195,6 +196,7 @@
   ],
   "notListed": {
     "/partner-us/apply/[id]": "One member's own partner application; opened from My partner applications (/partner-us/apply).",
+    "/partner-us/signature/batches/[id]": "One toll manufacturer's own batch record; opened from FLAME Signature (/partner-us/signature).",
     "/partner-us/complaints/new": "Starts a complaint; opened from the Complaints page (/partner-us/complaints), which is listed.",
     "/legal/chapter-builder-agreement": "Opened from the Chapter Builder and Meetup Venue forms only, next to the box members tick to accept it (owner, 22 Nov 2026).",
     "/get-involved/chapter-leader": "Forwards to /get-involved/chapter-builder, which is listed (one Chapter Builder page, owner 22 Nov 2026).",

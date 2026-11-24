@@ -12,7 +12,7 @@ const deny = (status: number) => new NextResponse(status === 404 ? "Not found" :
  * Opens one vetting document for a reviewer (admins and founders only), never for other members and never for the
  * reviewer's own business. The file is decrypted on the server, sent with no-store, and every view is logged.
  * Partner documents (purpose 'partner', 0031) and supplier offer files (purpose 'offer', 0032) can also be opened by
- * national reviewers. Sample photos (purpose 'sample', 0035) open for national reviewers; complaint evidence
+ * national reviewers. Sample photos (purpose 'sample', 0035) and FLAME Signature batch files (purpose 'batch', 0037) open for national reviewers; complaint evidence
  * (purpose 'complaint', 0035) opens for national reviewers and for the two sides of that complaint (the member who
  * complained and the partner), so the partner can see and answer the evidence.
  */
@@ -37,8 +37,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     if (!party && c.partner_user_id === user.id) return deny(403);
   } else {
     if (!moderator && partnerReviewer !== true) return deny(403);
-    // National reviewers open partner documents, offer files and sample photos only.
-    if (!moderator && doc.purpose !== "partner" && doc.purpose !== "offer" && doc.purpose !== "sample") return deny(403);
+    // National reviewers open partner documents, offer files, sample photos and batch files (0037) only.
+    if (!moderator && doc.purpose !== "partner" && doc.purpose !== "offer" && doc.purpose !== "sample" && doc.purpose !== "batch") return deny(403);
     if (doc.user_id === user.id) return deny(403);   // reviewers never review their own business
   }
   if (doc.key_id !== k.id) return new NextResponse("This file was encrypted with an older key. Ask the member to upload it again.", { status: 409, headers: { "Cache-Control": "no-store" } });

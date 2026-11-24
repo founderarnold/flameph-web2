@@ -17,6 +17,11 @@ import {
 import { trackRecords } from "@/lib/service-offers-server";
 import { declareConflict, decideOffer, saveScore, teamNote } from "../actions";
 import { ReferencesSection, ServiceTerms, TrackRecordCard } from "./ServiceSections";
+import {
+  reviewState, SIG_PRODUCT_COLS, SIGNATURE_CATEGORIES, SIGNATURE_COLS, SIGNATURE_GATE_HELP, SIGNATURE_REASON_KEYS, SIGNATURE_REASONS, SIGNATURE_SCORE_LABELS,
+  SIGNATURE_FILE_TYPES, SITE_COLS, type ReviewRow, type SigProductRow, type SignatureOfferRow, type SiteRow,
+} from "@/lib/signature";
+import { SignatureProducts, SignatureReviews, SignatureTerms } from "./SignatureSections";
 
 export const metadata = { title: "Partner offer", robots: { index: false } };
 
@@ -38,8 +43,13 @@ const ERR: Record<string, string> = {
   gate: `A Best Offer needs the compliance gate passed by every reviewer and an average score of at least ${PASS_MARK} for this version.`,
   empty_note: "Write the note first.", failed: "That didn't go through. Please try again.", missing: "Not found.",
   ref_choice: "Choose whether the past client was verified.", ref_note: "Write what the client said, or why it could not be verified.",
+  reviews: "A FLAME Signature proposal can be chosen only after the regulatory AND the legal review of this version are both cleared.",
+  review: "Tick every item before marking the review cleared, or choose \"Not cleared\" and say what is missing.",
+  review_outcome: "Choose Cleared or Not cleared.", review_note: "Write what you checked (at least a few words).",
+  product_note: "Say why the product is not approved, so the manufacturer knows what to change.",
+  regulatory_first: "Clear the regulatory review of this version before approving products.",
 };
-const DONE: Record<string, string> = { coi: "Declaration saved.", scored: "Score saved.", decided: "Decision saved. The partner was told in their Inbox and by email.", note: "Note saved (team only).", reference: "Result of the call saved." };
+const DONE: Record<string, string> = { review: "Review saved.", product: "Product decision saved.", coi: "Declaration saved.", scored: "Score saved.", decided: "Decision saved. The partner was told in their Inbox and by email.", note: "Note saved (team only).", reference: "Result of the call saved." };
 const ACTION: Record<string, string> = { submitted: "Sent by the partner", needs_changes: "Asked for changes", selected: "Chosen as Best Offer", not_selected: "Not chosen", withdrawn: "Withdrawn by the partner", reopened: "Opened again by the partner", team_note: "Team note" };
 
 /** One supplier offer for the national team: terms, products with landed cost, files (logged viewer), conflict
@@ -50,7 +60,7 @@ export default async function OfferReview({ params, searchParams }: { params: Pr
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const ctx = await adminContext(["super_admin", "admin", "national_reviewer"]);
   const [{ data: row }, { data: itemRows }, { data: docRows }, { data: scoreRows }, { data: coiRows }, { data: histRows }] = await Promise.all([
-    ctx.db.from("supplier_offers").select(`user_id, application_id, ${OFFER_COLS}, ${SERVICE_COLS}`).eq("id", id).maybeSingle(),
+    ctx.db.from("supplier_offers").select(`user_id, application_id, ${OFFER_COLS}, ${SERVICE_COLS}, ${SIGNATURE_COLS}`).eq("id", id).maybeSingle(),
     ctx.db.from("supplier_offer_items").select(ITEM_COLS).eq("offer_id", id).order("position"),
     ctx.db.from("vetting_documents").select("id, doc_type, item_id, file_name, size_bytes, mime, uploaded_at").eq("offer_id", id).eq("purpose", "offer").is("deleted_at", null).order("uploaded_at"),
     ctx.db.from("supplier_offer_scores").select("id, reviewer_id, revision, total, compliance_pass, compliance_note, note, updated_at, price_value, quality_samples, compliance_reliability, commission_benefits, logistics_support").eq("offer_id", id).order("revision", { ascending: false }),
@@ -58,8 +68,18 @@ export default async function OfferReview({ params, searchParams }: { params: Pr
     ctx.db.from("supplier_offer_history").select("id, action, reasons, note, created_at, revision, internal, actor_id").eq("offer_id", id).order("created_at", { ascending: false }).limit(100),
   ]);
   if (!row) notFound();
-  const o = row as unknown as ServiceOfferRow & { user_id: string; application_id: string | null };
+  const o = row as unknown as ServiceOfferRow & SignatureOfferRow & { user_id: string; application_id: string | null };
   const service = o.kind === "service";
+  const signature = o.kind === "manufacturer";
+  const [{ data: siteRows }, { data: sigRows }, { data: revRows }] = signature ? await Promise.all([
+    ctx.db.from("signature_sites").select(SITE_COLS).eq("offer_id", id).order("position"),
+    ctx.db.from("signature_products").select(SIG_PRODUCT_COLS).eq("offer_id", id).order("position"),
+    ctx.db.from("signature_reviews").select("id, revision, review_type, outcome, checklist, note, reviewer_id, created_at").eq("offer_id", id).order("created_at", { ascending: false }),
+  ]) : [{ data: [] }, { data: [] }, { data: [] }];
+  const sites = (siteRows ?? []) as unknown as SiteRow[];
+  const sigProducts = (sigRows ?? []) as unknown as SigProductRow[];
+  const reviews = (revRows ?? []) as unknown as ReviewRow[];
+  const rState = reviewState(reviews, o.revision);
   const [{ data: pkgRows }, { data: refRows }] = service ? await Promise.all([
     ctx.db.from("service_offer_packages").select(PACKAGE_COLS).eq("offer_id", id).order("position"),
     ctx.db.from("service_offer_references").select(REFERENCE_COLS).eq("offer_id", id).order("position"),
@@ -67,10 +87,11 @@ export default async function OfferReview({ params, searchParams }: { params: Pr
   const packages = (pkgRows ?? []) as unknown as PackageRow[];
   const refs = (refRows ?? []) as unknown as ReferenceRow[];
   const track = service ? (await trackRecords(ctx.db, [o.user_id], new Map([[o.user_id, refs]]))).get(o.user_id) : undefined;
-  const partnerWord = service ? "service provider" : "supplier";
-  const scoreLabel = (k: keyof typeof SERVICE_SCORE_LABELS, l: string) => (service ? SERVICE_SCORE_LABELS[k].label : l);
-  const reasonText = (r: string) => (service ? SERVICE_REASONS[r as keyof typeof SERVICE_REASONS] : undefined) ?? OFFER_REASONS[r as keyof typeof OFFER_REASONS] ?? r;
-  const fileLabel = (t: string) => (service ? SERVICE_FILE_TYPES[t as keyof typeof SERVICE_FILE_TYPES]?.label : undefined) ?? OFFER_FILE_TYPES[t as keyof typeof OFFER_FILE_TYPES]?.label ?? t;
+  const partnerWord = service ? "service provider" : signature ? "toll manufacturer" : "supplier";
+  const scoreLabel = (k: keyof typeof SERVICE_SCORE_LABELS, l: string) => (service ? SERVICE_SCORE_LABELS[k].label : signature ? SIGNATURE_SCORE_LABELS[k].label : l);
+  const scoreHelp = (k: keyof typeof SERVICE_SCORE_LABELS, h: string) => (service ? SERVICE_SCORE_LABELS[k].help : signature ? SIGNATURE_SCORE_LABELS[k].help : h);
+  const reasonText = (r: string) => (service ? SERVICE_REASONS[r as keyof typeof SERVICE_REASONS] : signature ? SIGNATURE_REASONS[r as keyof typeof SIGNATURE_REASONS] : undefined) ?? OFFER_REASONS[r as keyof typeof OFFER_REASONS] ?? r;
+  const fileLabel = (t: string) => (service ? SERVICE_FILE_TYPES[t as keyof typeof SERVICE_FILE_TYPES]?.label : signature ? SIGNATURE_FILE_TYPES[t as keyof typeof SIGNATURE_FILE_TYPES]?.label : undefined) ?? OFFER_FILE_TYPES[t as keyof typeof OFFER_FILE_TYPES]?.label ?? t;
   const items = (itemRows ?? []) as unknown as ItemRow[];
   const docs = (docRows ?? []) as Doc[];
   const scores = (scoreRows ?? []) as Score[];
@@ -82,13 +103,14 @@ export default async function OfferReview({ params, searchParams }: { params: Pr
   const current = scores.filter((s) => s.revision === o.revision);
   const myScore = current.find((s) => s.reviewer_id === ctx.user.id) ?? null;
   const res = offerResult(scores, o.revision);
-  const people = [...new Set([...scores.map((s) => s.reviewer_id), ...conflicts.map((c) => c.reviewer_id), ...history.map((h) => h.actor_id), ...refs.map((r) => r.verified_by)].filter(Boolean) as string[])];
+  const people = [...new Set([...scores.map((s) => s.reviewer_id), ...conflicts.map((c) => c.reviewer_id), ...history.map((h) => h.actor_id), ...refs.map((r) => r.verified_by), ...reviews.map((r) => r.reviewer_id)].filter(Boolean) as string[])];
   const [{ data: prof }, { data: names }, { data: roleRows }, { data: same }] = await Promise.all([
     ctx.db.from("partner_profiles").select("legal_name, status, categories, accredited_at").eq("user_id", o.user_id).maybeSingle(),
     people.length ? ctx.db.from("profiles").select("id, full_name").in("id", people) : Promise.resolve({ data: [] }),
     people.length ? ctx.db.from("roles").select("user_id, role").in("user_id", people) : Promise.resolve({ data: [] }),
     o.product_group ? ctx.db.from("supplier_offers").select("id").eq("product_group", o.product_group).in("status", ["submitted", "selected"]).neq("id", id).limit(5)
       : o.service_category ? ctx.db.from("supplier_offers").select("id").eq("kind", "service").eq("service_category", o.service_category).in("status", ["submitted", "selected"]).neq("id", id).limit(5)
+      : o.signature_category ? ctx.db.from("supplier_offers").select("id").eq("kind", "manufacturer").eq("signature_category", o.signature_category).in("status", ["submitted", "selected"]).neq("id", id).limit(5)
       : Promise.resolve({ data: [] }),
   ]);
   const nameOf = new Map((names ?? []).map((p) => [p.id, p.full_name as string]));
@@ -99,20 +121,22 @@ export default async function OfferReview({ params, searchParams }: { params: Pr
 
   return (
     <div className="space-y-4">
-      <PartnerTabs current={service ? "service_offers" : "offers"} />
+      <PartnerTabs current={service ? "service_offers" : signature ? "signature_offers" : "offers"} />
       <header>
-        <p className="text-xs font-bold uppercase text-muted">{service ? `Service offer · ${o.service_category ? SERVICE_CATEGORIES[o.service_category] : "kind not chosen"}` : o.product_group ? PRODUCT_GROUPS[o.product_group] : "No product group"}{o.revision > 0 ? ` · version ${o.revision}` : ""}</p>
+        <p className="text-xs font-bold uppercase text-muted">{service ? `Service offer · ${o.service_category ? SERVICE_CATEGORIES[o.service_category] : "kind not chosen"}` : signature ? `FLAME Signature proposal · ${o.signature_category ? SIGNATURE_CATEGORIES[o.signature_category] : "kind not chosen"}` : o.product_group ? PRODUCT_GROUPS[o.product_group] : "No product group"}{o.revision > 0 ? ` · version ${o.revision}` : ""}</p>
         <h1 className="break-words text-2xl font-extrabold text-primary">{o.title || "(no name yet)"}</h1>
-        <p className="text-sm">{service ? "Service provider" : "Supplier"}: <strong>{prof?.legal_name ?? "—"}</strong> ({prof?.status === "accredited" ? "accredited" : "not accredited now"}){o.application_id && <> · <Link href={`/admin/partners/${o.application_id}`} className="underline">{partnerWord} application</Link></>}</p>
+        <p className="text-sm">{service ? "Service provider" : signature ? "Toll manufacturer" : "Supplier"}: <strong>{prof?.legal_name ?? "—"}</strong> ({prof?.status === "accredited" ? "accredited" : "not accredited now"}){o.application_id && <> · <Link href={`/admin/partners/${o.application_id}`} className="underline">{partnerWord} application</Link></>}</p>
         <p className="text-sm">Status: <strong>{OFFER_STATUS[o.status].label}</strong> · sent {when(o.submitted_at)}</p>
       </header>
       {sp.done && <Notice tone="ok">{DONE[sp.done] ?? "Saved."}</Notice>}
       {sp.error && <Notice tone="danger">{ERR[sp.error] ?? ERR.failed}</Notice>}
       {own && <Notice tone="warn">{ERR.own}</Notice>}
 
+      {(same ?? []).length > 0 && signature && <Link href={compareHref} className="btn btn-outline min-h-11 w-full px-3 text-sm sm:w-auto">Compare with other proposals for this kind of product</Link>}
+      {signature && <SignatureTerms o={o} sites={sites} />}
       {(same ?? []).length > 0 && service && <Link href={compareHref} className="btn btn-outline min-h-11 w-full px-3 text-sm sm:w-auto">Compare with other offers for this kind of service</Link>}
       {service && <><ServiceTerms o={o} packages={packages} /><TrackRecordCard tr={track} /><ReferencesSection id={id} refs={refs} canCheck={cleared && o.status !== "draft" && o.status !== "withdrawn"} who={who} /></>}
-      {!service && <>
+      {!service && !signature && <>
       <section className="card space-y-3 p-4" aria-labelledby="terms-h">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="terms-h" className="text-lg font-bold">Offer terms</h2>
@@ -167,6 +191,8 @@ export default async function OfferReview({ params, searchParams }: { params: Pr
         )}
       </section>
 
+      {signature && <SignatureProducts id={id} o={o} products={sigProducts} sites={sites} canDecide={cleared && (o.status === "submitted" || o.status === "selected")} regulatoryCleared={rState.regulatory === "cleared"} />}
+
       {!own && (
         <section id="coi" className="card scroll-mt-24 space-y-3 p-4" aria-labelledby="coi-h">
           <h2 id="coi-h" className="text-lg font-bold">Conflict of interest</h2>
@@ -215,13 +241,13 @@ export default async function OfferReview({ params, searchParams }: { params: Pr
                 <div key={p.key} className="field">
                   <label htmlFor={p.key} className="label">{scoreLabel(p.key, p.label)} <span className="text-sm font-normal text-muted">(0 to {p.max})</span></label>
                   <input id={p.key} name={p.key} type="number" min={0} max={p.max} step={1} required inputMode="numeric" defaultValue={myScore?.[p.key] ?? ""} className="input" aria-describedby={`${p.key}-help`} />
-                  <p id={`${p.key}-help`} className="field-help">{service ? SERVICE_SCORE_LABELS[p.key].help : p.help}</p>
+                  <p id={`${p.key}-help`} className="field-help">{scoreHelp(p.key, p.help)}</p>
                 </div>
               ))}
             </div>
             <fieldset className="space-y-2 rounded-xl border-2 border-line p-3">
               <legend className="px-1 font-bold">Compliance gate (required)</legend>
-              <p className="text-sm text-muted">{service ? SERVICE_GATE_HELP : "Pass only if the supplier is accredited, its permits are current, and products that need FDA registration or certificates have them."}</p>
+              <p className="text-sm text-muted">{service ? SERVICE_GATE_HELP : signature ? SIGNATURE_GATE_HELP : "Pass only if the supplier is accredited, its permits are current, and products that need FDA registration or certificates have them."}</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-line px-3 py-2 has-[:checked]:border-primary has-[:checked]:bg-primary-soft"><input type="radio" name="compliance" value="pass" required defaultChecked={myScore?.compliance_pass === true} className="check" /><span className="font-semibold">Passes</span></label>
                 <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-line px-3 py-2 has-[:checked]:border-primary has-[:checked]:bg-primary-soft"><input type="radio" name="compliance" value="fail" defaultChecked={myScore?.compliance_pass === false} className="check" /><span className="font-semibold">Fails</span></label>
@@ -237,6 +263,8 @@ export default async function OfferReview({ params, searchParams }: { params: Pr
           </form>
         </section>
       )}
+
+      {signature && <SignatureReviews id={id} revision={o.revision} reviews={reviews} canReview={cleared && o.status === "submitted"} who={who} />}
 
       <section className="card space-y-3 p-4" aria-labelledby="result-h">
         <h2 id="result-h" className="text-lg font-bold">Scores for version {o.revision || "—"}</h2>
@@ -260,24 +288,25 @@ export default async function OfferReview({ params, searchParams }: { params: Pr
         <section id="decide" className="card scroll-mt-24 space-y-3 border-2 border-primary p-4" aria-labelledby="dec-h">
           <h2 id="dec-h" className="text-lg font-bold">Decision</h2>
           {!res.canSelect && <Notice tone="info">{ERR.gate}</Notice>}
+          {signature && !rState.cleared && <Notice tone="info">{ERR.reviews}</Notice>}
           <form action={decideOffer} className="space-y-3">
             <input type="hidden" name="id" value={id} />
             <fieldset className="grid gap-2 sm:grid-cols-3">
               <legend className="label">What do you decide?</legend>
               {([["selected", "Choose as Best Offer"], ["needs_changes", "Send back for changes"], ["not_selected", "Not chosen"]] as const).map(([v, l]) => (
-                <label key={v} className={`flex min-h-11 items-center gap-2 rounded-xl border border-line px-3 py-2 has-[:checked]:border-primary has-[:checked]:bg-primary-soft ${v === "selected" && !res.canSelect ? "opacity-50" : "cursor-pointer"}`}>
-                  <input type="radio" name="decision" value={v} required disabled={v === "selected" && !res.canSelect} className="check" /><span className="font-semibold">{l}</span>
+                <label key={v} className={`flex min-h-11 items-center gap-2 rounded-xl border border-line px-3 py-2 has-[:checked]:border-primary has-[:checked]:bg-primary-soft ${v === "selected" && (!res.canSelect || (signature && !rState.cleared)) ? "opacity-50" : "cursor-pointer"}`}>
+                  <input type="radio" name="decision" value={v} required disabled={v === "selected" && (!res.canSelect || (signature && !rState.cleared))} className="check" /><span className="font-semibold">{l}</span>
                 </label>
               ))}
             </fieldset>
             <div className="field">
               <label htmlFor="selection_reason" className="label">Reason for the final selection (needed to choose)</label>
-              <textarea id="selection_reason" name="selection_reason" rows={3} maxLength={2000} className="input" placeholder={service ? "e.g. Lowest monthly member rate among 3 bookkeepers, CPA-led, 2 past clients verified, replies within 24 hours." : "e.g. Lowest landed cost per piece among 3 offers, delivers to all 3 pilot regions, compliance passed."} />
+              <textarea id="selection_reason" name="selection_reason" rows={3} maxLength={2000} className="input" placeholder={signature ? "e.g. Lowest toll price per 100 g among 3 sauce makers, current FDA LTO, sample batches scored 4.5/5, both reviews cleared." : service ? "e.g. Lowest monthly member rate among 3 bookkeepers, CPA-led, 2 past clients verified, replies within 24 hours." : "e.g. Lowest landed cost per piece among 3 offers, delivers to all 3 pilot regions, compliance passed."} />
             </div>
             <fieldset>
               <legend className="label">Reasons the {partnerWord} will see (needed for changes or not chosen)</legend>
               <div className="grid gap-1 sm:grid-cols-2">
-                {(service ? SERVICE_REASON_KEYS : OFFER_REASON_KEYS).map((k) => (
+                {(service ? SERVICE_REASON_KEYS : signature ? SIGNATURE_REASON_KEYS : OFFER_REASON_KEYS).map((k) => (
                   <label key={k} className="flex min-h-11 cursor-pointer items-start gap-2 py-1"><input type="checkbox" name="reasons" value={k} className="check mt-0.5" /><span className="text-[15px]">{reasonText(k)}</span></label>
                 ))}
               </div>

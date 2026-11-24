@@ -16,7 +16,7 @@ export const PARTNER_CATEGORIES = {
   toll_manufacturer: {
     label: "Toll manufacturer", fil: "Gumagawa ng produkto para sa iba",
     text: "You make products for other brands under their name (FLAME Signature), with your own plant and permits.",
-    stage: "Application open",
+    stage: "FLAME Signature proposals open to accredited toll manufacturers",
   },
 } as const;
 export type PartnerCategory = keyof typeof PARTNER_CATEGORIES;

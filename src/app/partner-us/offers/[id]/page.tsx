@@ -17,6 +17,8 @@ import {
 } from "../actions";
 import { SERVICE_COLS, type ServiceOfferRow } from "@/lib/service-offers";
 import { ServiceOffer } from "./ServiceOffer";
+import { SIGNATURE_COLS, type SignatureOfferRow } from "@/lib/signature";
+import { SignatureOffer } from "./SignatureOffer";
 
 export const metadata = { title: "Best Offer", robots: { index: false } };
 
@@ -53,13 +55,13 @@ function ItemSummary({ it, vat }: { it: ItemRow; vat: OfferRow["vat_basis"] }) {
   );
 }
 
-export default async function OfferPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ step?: string; item?: string; done?: string; error?: string }> }) {
+export default async function OfferPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ step?: string; item?: string; site?: string; prod?: string; done?: string; error?: string }> }) {
   const { id } = await params;
   const sp = await searchParams;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { supabase, user } = await requireUser(`/partner-us/offers/${id}`);
   const [{ data: row }, { data: itemRows }, { data: docRows }, { data: histRows }] = await Promise.all([
-    supabase.from("supplier_offers").select(`${OFFER_COLS}, ${SERVICE_COLS}`).eq("id", id).eq("user_id", user.id).maybeSingle(),
+    supabase.from("supplier_offers").select(`${OFFER_COLS}, ${SERVICE_COLS}, ${SIGNATURE_COLS}`).eq("id", id).eq("user_id", user.id).maybeSingle(),
     supabase.from("supplier_offer_items").select(ITEM_COLS).eq("offer_id", id).order("position"),
     supabase.from("vetting_documents").select("id, doc_type, item_id, file_name, size_bytes, uploaded_at").eq("offer_id", id).eq("user_id", user.id).is("deleted_at", null).order("uploaded_at"),
     supabase.from("supplier_offer_history").select("id, action, reasons, note, created_at, revision").eq("offer_id", id).order("created_at", { ascending: false }).limit(40),
@@ -68,6 +70,10 @@ export default async function OfferPage({ params, searchParams }: { params: Prom
   // Step 6: a service provider's offer has its own screens (packages, standards, past clients).
   if ((row as unknown as ServiceOfferRow).kind === "service") {
     return <ServiceOffer o={row as unknown as ServiceOfferRow} docs={(docRows ?? []) as Doc[]} history={(histRows ?? []) as History[]} sp={sp} />;
+  }
+  // Step 7: a toll manufacturer's FLAME Signature proposal has its own screens (sites, products, quality, licence terms).
+  if ((row as unknown as SignatureOfferRow).kind === "manufacturer") {
+    return <SignatureOffer o={row as unknown as SignatureOfferRow} docs={(docRows ?? []) as Doc[]} history={(histRows ?? []) as History[]} sp={sp} />;
   }
   const o = row as unknown as OfferRow;
   const items = (itemRows ?? []) as unknown as ItemRow[];

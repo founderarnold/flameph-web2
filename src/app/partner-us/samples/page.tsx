@@ -13,6 +13,8 @@ export const metadata = { title: "Sample tests", robots: { index: false } };
 type Row = { id: string; ref_no: string; status: SampleStatus; partner_name: string; product_name: string; total: number | null; safety_concern: boolean; updated_at: string; submitted_at: string | null };
 type Target = { partner_user_id: string; partner_name: string; offer_id: string | null; offer_title: string | null; item_id: string | null; product_name: string | null; sell_unit: string | null };
 type Result = { id: string; ref_no: string; product_name: string; received_on: string; arrival_condition: keyof typeof ARRIVAL; total: number; would_recommend: keyof typeof RECOMMEND; feedback_tags: FeedbackTag[]; feedback: string | null; safety_concern: boolean; reviewed_at: string } & Record<string, number | string | boolean | null | string[]>;
+// "partner|offer|item", plus "|product name" for a FLAME Signature product (0037), which has an offer but no item line.
+const pickKey = (t: Target) => `${t.partner_user_id}|${t.offer_id ?? ""}|${t.item_id ?? ""}${t.offer_id && !t.item_id && t.product_name ? `|${encodeURIComponent(t.product_name)}` : ""}`;
 const TESTERS = ["super_admin", "admin", "national_reviewer", "chapter_tester"];
 
 /** Chapter testers (and the national team during the pilot): their sample tests and a button to start one.
@@ -30,7 +32,7 @@ export default async function Samples({ searchParams }: { searchParams: Promise<
   // Every product from the partners' offers, plus one "other product" line per partner.
   const raw = (targets ?? []) as Target[];
   const picks = [...new Map([...raw, ...raw.map((t) => ({ ...t, offer_id: null, offer_title: null, item_id: null, product_name: null, sell_unit: null }))]
-    .map((t) => [`${t.partner_user_id}|${t.offer_id ?? ""}|${t.item_id ?? ""}`, t])).values()]
+    .map((t) => [pickKey(t), t])).values()]
     .sort((x, y) => x.partner_name.localeCompare(y.partner_name) || (x.product_name ? 0 : 1) - (y.product_name ? 0 : 1));
   const shared = (results ?? []) as Result[];
   const err = sp.error ? CASE_ERRORS[sp.error] ?? CASE_ERRORS.failed : error ? CASE_ERRORS.unavailable : null;
@@ -57,7 +59,7 @@ export default async function Samples({ searchParams }: { searchParams: Promise<
                 <select id="target" name="target" required className="input" defaultValue="">
                   <option value="" disabled>Choose…</option>
                   {picks.map((t) => (
-                    <option key={`${t.partner_user_id}|${t.offer_id ?? ""}|${t.item_id ?? ""}`} value={`${t.partner_user_id}|${t.offer_id ?? ""}|${t.item_id ?? ""}`}>
+                    <option key={pickKey(t)} value={pickKey(t)}>
                       {t.partner_name}{t.product_name ? ` · ${t.product_name}${t.sell_unit ? ` (${t.sell_unit})` : ""}` : " · other product or service"}
                     </option>
                   ))}

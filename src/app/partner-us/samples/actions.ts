@@ -41,22 +41,29 @@ export async function startSample(fd: FormData) {
   const national = roles.some((r) => NATIONAL.includes(r));
   const admin = createAdminClient();
   if (!admin) go(`${HOME}?error=unavailable`);
-  // "partner|offer|item" from the pick list (which never carries prices).
-  const [partner, offer, item] = String(fd.get("target") ?? "").split("|").map((v) => uuid(v));
+  // "partner|offer|item" from the pick list (which never carries prices); a FLAME Signature product (0037) adds
+  // "|product name", since it has an offer but no item line.
+  const parts = String(fd.get("target") ?? "").split("|");
+  const [partner, offer, item] = parts.slice(0, 3).map((v) => uuid(v));
+  let sigName: string | null = null;
+  try { sigName = parts.length > 3 ? decodeURIComponent(parts.slice(3).join("|")) : null; } catch { sigName = null; }
   if (!partner) go(`${HOME}?error=partner`);
   const { data: targets } = await supabase.rpc("partner_sample_targets");
-  const hit = ((targets ?? []) as { partner_user_id: string; partner_name: string; offer_id: string | null; item_id: string | null; product_name: string | null }[])
-    .find((t) => t.partner_user_id === partner && (t.offer_id ?? null) === (offer ?? null) && (t.item_id ?? null) === (item ?? null))
-    ?? ((targets ?? []) as { partner_user_id: string; partner_name: string; offer_id: string | null; item_id: string | null; product_name: string | null }[]).find((t) => t.partner_user_id === partner);
+  type T = { partner_user_id: string; partner_name: string; offer_id: string | null; item_id: string | null; product_name: string | null };
+  const list = (targets ?? []) as T[];
+  const hit = list.find((t) => t.partner_user_id === partner && (t.offer_id ?? null) === (offer ?? null) && (t.item_id ?? null) === (item ?? null)
+      && (!sigName || t.product_name === sigName))
+    ?? list.find((t) => t.partner_user_id === partner);
   if (!hit) go(`${HOME}?error=partner`);
-  const product = str(fd, "product_name", 150) ?? (item && hit!.item_id === item ? hit!.product_name : null);
+  const sameItem = !!item && hit!.item_id === item;
+  const sameSignature = !item && !!sigName && !!offer && hit!.offer_id === offer && hit!.product_name === sigName;
+  const product = str(fd, "product_name", 150) ?? (sameItem || sameSignature ? hit!.product_name : null);
   if (!product) go(`${HOME}?error=missing`);
   const { data: chap } = await admin!.from("roles").select("chapter_id").eq("user_id", user.id).eq("role", "chapter_tester").limit(1).maybeSingle();
   if (!national && !chap?.chapter_id) go(`${HOME}?error=not_tester`);
-  const sameItem = item && hit!.item_id === item;
   const { data: row, error } = await admin!.from("partner_sample_tests").insert({
     tester_id: user.id, chapter_id: chap?.chapter_id ?? null, partner_user_id: partner, partner_name: hit!.partner_name,
-    offer_id: sameItem ? hit!.offer_id : null, item_id: sameItem ? item : null, product_name: product,
+    offer_id: sameItem || sameSignature ? hit!.offer_id : null, item_id: sameItem ? item : null, product_name: product,
   }).select("id").single();
   if (error || !row) go(`${HOME}?error=${error?.message.includes("limit") ? "limit" : "failed"}`);
   await admin!.from("audit_log").insert({ actor_id: user.id, action: "partner_sample_start", table_name: "partner_sample_tests", row_id: row!.id });
