@@ -254,7 +254,7 @@ export default async function ApplicationPage({ params, searchParams }: { params
             </form>
           ))}
           {!editable && a.status === "submitted" && <Notice tone="info">The national review team is checking your application. We will tell you in your Inbox and by email. You can&apos;t change it while it is being checked.</Notice>}
-          {!editable && a.status === "approved" && <Notice tone="ok">Your business is an accredited FLAME PH {cat.label.toLowerCase()}. {a.category === "supplier" ? <>You can now send your Best Offer. <Link href="/partner-us/offers" className="font-bold underline">Go to My Best Offers</Link></> : "We will tell you when your next form opens."}</Notice>}
+          {!editable && a.status === "approved" && <Notice tone="ok">Your business is an accredited FLAME PH {cat.label.toLowerCase()}. {a.category === "supplier" || a.category === "service_provider" ? <>You can now send your {a.category === "supplier" ? "Best Offer" : "service offer"}. <Link href="/partner-us/offers" className="font-bold underline">Go to My Best Offers</Link></> : "We will tell you when your next form opens."}</Notice>}
           {a.status === "withdrawn" && (
             <form action={reopenApplication}><input type="hidden" name="id" value={a.id} /><SubmitButton className="btn btn-primary min-h-11 w-full sm:w-auto" pendingText="Opening…">Open it again as a draft</SubmitButton></form>
           )}

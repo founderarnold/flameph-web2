@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import { adminContext } from "@/lib/admin/guard";
 import { tellApplicant } from "@/lib/partner-server";
 import { cleanScore, isOfferReason, offerResult, SCORE_PARTS, type ScoreRow } from "@/lib/offers";
+import { isServiceReason } from "@/lib/service-offers";
 
-// Admin > Partners > Supplier offers. Only the national team (founder, admin, national reviewer) declares conflicts,
+// Admin > Partners > Supplier offers and Service offers (Step 6 reuses every action here; service offers add reference
+// checks). Only the national team (founder, admin, national reviewer) declares conflicts,
 // scores and decides. Chapter coordinators, testers and finance have no access to commercial offers. Every step is in
 // supplier_offer_history and the audit log, and the database checks the same rules again (0032).
 
@@ -16,10 +18,10 @@ const page = (id: string, q: string, hash = "") => `/admin/partners/offers/${id}
 async function loadOffer(id: string | null) {
   const ctx = await adminContext([...NATIONAL]);
   if (!id) redirect("/admin/partners/offers");
-  const { data: offer } = await ctx.db.from("supplier_offers").select("id, user_id, status, revision, title").eq("id", id!).maybeSingle();
+  const { data: offer } = await ctx.db.from("supplier_offers").select("id, user_id, status, revision, title, kind").eq("id", id!).maybeSingle();
   if (!offer) redirect("/admin/partners/offers?error=missing");
   if (offer!.user_id === ctx.user.id) redirect(page(id!, "error=own"));   // nobody reviews their own offer
-  return { ctx, offer: offer as { id: string; user_id: string; status: string; revision: number; title: string | null } };
+  return { ctx, offer: offer as { id: string; user_id: string; status: string; revision: number; title: string | null; kind: "supplier" | "service" } };
 }
 
 async function myDeclaration(ctx: Awaited<ReturnType<typeof adminContext>>, offerId: string) {
@@ -90,7 +92,7 @@ export async function decideOffer(fd: FormData) {
   if (offer.status !== "submitted") back("error=status");
   const mine = await myDeclaration(ctx, offer.id);
   if (!mine || mine.has_conflict) back("error=coi_first");
-  const reasons = [...new Set(fd.getAll("reasons").map(String).filter(isOfferReason))].slice(0, 12);
+  const reasons = [...new Set(fd.getAll("reasons").map(String).filter(offer.kind === "service" ? isServiceReason : isOfferReason))].slice(0, 12);
   const note = String(fd.get("note") ?? "").trim().slice(0, 2000) || null;
   const selection_reason = String(fd.get("selection_reason") ?? "").trim().slice(0, 2000) || null;
   if (decision === "selected") {
@@ -111,9 +113,9 @@ export async function decideOffer(fd: FormData) {
     offer_id: offer.id, actor_id: ctx.user.id, action: decision, revision: offer.revision,
     reasons: decision === "selected" ? [] : reasons, note: decision === "selected" ? selection_reason : note,
   });
-  await ctx.audit(`supplier_offer_${decision}`, "supplier_offers", offer.id, { revision: offer.revision, reasons });
+  await ctx.audit(`${offer.kind === "service" ? "service" : "supplier"}_offer_${decision}`, "supplier_offers", offer.id, { revision: offer.revision, reasons });
   const t = DECISION_TEXT[decision as keyof typeof DECISION_TEXT];
-  await tellApplicant(offer.user_id, t.title, `${t.body} (${offer.title ?? "your offer"})`, `/partner-us/offers/${offer.id}`, "FLAME PH Best Offer");
+  await tellApplicant(offer.user_id, offer.kind === "service" ? t.title.replace("Your offer", "Your service offer") : t.title, `${t.body} (${offer.title ?? "your offer"})`, `/partner-us/offers/${offer.id}`, "FLAME PH Best Offer");
   revalidatePath("/admin/partners/offers"); revalidatePath(`/admin/partners/offers/${offer.id}`);
   back("done=decided");
 }
@@ -127,4 +129,29 @@ export async function teamNote(fd: FormData) {
   await ctx.audit("supplier_offer_team_note", "supplier_offers", offer.id);
   revalidatePath(`/admin/partners/offers/${offer.id}`);
   redirect(page(offer.id, "done=note", "#history"));
+}
+
+/** Service offers (Step 6): the result of calling one of the provider's past clients. Only a reviewer who declared no
+ *  conflict of interest; "could not verify" needs a note. The database checks the same (0036). */
+export async function checkReference(fd: FormData) {
+  const { ctx, offer } = await loadOffer(uuid(fd.get("id")));
+  const back = (q: string): never => redirect(page(offer.id, q, "#references"));
+  if (offer.kind !== "service") back("error=failed");
+  if (!["submitted", "needs_changes", "selected", "not_selected"].includes(offer.status)) back("error=status");
+  const mine = await myDeclaration(ctx, offer.id);
+  if (!mine || mine.has_conflict) back("error=coi_first");
+  const refId = uuid(fd.get("reference_id"));
+  const result = String(fd.get("verification") ?? "");
+  if (!refId || !["verified", "not_verified"].includes(result)) back("error=ref_choice");
+  const note = String(fd.get("verification_note") ?? "").trim().slice(0, 1000) || null;
+  if (!note) back("error=ref_note");
+  const r = Number(fd.get("client_rating"));
+  const client_rating = result === "verified" && Number.isInteger(r) && r >= 1 && r <= 5 ? r : null;
+  const { error } = await ctx.db.from("service_offer_references").update({
+    verification: result, client_rating, verification_note: note, verified_by: ctx.user.id, verified_at: new Date().toISOString(),
+  }).eq("id", refId!).eq("offer_id", offer.id);
+  if (error) back("error=failed");
+  await ctx.audit("service_offer_reference_checked", "service_offer_references", refId!, { offer_id: offer.id, result, client_rating });
+  revalidatePath(`/admin/partners/offers/${offer.id}`);
+  back("done=reference");
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 const TABS = [
   ["applications", "Applications", "/admin/partners"],
   ["offers", "Supplier offers", "/admin/partners/offers"],
+  ["service_offers", "Service offers", "/admin/partners/offers?kind=service"],
   ["territories", "Territories", "/admin/partners/territories"],
   ["commissions", "Commissions", "/admin/partners/commissions"],
   ["samples", "Samples", "/admin/partners/samples"],
@@ -11,7 +12,7 @@ const TABS = [
   ["sanctions", "Sanctions", "/admin/partners/sanctions"],
 ] as const;
 
-/** The national team's partner sections (Admin > Partners): applications, supplier offers, territories, commissions,
+/** The national team's partner sections (Admin > Partners): applications, supplier offers, service offers, territories, commissions,
  *  sample tests, complaints, penalties and sanctions. */
 export function PartnerTabs({ current }: { current: (typeof TABS)[number][0] }) {
   return (

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { ownOffer } from "./own";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendEmail, NOTIFY_TO } from "@/lib/email";
 import { ORG } from "@/lib/site";
@@ -14,10 +15,13 @@ import { partnerBytes } from "@/lib/partner-server";
 import {
   BASE_UNITS, isOfferFileType, ITEM_COLS, MAX_ITEMS, MAX_OFFER_FILES, MAX_OFFERS, MAX_PHOTOS_PER_ITEM, OFFER_COLS, OFFER_EDITABLE, OFFER_LAST_STEP,
   offerMissing, parseCount, parseMoney, parseQty, parseTiers, PRODUCT_GROUPS, SAMPLES, SHIPPING_TERMS, STOCK, VAT_BASIS,
-  type OfferStatus,
 } from "@/lib/offers";
+import {
+  isKind, isServiceFileType, PACKAGE_COLS, REFERENCE_COLS, SERVICE_COLS, serviceMissing, type OfferKind, type PackageRow, type ServiceOfferRow,
+} from "@/lib/service-offers";
 
-// The supplier's side of the Best Offer. Every write goes through here with the server key, after checking that the
+// The supplier's and the service provider's side of the Best Offer (Step 2; Step 6 adds kind 'service', whose own
+// screens are saved in ./service-actions). Files, sending, withdrawing and reopening are shared by both kinds. Every write goes through here with the server key, after checking that the
 // signed-in member owns the offer and that it is still a draft (or was sent back for changes). The database checks the
 // same rules again (0032: accredited suppliers only, status moves, versions, limits, prices).
 
@@ -28,34 +32,28 @@ const uuid = (v: unknown) => (typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v
 const str = (fd: FormData, k: string, max: number) => String(fd.get(k) ?? "").trim().slice(0, max) || null;
 const pick = <T extends object>(v: unknown, list: T) => (typeof v === "string" && v in list ? v : null);
 
-/** The member's own offer, read as the member (row level security), then the server key for writing. */
-async function ownOffer(id: string | null) {
-  const { supabase, user } = await requireUser(HOME);
-  if (!id) go(HOME);
-  const { data: offer, error } = await supabase.from("supplier_offers").select("id, user_id, status, revision, title").eq("id", id!).maybeSingle();
-  if (error) go(`${HOME}?error=unavailable`);
-  if (!offer || offer.user_id !== user.id) go(HOME);
-  const admin = createAdminClient();
-  if (!admin) go(`${HOME}?error=unavailable`);
-  return { user, supabase, admin: admin!, offer: offer as { id: string; user_id: string; status: OfferStatus; revision: number; title: string | null } };
-}
+/** The partner category that may make each kind of offer. */
+const CATEGORY_OF: Record<OfferKind, string> = { supplier: "supplier", service: "service_provider" };
 
-/** Starts a new offer. Only an accredited supplier (approved supplier application) can. */
-export async function startOffer() {
+/** Starts a new offer. Only an accredited supplier (approved supplier application) can start a supplier offer, and only
+ *  an accredited service provider a service offer. */
+export async function startOffer(fd?: FormData) {
+  const kind: OfferKind = isKind(fd?.get("kind")) ? (fd!.get("kind") as OfferKind) : "supplier";
+  const category = CATEGORY_OF[kind];
   const { supabase, user } = await requireUser(HOME);
   const [{ data: prof, error }, { data: app }, { count }] = await Promise.all([
     supabase.from("partner_profiles").select("status, categories").eq("user_id", user.id).maybeSingle(),
-    supabase.from("partner_applications").select("id").eq("user_id", user.id).eq("category", "supplier").eq("status", "approved").maybeSingle(),
-    supabase.from("supplier_offers").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    supabase.from("partner_applications").select("id").eq("user_id", user.id).eq("category", category).eq("status", "approved").maybeSingle(),
+    supabase.from("supplier_offers").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("kind", kind),
   ]);
   if (error) go(`${HOME}?error=unavailable`);
-  if (!prof || prof.status !== "accredited" || !(prof.categories as string[]).includes("supplier")) go(`${HOME}?error=not_supplier`);
+  if (!prof || prof.status !== "accredited" || !(prof.categories as string[]).includes(category)) go(kind === "service" ? `${HOME}?error=not_provider` : `${HOME}?error=not_supplier`);
   if ((count ?? 0) >= MAX_OFFERS) go(`${HOME}?error=limit`);
   const admin = createAdminClient();
   if (!admin) go(`${HOME}?error=unavailable`);
-  const { data: row, error: insErr } = await admin!.from("supplier_offers").insert({ user_id: user.id, application_id: app?.id ?? null }).select("id").single();
+  const { data: row, error: insErr } = await admin!.from("supplier_offers").insert({ user_id: user.id, application_id: app?.id ?? null, kind }).select("id").single();
   if (insErr || !row) go(`${HOME}?error=failed`);
-  await admin!.from("audit_log").insert({ actor_id: user.id, action: "supplier_offer_start", table_name: "supplier_offers", row_id: row!.id });
+  await admin!.from("audit_log").insert({ actor_id: user.id, action: kind === "service" ? "service_offer_start" : "supplier_offer_start", table_name: "supplier_offers", row_id: row!.id });
   revalidatePath(HOME);
   go(formPath(row!.id, 1, "done=started"));
 }
@@ -63,6 +61,7 @@ export async function startOffer() {
 /** Saves screen 1, 3 or 5. "Save draft" stays; "Save and continue" goes on. Formats are checked; blanks are fine until sending. */
 export async function saveOfferStep(fd: FormData) {
   const { offer, admin, user } = await ownOffer(uuid(fd.get("id")));
+  if (offer.kind !== "supplier") go(formPath(offer.id, 1));   // service offers save through ./service-actions
   const step = Math.min(OFFER_LAST_STEP, Math.max(1, Number(fd.get("step")) || 1));
   const next = fd.get("intent") === "next";
   if (!OFFER_EDITABLE.includes(offer.status)) go(formPath(offer.id, step, "error=locked"));
@@ -110,6 +109,7 @@ export async function saveItem(fd: FormData) {
   const { offer, admin } = await ownOffer(uuid(fd.get("id")));
   const itemId = uuid(fd.get("item_id"));
   const back = (q: string): never => go(formPath(offer.id, 2, `${q}${itemId ? `&item=${itemId}` : "&item=new"}`));
+  if (offer.kind !== "supplier") go(formPath(offer.id, 2));
   if (!OFFER_EDITABLE.includes(offer.status)) go(formPath(offer.id, 2, "error=locked"));
 
   const product_name = str(fd, "product_name", 150);
@@ -171,7 +171,7 @@ export async function uploadOfferFile(fd: FormData) {
   if (!OFFER_EDITABLE.includes(offer.status)) back("error=locked");
   const type = fd.get("doc_type");
   const file = fd.get("file");
-  if (!isOfferFileType(type)) back("error=doc_type");
+  if (offer.kind === "service" ? !isServiceFileType(type) : !isOfferFileType(type)) back("error=doc_type");
   if (!(file instanceof File) || file.size === 0) back("error=empty");
   const f = file as File;
   if (f.size > PARTNER_DOC_MAX_BYTES) back("error=size");
@@ -223,30 +223,37 @@ export async function submitOffer(fd: FormData) {
   const back = (q: string): never => go(formPath(offer.id, OFFER_LAST_STEP, q));
   if (!OFFER_EDITABLE.includes(offer.status)) back("error=locked");
   if (fd.get("declaration") !== "yes") back("error=declaration");
+  const service = offer.kind === "service";
   const [{ data: full }, { data: items }, { count: photos }, { data: prof }] = await Promise.all([
-    admin.from("supplier_offers").select(OFFER_COLS).eq("id", offer.id).single(),
-    admin.from("supplier_offer_items").select(ITEM_COLS).eq("offer_id", offer.id).order("position"),
-    admin.from("vetting_documents").select("id", { count: "exact", head: true }).eq("offer_id", offer.id).eq("doc_type", "product_photo").is("deleted_at", null),
+    admin.from("supplier_offers").select(service ? `${OFFER_COLS}, ${SERVICE_COLS}` : OFFER_COLS).eq("id", offer.id).single(),
+    service ? admin.from("service_offer_packages").select(PACKAGE_COLS).eq("offer_id", offer.id).order("position")
+      : admin.from("supplier_offer_items").select(ITEM_COLS).eq("offer_id", offer.id).order("position"),
+    admin.from("vetting_documents").select("id", { count: "exact", head: true }).eq("offer_id", offer.id).eq("doc_type", service ? "portfolio" : "product_photo").is("deleted_at", null),
     admin.from("partner_profiles").select("legal_name, status, categories").eq("user_id", user.id).maybeSingle(),
   ]);
   if (!full) back("error=failed");
-  if (!prof || prof.status !== "accredited" || !(prof.categories as string[]).includes("supplier")) back("error=not_supplier");
+  if (!prof || prof.status !== "accredited" || !(prof.categories as string[]).includes(CATEGORY_OF[offer.kind])) back(service ? "error=not_provider" : "error=not_supplier");
   const o = full as unknown as Parameters<typeof offerMissing>[0] & { revision: number; title: string | null };
-  if (offerMissing(o, items?.length ?? 0, photos ?? 0).length) back("error=missing");
+  const { data: refs } = service ? await admin.from("service_offer_references").select(REFERENCE_COLS).eq("offer_id", offer.id).order("position") : { data: [] };
+  const missing = service
+    ? serviceMissing(full as unknown as ServiceOfferRow, (items ?? []) as unknown as PackageRow[], refs?.length ?? 0, photos ?? 0)
+    : offerMissing(o, items?.length ?? 0, photos ?? 0);
+  if (missing.length) back("error=missing");
   const now = new Date().toISOString();
   const wasChanges = offer.status === "needs_changes";
   const { data: sent, error } = await admin.from("supplier_offers").update({ status: "submitted", submitted_at: now, declaration_at: now })
     .eq("id", offer.id).eq("user_id", user.id).select("revision").single();
   if (error || !sent) back("error=failed");
   // The frozen copy of what was sent: this is the version history.
-  await admin.from("supplier_offer_history").insert({
-    offer_id: offer.id, actor_id: user.id, action: "submitted", revision: sent!.revision,
-    snapshot: { offer: full, items: items ?? [] }, note: wasChanges ? "Sent again after changes" : null,
-  });
-  await admin.from("audit_log").insert({ actor_id: user.id, action: "supplier_offer_submit", table_name: "supplier_offers", row_id: offer.id, detail: { revision: sent!.revision, items: items?.length ?? 0 } });
+  // Service offers keep their packages and past clients in the frozen copy (Step 6).
+  const base = { offer_id: offer.id, actor_id: user.id, action: "submitted", revision: sent!.revision, note: wasChanges ? "Sent again after changes" : null };
+  await admin.from("supplier_offer_history").insert(service
+    ? { ...base, snapshot: { offer: full, packages: items ?? [], references: refs ?? [] } }
+    : { ...base, snapshot: { offer: full, items: items ?? [] } });
+  await admin.from("audit_log").insert({ actor_id: user.id, action: service ? "service_offer_submit" : "supplier_offer_submit", table_name: "supplier_offers", row_id: offer.id, detail: { revision: sent!.revision, [service ? "packages" : "items"]: items?.length ?? 0 } });
   await sendEmail({
-    to: NOTIFY_TO, subject: `Supplier Best Offer ${sent!.revision > 1 ? `version ${sent!.revision}` : "received"}: ${o.title ?? "(no name)"} from ${prof!.legal_name}`,
-    text: `A supplier offer is waiting for the national team's review and scoring.\n\nOpen it in Admin > Partners > Supplier offers: ${ORG.url}/admin/partners/offers/${offer.id}`,
+    to: NOTIFY_TO, subject: `${service ? "Service" : "Supplier"} Best Offer ${sent!.revision > 1 ? `version ${sent!.revision}` : "received"}: ${o.title ?? "(no name)"} from ${prof!.legal_name}`,
+    text: `A ${service ? "service provider" : "supplier"} offer is waiting for the national team's review and scoring.\n\nOpen it in Admin > Partners > ${service ? "Service" : "Supplier"} offers: ${ORG.url}/admin/partners/offers/${offer.id}`,
   });
   revalidatePath(HOME); revalidatePath(`${HOME}/${offer.id}`); revalidatePath("/admin/partners/offers");
   go(formPath(offer.id, OFFER_LAST_STEP, "done=submitted"));
