@@ -119,7 +119,7 @@ export default async function ApplicationPage({ params, searchParams }: { params
 
       {editable && step <= 3 && (
         <form action={saveStep} className="card space-y-4 p-4 sm:p-6">
-          <input type="hidden" name="id" value={a.id} /><input type="hidden" name="step" value={step} />
+          <input type="hidden" name="application_id" value={a.id} /><input type="hidden" name="step" value={step} />
           <div>
             <h2 className="text-xl font-extrabold">{STEPS[step - 1].title}</h2>
             <p className="text-sm text-muted" lang="fil">{STEPS[step - 1].fil}. Puwedeng i-save at ituloy mamaya.</p>

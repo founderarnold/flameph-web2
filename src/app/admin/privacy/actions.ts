@@ -17,7 +17,7 @@ const ctx = () => adminContext([...ADMINS]);
 
 export async function updateRequest(fd: FormData) {
   const c = await ctx();
-  const id = s(fd.get("id"), 40);
+  const id = s(fd.get("request_id"), 40);
   const step = s(fd.get("step"), 20);
   const response = s(fd.get("response"));
   const now = new Date().toISOString();
@@ -112,7 +112,7 @@ export async function startIncident(fd: FormData) {
 
 export async function updateIncident(fd: FormData) {
   const c = await ctx();
-  const id = s(fd.get("id"), 40);
+  const id = s(fd.get("incident_id"), 40);
   const step = s(fd.get("step"), 20);
   const now = new Date().toISOString();
   const back = `${INC}/${id}`;

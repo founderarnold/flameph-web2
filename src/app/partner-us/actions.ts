@@ -70,7 +70,7 @@ export async function startApplication(fd: FormData) {
 /** Saves one screen. "Save draft" stays on the screen; "Save and continue" goes to the next. Formats are checked;
  *  missing answers are fine until the application is sent. */
 export async function saveStep(fd: FormData) {
-  const { app, admin, user } = await ownApp(uuid(fd.get("id")));
+  const { app, admin, user } = await ownApp(uuid(fd.get("application_id")));
   const step = Math.min(LAST_STEP, Math.max(1, Number(fd.get("step")) || 1));
   const next = fd.get("intent") === "next";
   if (!EDITABLE.includes(app.status)) go(formPath(app.id, step, "error=locked"));

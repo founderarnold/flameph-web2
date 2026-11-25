@@ -143,7 +143,7 @@ export default async function OfferPage({ params, searchParams }: { params: Prom
 
       {editable && (step === 1 || step === 3) && (
         <form action={saveOfferStep} className="card space-y-4 p-4 sm:p-6">
-          <input type="hidden" name="id" value={o.id} /><input type="hidden" name="step" value={step} />
+          <input type="hidden" name="offer_id" value={o.id} /><input type="hidden" name="step" value={step} />
           <div>
             <h2 className="text-xl font-extrabold">{OFFER_STEPS[step - 1].title}</h2>
             <p className="text-sm text-muted" lang="fil">{OFFER_STEPS[step - 1].fil}. Puwedeng i-save at ituloy mamaya.</p>
@@ -325,7 +325,7 @@ export default async function OfferPage({ params, searchParams }: { params: Prom
           <PartnerMoneyNotice />
           {editable ? (
             <form action={saveOfferStep} className="space-y-3 rounded-xl border border-line p-3 sm:p-4">
-              <input type="hidden" name="id" value={o.id} /><input type="hidden" name="step" value={OFFER_LAST_STEP} />
+              <input type="hidden" name="offer_id" value={o.id} /><input type="hidden" name="step" value={OFFER_LAST_STEP} />
               <Text name="commission_pct" label="Proposed commission (% of net sales)" value={num(o.commission_pct)} need max={6} inputMode="decimal" placeholder="e.g. 5" help={COMMISSION_HELP} />
               <TextArea name="commission_note" label="Other benefits for members or chapters (optional)" value={o.commission_note} max={500} rows={2} placeholder="e.g. Free delivery for chapter group orders; product training for members" />
               <SubmitButton className="btn btn-outline min-h-11 w-full sm:w-auto" pendingText="Saving…">Save</SubmitButton>

@@ -121,7 +121,7 @@ export async function SignatureOffer({ o, docs, history, sp }: { o: SignatureOff
 
       {editable && step === 1 && (
         <form action={saveSignatureStep} className="card space-y-4 p-4 sm:p-6">
-          <input type="hidden" name="id" value={o.id} /><input type="hidden" name="step" value={1} />
+          <input type="hidden" name="offer_id" value={o.id} /><input type="hidden" name="step" value={1} />
           <div>
             <h2 className="text-xl font-extrabold">{stepInfo.title}</h2>
             <p className="text-sm text-muted" lang="fil">{stepInfo.fil}. Puwedeng i-save at ituloy mamaya.</p>
@@ -304,7 +304,7 @@ export async function SignatureOffer({ o, docs, history, sp }: { o: SignatureOff
             <p className="text-sm text-muted" lang="fil">Paano ninyo sinusuri ang bawat batch, paano natutunton ang mga sangkap, at ano ang plano kung kailangang i-recall.</p>
           </div>
           <form action={saveSignatureStep} className="space-y-4">
-            <input type="hidden" name="id" value={o.id} /><input type="hidden" name="step" value={4} />
+            <input type="hidden" name="offer_id" value={o.id} /><input type="hidden" name="step" value={4} />
             <fieldset className="space-y-4 rounded-xl border border-line p-3 sm:p-4">
               <legend className="px-1 font-bold">Sample batches</legend>
               <Select name="sample_availability" label="Sample batches for testing" value={o.sample_availability} need options={Object.entries(SAMPLES)} help="Chapter testers and the national team test sample batches before anything is chosen." />
@@ -383,7 +383,7 @@ export async function SignatureOffer({ o, docs, history, sp }: { o: SignatureOff
           <PartnerMoneyNotice />
           {editable ? (
             <form action={saveSignatureStep} className="space-y-4 rounded-xl border border-line p-3 sm:p-4">
-              <input type="hidden" name="id" value={o.id} /><input type="hidden" name="step" value={OFFER_LAST_STEP} /><input type="hidden" name="ip_terms_shown" value="yes" />
+              <input type="hidden" name="offer_id" value={o.id} /><input type="hidden" name="step" value={OFFER_LAST_STEP} /><input type="hidden" name="ip_terms_shown" value="yes" />
               <fieldset className="space-y-2">
                 <legend className="font-bold">FLAME Signature trademark licence terms ({IP_TERMS_VERSION})<span className="ml-1 text-xs font-normal text-muted">(needed to send)</span></legend>
                 <ol className="list-decimal space-y-1 pl-5 text-[15px] leading-6">{IP_TERMS.en.map((t) => <li key={t}>{t}</li>)}</ol>

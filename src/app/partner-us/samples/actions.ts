@@ -72,7 +72,7 @@ export async function startSample(fd: FormData) {
 
 /** Saves the form. "Send" also checks everything is there (and at least one photo). */
 export async function saveSample(fd: FormData) {
-  const { t, admin, user } = await myTest(uuid(fd.get("id")));
+  const { t, admin, user } = await myTest(uuid(fd.get("sample_id")));
   const send = fd.get("intent") === "send";
   const back = (q: string): never => go(`${HOME}/${t.id}?${q}#form`);
   if (t.status !== "draft") back("error=locked");

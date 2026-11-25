@@ -21,8 +21,9 @@ const pick = <T extends object>(v: unknown, list: T) => (typeof v === "string" &
 const yesNo = (v: unknown) => (v === "yes" ? true : v === "no" ? false : null);
 const today = () => new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
 
-async function ownService(fd: FormData, step: number) {
-  const ctx = await ownOffer(uuid(fd.get("id")));
+/** key: the save-step forms send "offer_id" (a field named "id" hides the form's own id and drops the pressed button). */
+async function ownService(fd: FormData, step: number, key = "id") {
+  const ctx = await ownOffer(uuid(fd.get(key)));
   if (ctx.offer.kind !== "service") go(formPath(ctx.offer.id, step));
   if (!OFFER_EDITABLE.includes(ctx.offer.status)) go(formPath(ctx.offer.id, step, "error=locked"));
   return ctx;
@@ -31,7 +32,7 @@ async function ownService(fd: FormData, step: number) {
 /** Saves screen 1, 3 or 5. "Save draft" stays; "Save and continue" goes on. Formats are checked; blanks are fine until sending. */
 export async function saveServiceStep(fd: FormData) {
   const step = Math.min(OFFER_LAST_STEP, Math.max(1, Number(fd.get("step")) || 1));
-  const { offer, admin, user } = await ownService(fd, step);
+  const { offer, admin, user } = await ownService(fd, step, "offer_id");
   const next = fd.get("intent") === "next";
   const bad = (code: string): never => go(formPath(offer.id, step, `error=${code}`));
   const date = (k: string) => {

@@ -48,7 +48,7 @@ export default async function SampleTest({ params, searchParams }: { params: Pro
 
       {draft ? (
         <form id="form" action={saveSample} className="card scroll-mt-24 space-y-5 p-4 sm:p-6">
-          <input type="hidden" name="id" value={t.id} />
+          <input type="hidden" name="sample_id" value={t.id} />
           <fieldset className="space-y-4">
             <legend className="text-lg font-extrabold">1. When it arrived <span className="text-sm font-normal text-muted" lang="fil">· Pagdating</span></legend>
             <div className="grid gap-4 sm:grid-cols-2">
