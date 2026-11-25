@@ -3,6 +3,7 @@ import { Section } from "@/components/ui";
 import { ShareButtons } from "@/components/ShareButtons";
 import { list, mediaUrl } from "@/lib/content";
 import { SOCIALS } from "@/lib/listing";
+import { linkHref } from "@/lib/links";
 import { getSession } from "@/lib/auth";
 import { createAdminClient, createPublicClient } from "@/lib/supabase/server";
 import { peso } from "@/lib/growth";
@@ -30,7 +31,6 @@ export type B = {
 type Product = { id: string; name: string; description: string | null; price: number | null; price_from: boolean; unit: string | null; min_order: string | null; photo_path: string | null; link_url: string | null };
 type Review = { id: string; user_id: string; rating: number; body: string | null; reviewer_name: string | null; reviewer_city: string | null; created_at: string };
 
-const safeLink = (u?: string | null) => (u && /^https?:\/\//i.test(u) ? u : null);
 
 /**
  * A business profile on flameph.org. Used by /members/[slug] (members and visitors) and the older /directory/[slug].
@@ -85,14 +85,14 @@ export async function BusinessProfile({ business, review, basePath, note }: { bu
   const messenger = b.contact_messenger ? (b.contact_messenger.startsWith("http") ? b.contact_messenger : `https://m.me/${b.contact_messenger}`) : null;
   const viber = b.contact_viber ? `viber://chat?number=${encodeURIComponent(b.contact_viber.replace(/^0/, "+63").replace(/\s/g, ""))}` : null;
   const tel = b.contact_phone ? `tel:${b.contact_phone.replace(/\s/g, "")}` : null;
-  const shop = safeLink(b.marketplaceph_url);
+  const shop = linkHref("marketplaceph_url", b.marketplaceph_url);
   const inquire = "#inquire";
   const photos = b.photos ?? [];
   const cover = mediaUrl(b.cover_url) ?? mediaUrl(photos[0]);
   const logo = mediaUrl(b.logo_url);
   const place = [b.map_landmark, b.city, b.province, "Philippines"].filter(Boolean).join(", ");
   const maps = b.city || b.map_landmark ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}` : null;
-  const socials = SOCIALS.map((x) => ({ ...x, href: safeLink(b[x.key]) })).filter((x) => x.href);
+  const socials = SOCIALS.map((x) => ({ ...x, href: linkHref(x.key, b[x.key]) })).filter((x) => x.href);
   const bar = [
     (messenger || viber) && { href: (messenger ?? viber)!, label: "Message", external: Boolean(messenger) },
     tel && { href: tel, label: "Call", external: false },
@@ -161,7 +161,7 @@ export async function BusinessProfile({ business, review, basePath, note }: { bu
                       {x.min_order && <p className="text-xs text-muted">Min. order: {x.min_order}</p>}
                       <div className="mt-2 flex flex-wrap gap-2">
                         <a href={`#inquire-${i}`} className="btn btn-outline min-h-9 px-3 py-1 text-sm">Inquire</a>
-                        {safeLink(x.link_url) && <a data-track href={safeLink(x.link_url)!} target="_blank" rel="noopener" className="btn btn-flame min-h-9 px-3 py-1 text-sm">Order ↗</a>}
+                        {linkHref("website_url", x.link_url) && <a data-track href={linkHref("website_url", x.link_url)!} target="_blank" rel="noopener" className="btn btn-flame min-h-9 px-3 py-1 text-sm">Order ↗</a>}
                       </div>
                     </div>
                   </li>

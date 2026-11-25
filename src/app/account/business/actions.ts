@@ -4,6 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { EXTRA_FIELDS } from "@/lib/listing";
 import { regionOf } from "@/content/ph-regions";
 import { SIGNED_OUT_MESSAGE, friendlyDbError } from "@/lib/db-errors";
+import { normalizeLink, type LinkKind } from "@/lib/links";
+import { marketplaceLinked, storeSummary } from "@/lib/marketplace-store";
+import { STORE_REWARDS, type StoreSummary } from "@/lib/listing-sections";
+import { awardMilestones } from "@/lib/milestones";
+import { SOCIALS } from "@/lib/listing";
+
+const LINK_LABEL = Object.fromEntries([...SOCIALS.map((x) => [x.key, x.label]), ["marketplaceph_url", "your MarketplacePH store link"]]) as Record<LinkKind, string>;
 
 /**
  * Saves the member's own business listing on the server.
@@ -50,10 +57,16 @@ export async function saveBusinessListing(input: Record<string, unknown>, opts: 
   const vs = str(input.verification_status, 20);
   row.verification_status = ["none", "pending", "approved", "rejected"].includes(vs) ? vs : "none";
 
+  // Links work with or without https://, "www." or an @handle: each is saved as a full https:// address.
+  const bad: string[] = [];
+  const asLink = (f: LinkKind, v: string) => { if (!v) return null; const u = normalizeLink(f, v); if (!u) bad.push(LINK_LABEL[f]); return u; };
+  row.marketplaceph_url = asLink("marketplaceph_url", str(input.marketplaceph_url, 300));
   const extras = Object.fromEntries(EXTRA_FIELDS.map((f) => {
     const v = str(input[f], 500);
-    return [f, !v ? null : f.endsWith("_url") && !f.startsWith("logo") && !f.startsWith("cover") && !/^https?:\/\//i.test(v) ? `https://${v}` : v];
+    const isLink = f.endsWith("_url") && !f.startsWith("logo") && !f.startsWith("cover");
+    return [f, !v ? null : isLink ? asLink(f as LinkKind, v) : v];
   }));
+  if (bad.length) return { ok: false, error: `Please check ${bad.join(", ")}: that doesn't look like a web link. Example: facebook.com/yourpage` };
 
   // Find the member's own listing on the server, so an old or wrong id from the page can never point at someone else's.
   const { data: mine, error: findError } = await supabase.from("businesses").select("id, slug").eq("owner_id", user.id).order("created_at").limit(1).maybeSingle();
@@ -82,4 +95,30 @@ export async function saveBusinessListing(input: Record<string, unknown>, opts: 
   revalidatePath("/account/business");
   revalidatePath("/account");
   return { ok: true, id: String(res.data.id), slug: String(res.data.slug), partial };
+}
+
+export type SyncStoreResult =
+  | { ok: true; url: string; name: string; summary: StoreSummary; newPoints: number }
+  | { ok: false; error: string };
+
+/**
+ * The Sync button: reads the member's MarketplacePH store, puts its link on the listing and gives the store points
+ * (saved once each as growth milestones, so they show on the member's flameph.org Rewards).
+ */
+export async function syncMarketplaceStore(): Promise<SyncStoreResult> {
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Listings open once the database is connected." };
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth.user;
+  if (!user) return { ok: false, error: SIGNED_OUT_MESSAGE };
+  if (!(await marketplaceLinked(user.id))) return { ok: false, error: "Sign in to marketplaceph.com with your FLAME PH account first, then press Sync again." };
+  const summary = await storeSummary(user.email);
+  if (!summary) return { ok: false, error: "MarketplacePH didn't answer just now. Please try again in a minute." };
+  if (!summary.activated || !summary.store) return { ok: false, error: "We couldn't find a store on your MarketplacePH account yet. Open your free store there, then press Sync again." };
+
+  const { data: mine } = await supabase.from("businesses").select("id").eq("owner_id", user.id).order("created_at").limit(1).maybeSingle();
+  if (mine) await supabase.from("businesses").update({ marketplaceph_url: summary.store.url }).eq("id", mine.id).eq("owner_id", user.id);
+  const newPoints = await awardMilestones(supabase, user.id, STORE_REWARDS.filter((r) => r.done(summary)).map((r) => r.key));
+  revalidatePath("/account/business");
+  return { ok: true, url: summary.store.url, name: summary.store.name, summary, newPoints };
 }
