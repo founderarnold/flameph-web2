@@ -12,7 +12,47 @@ export async function followingIds(supabase: SupabaseClient, userId: string): Pr
   return new Set(error ? [] : (data ?? []).map((r) => r.followee_id as string));
 }
 
-export type Suggestion = Omit<SuggestedBiz, "slug"> & { slug: string | null; mutual?: number; reason?: string | null };
+export type Suggestion = Omit<SuggestedBiz, "slug"> & {
+  slug: string | null; mutual?: number; reason?: string | null;
+  /** From member_cards_v2 (0040): the person's own name, their business name, profile photo, Verified badge and follower count. */
+  person_name?: string | null; business_name?: string | null; avatar_path?: string | null; verified?: boolean; followers?: number | null;
+};
+
+type CardV2 = { id: string; person_name: string; business_name: string | null; slug: string | null; sector: string | null; subsector: string | null;
+  city: string | null; province: string | null; chapter_id: string | null; avatar_path: string | null; logo_url: string | null; verified: boolean; followers: number };
+
+/** Card details (photo, business name, place, Verified, followers) for up to 100 members. Empty before the 0040 update. */
+export async function cardDetails(supabase: SupabaseClient, ids: string[]): Promise<Map<string, CardV2> | null> {
+  if (!ids.length) return new Map();
+  const { data, error } = await supabase.rpc("member_cards_v2", { ids: [...new Set(ids)].slice(0, 100) });
+  if (error) return null;
+  return new Map(((data ?? []) as CardV2[]).map((c) => [c.id, c]));
+}
+
+/** Adds photo, person and business name, place, Verified and followers to cards. Unchanged before the 0040 update. */
+export async function withCardDetails<T extends Suggestion>(supabase: SupabaseClient, cards: T[]): Promise<T[]> {
+  const more = await cardDetails(supabase, cards.map((c) => c.owner_id));
+  if (!more) return cards;
+  return cards.map((c) => {
+    const d = more.get(c.owner_id);
+    if (!d) return c;
+    return { ...c, person_name: d.person_name, business_name: d.business_name ?? c.business_name ?? null, avatar_path: d.avatar_path,
+      logo_url: c.logo_url ?? d.logo_url, verified: Boolean(c.verified || d.verified), followers: d.followers,
+      city: c.city ?? d.city, province: c.province ?? d.province, sector: c.sector ?? d.sector, slug: c.slug ?? d.slug };
+  });
+}
+
+export type FollowFilters = { industry: string; category: string; province: string; city: string; verified: boolean; q: string };
+
+/** Members to follow that match the filters (browse_members, 0040), as cards. null before the 0040 update. */
+export async function browseMembers(supabase: SupabaseClient, f: FollowFilters, limit = 24): Promise<Suggestion[] | null> {
+  const { data, error } = await supabase.rpc("browse_members", {
+    p_industry: f.industry || null, p_category: f.category || null, p_province: f.province || null,
+    p_city: f.city || null, p_verified: f.verified, p_q: f.q || null, max_rows: limit,
+  });
+  if (error) return null;
+  return peopleCards(supabase, ((data ?? []) as { user_id: string }[]).map((r) => ({ user_id: r.user_id })));
+}
 
 /** Members the viewer shares connections with (friends of friends, and people followed by people they follow). Empty before the 0018 update. */
 export async function mutualCounts(supabase: SupabaseClient, max = 30): Promise<Map<string, number>> {
@@ -61,6 +101,17 @@ export async function suggestedPeople(supabase: SupabaseClient, userId: string, 
 export async function peopleCards(supabase: SupabaseClient, ranked: { user_id: string; reason?: string; detail?: string | null }[]): Promise<Suggestion[]> {
   const ids = ranked.map((r) => r.user_id).slice(0, 50);
   if (!ids.length) return [];
+  const v2 = await cardDetails(supabase, ids);
+  if (v2) {
+    return ranked.flatMap((r) => {
+      const c = v2.get(r.user_id);
+      if (!c) return [];
+      return [{ id: c.id, owner_id: c.id, name: c.business_name ?? c.person_name, slug: c.slug, sector: c.subsector || c.sector, city: c.city, province: c.province,
+        chapter_id: c.chapter_id, logo_url: c.logo_url, person_name: c.person_name, business_name: c.business_name, avatar_path: c.avatar_path,
+        verified: c.verified, followers: c.followers, mutual: r.reason === "mutual" ? Number(r.detail) || 0 : 0,
+        reason: r.reason ? reasonLabel({ reason: r.reason, detail: r.detail ?? null }) : null }];
+    });
+  }
   const [{ data: cards }, logos] = await Promise.all([
     supabase.rpc("member_cards", { ids }),
     list<{ owner_id: string; logo_url: string | null }>({ table: "businesses", select: "owner_id, logo_url", filters: { ...PUBLIC_BUSINESS_FILTERS, owner_id: ids }, limit: 50 }),

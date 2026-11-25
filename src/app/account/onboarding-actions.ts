@@ -82,6 +82,20 @@ export async function toggleFollow(fd: FormData) {
   redirect(back);
 }
 
+/**
+ * Follow or unfollow from the page's JavaScript, without reloading the page: the button already shows the new state,
+ * so only the database changes here. Returns whether it saved, so the button can undo itself if it didn't.
+ */
+export async function setFollow(memberId: string, follow: boolean): Promise<{ ok: boolean }> {
+  const { supabase, user } = await requireUser("/home");
+  const target = uuid(s(memberId, 40));
+  if (!target || target === user.id) return { ok: false };
+  const { error } = follow
+    ? await supabase.from("member_follows").upsert({ follower_id: user.id, followee_id: target }, { onConflict: "follower_id,followee_id", ignoreDuplicates: true })
+    : await supabase.from("member_follows").delete().eq("follower_id", user.id).eq("followee_id", target);
+  return { ok: !error };
+}
+
 /** Step 4 (last): name, place and stage, then onboarding is done and the member goes to the feed. */
 export async function saveOnboardingProfile(fd: FormData) {
   const { supabase, user } = await requireUser("/welcome");
@@ -139,4 +153,17 @@ export async function savePrivacy(fd: FormData) {
   revalidatePath("/account/settings");
   revalidatePath("/members", "layout");
   redirect(`/account/settings?privacy=${error ? "error" : "saved"}#privacy`);
+}
+
+/**
+ * The member's card photo: a file they just uploaded to their own folder (`<id>/avatar-…`), or empty to show their
+ * business logo (or initials) instead. Needs the 0040 database update; before it, returns ok: false.
+ */
+export async function saveAvatar(path: string | null): Promise<{ ok: boolean }> {
+  const { supabase, user } = await requireUser("/account/profile");
+  const clean = path ? s(path, 300) : "";
+  if (clean && !new RegExp(`^${user.id}/avatar-[A-Za-z0-9_.-]+$`).test(clean)) return { ok: false };
+  const { error } = await supabase.from("profiles").update({ avatar_path: clean || null }).eq("id", user.id);
+  if (!error) { revalidatePath("/account/profile"); revalidatePath("/members", "layout"); }
+  return { ok: !error };
 }

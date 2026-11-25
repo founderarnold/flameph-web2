@@ -5,18 +5,20 @@ import { INDUSTRIES } from "@/lib/industries";
 import { PROVINCES } from "@/content/ph-provinces";
 import { STAGES, STAGE_KEYS } from "@/lib/growth";
 import { STEPS, STEP_TITLES, stepOf, type Step } from "@/lib/onboarding";
-import { followingIds, peopleCards, suggestedPeople } from "@/lib/suggestions";
+import { browseMembers, followingIds, peopleCards, suggestedPeople, withCardDetails, type FollowFilters } from "@/lib/suggestions";
 import { saveChapter, saveIndustries, saveLocation, saveOnboardingProfile, skipOnboarding } from "@/app/account/onboarding-actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Notice } from "@/components/ui";
 import { SuggestedMemberCard } from "@/components/shell/MemberCard";
+import { FollowCount, FollowCountProvider } from "@/components/shell/FollowButton";
+import { AvatarPicker } from "@/components/shell/AvatarPicker";
 
 export const metadata = { title: "Welcome" };
 
 type Chapter = { id: string; name: string; region: string | null; province: string | null; city: string | null; status: string };
 
 /** First-run onboarding: industries, chapter, follow members, finish the profile. Every step can be skipped. */
-export default async function Welcome({ searchParams }: { searchParams: Promise<{ step?: string; error?: string; where?: string }> }) {
+export default async function Welcome({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
   const step = stepOf(sp.step);
   const { supabase, user } = await requireUser(`/welcome?step=${step}`);
@@ -51,10 +53,11 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
 
       {step === "chapter" && <ChapterStep supabase={supabase} userId={user.id} p={p} where={sp.where === "1"} />}
 
-      {step === "follow" && <FollowStep userId={user.id} supabase={supabase} p={p} />}
+      {step === "follow" && <FollowStep userId={user.id} supabase={supabase} p={p} f={readFollowFilters(sp)} />}
 
       {step === "profile" && (
         <form action={saveOnboardingProfile} className="space-y-4">
+          {p && "avatar_path" in p && <ProfilePhoto supabase={supabase} userId={user.id} name={p.full_name ?? ""} avatarPath={(p.avatar_path as string | null) ?? null} />}
           <div><label className="label" htmlFor="ob-name">Your full name</label><input id="ob-name" name="full_name" autoComplete="name" maxLength={120} defaultValue={p?.full_name ?? ""} className="input" /></div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div><label className="label" htmlFor="ob-prov">Province</label>
@@ -183,25 +186,92 @@ async function ChapterStep({ supabase, userId, p, where }: { supabase: Supa; use
   );
 }
 
-async function FollowStep({ userId, supabase, p }: { userId: string; supabase: Supa; p: Record<string, unknown> | null }) {
-  const following = await followingIds(supabase, userId);
-  const [suggested, followed] = await Promise.all([
-    suggestedPeople(supabase, userId, { industries: p?.industries as string[] | undefined, chapter_id: p?.chapter_id as string | undefined, province: p?.province as string | undefined }, 12, { exclude: following }),
-    peopleCards(supabase, [...following].slice(0, 12).map((user_id) => ({ user_id }))),
-  ]);
-  // People just followed stay on the screen (as "Following") so the list doesn't jump.
-  const people = [...followed, ...suggested].slice(0, Math.max(12, followed.length));
+const ALL_CATEGORIES = INDUSTRIES.flatMap((i) => i.subs);
+
+/** Filters for "Follow members", from the address bar. Unknown values are dropped. */
+function readFollowFilters(sp: Record<string, string | undefined>): FollowFilters {
+  const t = (v: string | undefined, max = 60) => (v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+  return {
+    industry: INDUSTRIES.some((i) => i.name === sp.industry) ? sp.industry! : "",
+    category: ALL_CATEGORIES.includes(sp.category ?? "") ? sp.category! : "",
+    province: PROVINCES.includes(sp.province ?? "") ? sp.province! : "",
+    city: t(sp.city), verified: sp.verified === "1", q: t(sp.q),
+  };
+}
+const followQuery = (f: FollowFilters) => {
+  const q = new URLSearchParams({ step: "follow" });
+  for (const k of ["q", "industry", "category", "province", "city"] as const) if (f[k]) q.set(k, f[k]);
+  if (f.verified) q.set("verified", "1");
+  return `/welcome?${q}`;
+};
+
+/** Photo or logo for the member's card, on the last step. Shown once the 0040 database update has added the column. */
+async function ProfilePhoto({ supabase, userId, name, avatarPath }: { supabase: Supa; userId: string; name: string; avatarPath: string | null }) {
+  const { data: biz } = await supabase.from("businesses").select("logo_url").eq("owner_id", userId).not("logo_url", "is", null).order("created_at").limit(1).maybeSingle();
   return (
-    <div className="space-y-4">
-      <p className="text-muted">Members near you, in your chapter and in your industries. Follow them to see their posts in your feed. You follow {following.size} so far.</p>
-      {people.length === 0 ? (
-        <Notice tone="info">No suggestions yet. Members appear here as more people join near you and in your industries.</Notice>
-      ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {people.map((b) => <li key={b.id}><SuggestedMemberCard b={b} following={following.has(b.owner_id)} back="/welcome?step=follow" /></li>)}
-        </ul>
-      )}
-      <Link href="/welcome?step=profile" className="btn btn-primary min-h-11 w-full">Next</Link>
-    </div>
+    <fieldset className="rounded-xl border border-line p-3">
+      <legend className="label px-1">Your photo or logo (optional)</legend>
+      <AvatarPicker userId={userId} name={name} avatarPath={avatarPath} logoPath={(biz?.logo_url as string | null) ?? null} />
+    </fieldset>
+  );
+}
+
+/** Filter form for "Follow members": search, industry, business category, province, city, Verified only. A plain GET form. */
+function FollowFilterForm({ f, active }: { f: FollowFilters; active: boolean }) {
+  return (
+    <details open={active} className="rounded-xl border border-line p-3">
+      <summary className="min-h-11 cursor-pointer content-center font-semibold">Filter members{active ? " (on)" : ""}</summary>
+      <form method="get" action="/welcome" role="search" className="mt-2 grid gap-2 sm:grid-cols-2">
+        <input type="hidden" name="step" value="follow" />
+        <label htmlFor="ff-q" className="sr-only">Name or business</label>
+        <input id="ff-q" name="q" defaultValue={f.q} maxLength={60} placeholder="Name or business" className="input min-h-11 sm:col-span-2" />
+        <label htmlFor="ff-ind" className="sr-only">Industry</label>
+        <select id="ff-ind" name="industry" defaultValue={f.industry} className="input min-h-11"><option value="">All industries</option>{INDUSTRIES.map((i) => <option key={i.name}>{i.name}</option>)}</select>
+        <label htmlFor="ff-cat" className="sr-only">Business category</label>
+        <select id="ff-cat" name="category" defaultValue={f.category} className="input min-h-11">
+          <option value="">All business categories</option>
+          {INDUSTRIES.filter((i) => i.subs.length).map((i) => <optgroup key={i.name} label={i.name}>{i.subs.map((x) => <option key={x}>{x}</option>)}</optgroup>)}
+        </select>
+        <label htmlFor="ff-prov" className="sr-only">Province</label>
+        <select id="ff-prov" name="province" defaultValue={f.province} className="input min-h-11"><option value="">All provinces</option>{PROVINCES.map((x) => <option key={x}>{x}</option>)}</select>
+        <label htmlFor="ff-city" className="sr-only">City or municipality</label>
+        <input id="ff-city" name="city" defaultValue={f.city} maxLength={60} placeholder="City or municipality" autoComplete="address-level2" className="input min-h-11" />
+        <label className="flex min-h-11 items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" name="verified" value="1" defaultChecked={f.verified} className="h-5 w-5" /> Verified businesses only</label>
+        <button className="btn btn-primary min-h-11">Show members</button>
+        {active && <Link href="/welcome?step=follow" className="btn btn-ghost min-h-11">Clear filters</Link>}
+      </form>
+    </details>
+  );
+}
+
+async function FollowStep({ userId, supabase, p, f }: { userId: string; supabase: Supa; p: Record<string, unknown> | null; f: FollowFilters }) {
+  const following = await followingIds(supabase, userId);
+  const active = Boolean(f.q || f.industry || f.category || f.province || f.city || f.verified);
+  const back = followQuery(f);
+  const [found, followed] = await Promise.all([
+    active
+      ? browseMembers(supabase, f, 24)
+      : suggestedPeople(supabase, userId, { industries: p?.industries as string[] | undefined, chapter_id: p?.chapter_id as string | undefined, province: p?.province as string | undefined }, 12, { exclude: following }),
+    active ? Promise.resolve([]) : peopleCards(supabase, [...following].slice(0, 12).map((user_id) => ({ user_id }))),
+  ]);
+  // People already followed stay on the screen (as "Following") so the list doesn't jump.
+  const people = await withCardDetails(supabase, active ? (found ?? []) : [...followed, ...(found ?? [])].slice(0, Math.max(12, followed.length)));
+  return (
+    <FollowCountProvider initial={following.size}>
+      <div className="space-y-4">
+        <p className="text-muted">Members near you, in your chapter and in your industries. Follow them to see their posts in your feed. You follow <FollowCount fallback={following.size} /> so far.</p>
+        <FollowFilterForm f={f} active={active} />
+        {active && found === null && <Notice tone="info">Filters aren&apos;t ready yet. <Link href="/welcome?step=follow" className="underline">Clear filters</Link> to see suggestions.</Notice>}
+        {people.length === 0 ? (
+          active ? <Notice tone="info">No members match these filters yet. <Link href="/welcome?step=follow" className="underline">Clear filters</Link></Notice>
+            : <Notice tone="info">No suggestions yet. Members appear here as more people join near you and in your industries.</Notice>
+        ) : (
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {people.map((b) => <li key={b.id} className="min-w-0"><SuggestedMemberCard b={b} following={following.has(b.owner_id)} back={back} /></li>)}
+          </ul>
+        )}
+        <Link href="/welcome?step=profile" className="btn btn-primary min-h-11 w-full">Next</Link>
+      </div>
+    </FollowCountProvider>
   );
 }

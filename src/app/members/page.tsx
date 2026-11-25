@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { INDUSTRY_NAMES } from "@/lib/industries";
+import { INDUSTRIES, INDUSTRY_NAMES } from "@/lib/industries";
 import { list } from "@/lib/content";
 import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
-import { followingIds, type SuggestedBiz } from "@/lib/suggestions";
+import { followingIds, withCardDetails, type SuggestedBiz } from "@/lib/suggestions";
+import { FollowCount, FollowCountProvider } from "@/components/shell/FollowButton";
 import { SuggestedMemberCard } from "@/components/shell/MemberCard";
 import { REGIONS, filterDirectory, filtersQuery, readFilters } from "@/lib/directory-search";
 
 export const metadata = { title: "Find members", robots: { index: false } };
 
-type Row = SuggestedBiz & { region?: string | null; subsector?: string | null };
+type Row = SuggestedBiz & { region?: string | null; subsector?: string | null; verified?: boolean };
 
 /** Members only: the member business directory. Search by name or place, filter by industry, chapter and region. */
 export default async function Members({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
@@ -27,12 +28,14 @@ export default async function Members({ searchParams }: { searchParams: Promise<
   const f = readFilters(sp, chapters.map((c) => c.id));
   const shown = filterDirectory(rows.filter((b) => b.owner_id !== user.id), f, withMinisite);
   const back = `/members${filtersQuery(f)}`;
-  const filtered = Boolean(f.q || f.industry || f.chapter || f.region || f.minisite);
+  const filtered = Boolean(f.q || f.industry || f.chapter || f.region || f.minisite || f.category || f.verified);
+  const cards = await withCardDetails(supabase, shown.slice(0, 60).map((b) => ({ ...b, business_name: b.name, sector: b.subsector || b.sector })));
   return (
     <div className="container-x py-6">
+      <FollowCountProvider initial={following.size}>
       <div className="mx-auto max-w-3xl space-y-5">
         <h1 className="text-2xl font-extrabold sm:text-3xl">Find members</h1>
-        <p className="text-muted">The FLAME PH member directory. Follow members to see their updates in your feed. You follow {following.size}.</p>
+        <p className="text-muted">The FLAME PH member directory. Follow members to see their updates in your feed. You follow <FollowCount fallback={following.size} />.</p>
         <form role="search" className="grid gap-2 sm:grid-cols-2">
           <label htmlFor="mq" className="sr-only">Name or place</label>
           <input id="mq" name="q" defaultValue={f.q} placeholder="Name, city or province" className="input min-h-11 sm:col-span-2" />
@@ -42,18 +45,25 @@ export default async function Members({ searchParams }: { searchParams: Promise<
           <select id="mc" name="chapter" defaultValue={f.chapter} className="input min-h-11"><option value="">All chapters</option>{chapters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
           <label htmlFor="mr" className="sr-only">Region</label>
           <select id="mr" name="region" defaultValue={f.region} className="input min-h-11"><option value="">All regions</option>{REGIONS.map((x) => <option key={x}>{x}</option>)}</select>
+          <label htmlFor="mcat" className="sr-only">Business category</label>
+          <select id="mcat" name="category" defaultValue={f.category} className="input min-h-11">
+            <option value="">All business categories</option>
+            {INDUSTRIES.filter((i) => i.subs.length).map((i) => <optgroup key={i.name} label={i.name}>{i.subs.map((x) => <option key={x}>{x}</option>)}</optgroup>)}
+          </select>
+          <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="verified" value="1" defaultChecked={f.verified} className="h-5 w-5" /> Verified businesses only</label>
           <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="minisite" value="1" defaultChecked={f.minisite} className="h-5 w-5" /> Has a mini-website</label>
           <button className="btn btn-primary min-h-11 sm:col-span-2">Search</button>
         </form>
         <p className="text-sm text-muted" role="status">{shown.length} {shown.length === 1 ? "member" : "members"}{filtered && <> · <Link href="/members" className="underline">Clear filters</Link></>}</p>
         {shown.length === 0 ? <p className="text-muted">No members match. <Link href="/members" className="underline">Show all</Link></p> : (
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {shown.slice(0, 60).map((b) => <li key={b.id}><SuggestedMemberCard b={b} following={following.has(b.owner_id)} back={back} minisite={withMinisite.has(b.owner_id)} /></li>)}
+            {cards.map((b) => <li key={b.id} className="min-w-0"><SuggestedMemberCard b={b} following={following.has(b.owner_id)} back={back} minisite={withMinisite.has(b.owner_id)} /></li>)}
           </ul>
         )}
         {shown.length > 60 && <p className="text-sm text-muted">Showing the first 60. Add a filter to narrow it down.</p>}
         <p className="text-sm text-muted">Looking for the public list of mini-websites? <a href="https://pages.flameph.org/directory" className="font-semibold underline">Open the Pages directory</a>.</p>
       </div>
+      </FollowCountProvider>
     </div>
   );
 }
