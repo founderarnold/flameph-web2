@@ -6,6 +6,7 @@ import { PROVINCES } from "@/content/ph-provinces";
 import { saveMemberType, saveRegistration, removeRegistration } from "../investor-actions";
 import { InvestorWarning } from "@/components/feed/InvestorWarning";
 import { Notice } from "@/components/ui";
+import { AvatarPicker } from "@/components/shell/AvatarPicker";
 import { INVESTOR_ERRORS, MEMBER_TYPES, REGISTRATION_LABEL_MEANING, REGISTRATION_LABEL_MEANING_TL, REGULATORS, registrationLabel, type MemberType, type Regulator } from "@/lib/investor";
 
 const INVESTOR_DONE: Record<string, string> = {
@@ -23,6 +24,8 @@ export default async function Profile({ searchParams }: { searchParams: Promise<
   const memberType = (p?.member_type ?? "business") as MemberType;
   const investor = memberType === "investor_funder";
   const { data: reg } = investor ? await supabase.from("investor_registrations").select("regulator, registered_name, reg_number, status, checked_at").eq("user_id", user.id).maybeSingle() : { data: null };
+  const { data: biz } = await supabase.from("businesses").select("logo_url").eq("owner_id", user.id).not("logo_url", "is", null).order("created_at").limit(1).maybeSingle();
+  const logo = (biz?.logo_url as string | null) ?? null;
   const label = reg?.status === "seen" ? registrationLabel({ regulator: reg.regulator as Regulator, checked_at: reg.checked_at }) : null;
   return (
     <div className="max-w-xl">
@@ -34,6 +37,12 @@ export default async function Profile({ searchParams }: { searchParams: Promise<
           <p className="mt-1 text-sm text-muted">One tap. You can change it anytime below.</p>
           <StagePicker back="/account/profile?welcome=1" narrow />
         </div>
+      )}
+      {p && "avatar_path" in p && (
+        <section aria-labelledby="photo-h" className="card mt-6 space-y-3 p-5">
+          <h2 id="photo-h" className="text-lg font-extrabold">Photo or logo</h2>
+          <AvatarPicker userId={user.id} name={p.full_name ?? ""} avatarPath={(p.avatar_path as string | null) ?? null} logoPath={logo} />
+        </section>
       )}
       <form action={saveProfile} className="card mt-6 space-y-4 p-5">
         <div><label className="label" htmlFor="fn">Full name *</label><input id="fn" name="full_name" required defaultValue={p?.full_name ?? ""} autoComplete="name" className="input" /></div>

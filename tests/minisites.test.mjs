@@ -95,8 +95,8 @@ test("sync endpoint: matched by proven email, saves leads once into the existing
 
 test("directory filters: industry, chapter, region (from the province when not saved), mini-website, name or place", () => {
   const f = D.readFilters({ q: "  Kape ", industry: "Food & beverage", chapter: "c1", region: "Region III (Central Luzon)", minisite: "1" }, ["c1"]);
-  assert.deepEqual(f, { q: "kape", industry: "Food & beverage", chapter: "c1", region: "Region III (Central Luzon)", minisite: true });
-  assert.deepEqual(D.readFilters({ industry: "Nope", chapter: "evil", region: "Mars" }, ["c1"]), { q: "", industry: "", chapter: "", region: "", minisite: false });
+  assert.deepEqual(f, { q: "kape", industry: "Food & beverage", chapter: "c1", region: "Region III (Central Luzon)", minisite: true, category: "", verified: false });
+  assert.deepEqual(D.readFilters({ industry: "Nope", chapter: "evil", region: "Mars", category: "Evil" }, ["c1"]), { q: "", industry: "", chapter: "", region: "", minisite: false, category: "", verified: false });
   const rows = [
     { owner_id: "u1", name: "Kape ni Juan", city: "San Fernando", province: "Pampanga", region: null, sector: "Food & beverage", chapter_id: "c1" },
     { owner_id: "u2", name: "Kape Cebu", city: "Cebu City", province: "Cebu", region: "Region VII (Central Visayas)", sector: "Food & beverage", chapter_id: "c2" },
