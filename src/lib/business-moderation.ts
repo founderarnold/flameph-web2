@@ -33,6 +33,9 @@ const fakeContact = (business: Business) => {
     || /^(?:test|fake|dummy|asdf)@|@example\.(?:com|org|net)$/i.test(email);
 };
 
+/** Money-making promises and payment tricks often used by scams, in English and Taglish. */
+export const SCAM_TERMS = /\b(?:guaranteed\s+(?:income|profit|returns?|earnings?)|double\s+your\s+(?:money|investment)|doble(?:hin)?\s+(?:ang\s+)?pera|get\s+rich\s+quick|ponzi|pyramid\s+scheme|investment\s+(?:scheme|package)\s+with\s+returns?|earn\s+(?:php\s*|₱\s*)?\d[\d,]*\s*(?:daily|a\s+day|per\s+day)|kumita\s+ng\s+\d[\d,]*\s*(?:araw-araw|kada\s+araw)|send\s+(?:an?\s+)?(?:advance|reservation)\s+(?:fee|payment)\s+(?:first|muna)|bayad\s+muna\s+bago|crypto\s+(?:doubling|investment)|recruit(?:ment)?\s+(?:bonus|and\s+earn))\b/i;
+
 export function moderateBusinessContent(business: Business, context: { others: Business[]; recentSubmissions: number }) {
   const signals: ModerationSignal[] = [];
   const add = (category: string, field: ModerationField, strong = false) => signals.push({ category, field, strong });
@@ -54,6 +57,8 @@ export function moderateBusinessContent(business: Business, context: { others: B
   const linkCount = linksIn(`${name} ${description} ${products}`);
   if (linkCount > 3) add("excessive_links", "profile", linkCount > 6);
   if (/\b(?:viagra|porn|free\s+crypto|guaranteed\s+money|casino\s+bonus)\b/i.test(`${name} ${description} ${products}`)) add("spam_terms", "profile", true);
+  // Scam-like offers (owner, 25 Nov 2026): these go to a quick FLAME PH check instead of publishing automatically.
+  if (SCAM_TERMS.test(`${name} ${description} ${products}`)) add("scam_like_offer", "description", true);
   if (fakeContact(business)) add("invalid_contact_pattern", "contact", true);
   if (context.recentSubmissions >= 2) add("rapid_resubmission", "profile");
 

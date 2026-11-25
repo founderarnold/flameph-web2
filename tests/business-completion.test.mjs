@@ -40,8 +40,8 @@ test("API checks completeness before consuming bot and rate-limit attempts", () 
 test("editor mirrors the authoritative checklist and requires saved changes", () => {
   assert.match(editor, /businessCompletion\(biz, ownerName, verification\.email_verified\)/);
   assert.match(editor, /Needed to publish/);
-  assert.match(editor, /Save your latest changes before publishing/);
-  assert.match(editor, /dirty \|\| !completion\.complete/);
+  // "Save and publish" saves the latest changes first, then publishes only when every item is in.
+  assert.match(editor, /publish && completion\.complete && submitBotToken/);
   assert.match(page, /select\("full_name"\)/);
   assert.match(page, /ownerName=\{profile\?\.full_name \?\? ""\}/);
 });

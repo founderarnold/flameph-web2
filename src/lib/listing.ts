@@ -8,7 +8,7 @@ export type Listing = Record<string, unknown> & { photos?: string[] | null };
 export const SECTORS = INDUSTRY_NAMES;
 
 export const EXTRA_FIELDS = ["logo_url", "cover_url", "hours", "map_landmark", "facebook_url", "google_business_url", "tiktok_url", "instagram_url", "shopee_url", "lazada_url", "website_url"] as const;
-export const SOCIALS: { key: (typeof EXTRA_FIELDS)[number]; label: string }[] = [
+export const SOCIALS: { key: "facebook_url" | "google_business_url" | "tiktok_url" | "instagram_url" | "shopee_url" | "lazada_url" | "website_url"; label: string }[] = [
   { key: "facebook_url", label: "Facebook" },
   { key: "google_business_url", label: "Google Business Profile" },
   { key: "tiktok_url", label: "TikTok" },

@@ -12,8 +12,9 @@ import { Turnstile } from "@/components/Turnstile";
 import { businessCompletion } from "@/lib/business-completion";
 import { MODERATION_FIELD_MESSAGES, safeModerationFields } from "@/lib/business-moderation-feedback";
 import { SIGNED_OUT_MESSAGE, friendlyDbError } from "@/lib/db-errors";
-import { saveBusinessListing } from "@/app/account/business/actions";
-import { neighbour, type SectionKey } from "@/lib/listing-sections";
+import { saveBusinessListing, syncMarketplaceStore } from "@/app/account/business/actions";
+import { DESCRIPTION_MIN, isStep, neighbour, type SectionKey, type StoreSummary } from "@/lib/listing-sections";
+import { LINK_PLACEHOLDER, normalizeLink, type LinkKind } from "@/lib/links";
 import { useGoToSection } from "@/components/listing/ListingSections";
 
 type Biz = Record<string, unknown> & {
@@ -40,7 +41,7 @@ const FIELDS: { name: string; label: string; type?: string; textarea?: boolean; 
   { name: "contact_viber", label: "Viber number", type: "tel" },
   { name: "contact_phone", label: "Phone number", type: "tel" },
   { name: "contact_email", label: "Business email", type: "email" },
-  { name: "marketplaceph_url", label: "Your MarketplacePH store link", type: "url" },
+  { name: "marketplaceph_url", label: "Your MarketplacePH store link" },
 ];
 
 const pub = (p: string) => p.startsWith("http") ? p : `${SUPABASE_URL}/storage/v1/object/public/media/${p}`;
@@ -57,7 +58,7 @@ const fieldsOf = (biz: Biz): Record<string, unknown> => ({
 /** Unsaved details are kept in this browser if a save fails because the sign-in expired, and come back after logging in. */
 const draftKey = (userId: string) => `flameph-listing-draft:${userId}`;
 
-export function BusinessEditor({ userId, email, ownerName, verification, initial, sectors, provinces, supportsExtras = true, section = "basics", query = "" }: { userId: string; email: string; ownerName: string; verification: AccountVerificationStatus; initial: Biz | null; sectors: string[]; provinces: string[]; supportsExtras?: boolean; section?: SectionKey; query?: string }) {
+export function BusinessEditor({ userId, email, ownerName, verification, initial, sectors, provinces, supportsExtras = true, section = "basics", query = "", store = { linked: false, summary: null } }: { userId: string; email: string; ownerName: string; verification: AccountVerificationStatus; initial: Biz | null; sectors: string[]; provinces: string[]; supportsExtras?: boolean; section?: SectionKey; query?: string; store?: { linked: boolean; summary: StoreSummary | null } }) {
   const supabase = createClient();
   const router = useRouter();
   const [biz, setBiz] = useState<Biz>(initial ?? { photos: [], verification_docs: [], published: false, lifecycle_status: "draft", publication_status: "unpublished" });
@@ -73,6 +74,8 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
   const goTo = useGoToSection(query);
   /** Where "Save and continue" goes once the save worked. */
   const afterSave = useRef<SectionKey | null>(null);
+  /** Step 6's "Save and publish": publish right after the save when everything needed is in. */
+  const publishAfterSave = useRef(false);
   useEffect(() => {
     try {
       const saved = localStorage.getItem(draftKey(userId));
@@ -118,7 +121,9 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
   async function save(e: React.FormEvent) {
     e.preventDefault();
     const then = afterSave.current;
+    const publish = publishAfterSave.current;
     afterSave.current = null;
+    publishAfterSave.current = false;
     setBusy(true); setMsg(null);
     const fields = fieldsOf(biz);
     // Saved on the server as the member signed in right now, so an expired or switched browser sign-in can't cause a raw database error.
@@ -139,13 +144,20 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       ...(outcome === "hold" ? { risk_level: "needs_review", lifecycle_status: "pending_review", publication_status: "unpublished", published: false } : {}) }));
     setDirty(false);
     const extra = res.partial ? " Logo, hours and links will be saved once FLAME PH finishes a database update." : "";
-    setMsg({ ok: true, text: (outcome === "publish"
-      ? "Saved and published! Your business is in the FLAME PH business directory now (it can take about a minute to appear)."
-      : outcome === "hold" && res.review?.emailNotConfirmed
-        ? "Saved. Please confirm your email address (see Account verification), then press Save again to go live."
-        : outcome === "hold"
-          ? "Saved. Something looked unusual, so a FLAME PH admin will take a quick look before it goes on the directory."
-          : then ? "Saved! On to the next section." : "Saved!") + extra });
+    // The automatic directory check already ran on save (listing-auto-review): published or held, nothing more to send.
+    if (outcome === "publish" || outcome === "hold") {
+      setMsg({ ok: true, text: (outcome === "publish"
+        ? "Saved and published! Your business is in the FLAME PH business directory now (it can take about a minute to appear)."
+        : res.review?.emailNotConfirmed
+          ? "Saved. Please confirm your email address (see Account verification), then press Save again to go live."
+          : "Saved. Something looked unusual, so a FLAME PH admin will take a quick look before it goes on the directory.") + extra });
+      if (then) goTo(then); else router.refresh();
+      return;
+    }
+    setMsg({ ok: true, text: res.partial ? "Saved! Logo, hours and links will be saved once FLAME PH finishes a database update." : then ? "Saved! On to the next step." : "Saved!" });
+    const canPublish = publish && completion.complete && submitBotToken && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft"));
+    if (canPublish) return submitForReview(res.id);
+    if (publish && !completion.complete) setMsg({ ok: true, text: "Saved! A few items are still needed before your listing can go live: see the list above." });
     if (then) goTo(then); else router.refresh();
   }
 
@@ -178,13 +190,23 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       : { ok: true, text: "Verification email sent. Open the newest link, then return here to submit your business." });
   }
 
-  async function submitForReview() {
-    if (!biz.id || busy) return;
+  async function syncStore() {
+    setBusy(true); setMsg(null);
+    const res = await syncMarketplaceStore().catch(() => ({ ok: false as const, error: "Could not reach MarketplacePH. Please try again." }));
+    setBusy(false);
+    if (!res.ok) return setMsg({ ok: false, text: res.error });
+    setBiz((b) => ({ ...b, marketplaceph_url: res.url }));
+    setMsg({ ok: true, text: `Synced ${res.name}: your store link is in.${res.newPoints ? ` +${res.newPoints} points added to your FLAME PH account.` : ""}` });
+    router.refresh();
+  }
+
+  async function submitForReview(id = biz.id) {
+    if (!id) return;
     setBusy(true); setMsg(null);
     const response = await fetch("/api/business/submit", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ businessId: biz.id, turnstileToken: submitBotToken }),
+      body: JSON.stringify({ businessId: id, turnstileToken: submitBotToken }),
     }).catch(() => null);
     const result = await response?.json().catch(() => ({}));
     setSubmitBotReset((n) => n + 1);
@@ -208,23 +230,27 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
   const on = (k: SectionKey) => section === k;
   const prev = neighbour(section, -1);
   const next = neighbour(section, 1);
-  const editorSection = !["details", "website"].includes(section);
+  const stepSection = isStep(section) || section === "publish";
   const needsBasicsFirst = !String(biz.name ?? "").trim() || !String(biz.city ?? "").trim();
+  const submittable = ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft"));
+  const published = biz.published === true || biz.publication_status === "published";
+  const descLen = String(biz.description ?? "").trim().length;
+  const storeReady = Boolean(store.linked && store.summary?.activated && store.summary.store);
 
   return (
-    <form id="business-details" onSubmit={save} className={editorSection ? "card mt-4 space-y-4 p-5" : "mt-4 space-y-3"}>
+    <form id="business-details" onSubmit={save} className={stepSection ? "card mt-4 space-y-4 p-5" : "mt-4 space-y-3"}>
       {biz.risk_level === "high" && <ModerationCorrection business={biz} />}
-      {/* Changes typed in another section and not saved yet stay here until saved, even while another section is open. */}
-      {!editorSection && dirty && (
+      {/* Changes typed in a step and not saved yet stay here until saved, even while a Level up page is open. */}
+      {!stepSection && dirty && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-warn-soft p-3 text-sm font-semibold text-warn">
           <span>You have listing changes that aren&apos;t saved yet.</span>
           <button className="btn btn-primary min-h-11 px-3 text-sm" disabled={busy}>{busy ? "Saving…" : "Save them now"}</button>
         </div>
       )}
-      {!editorSection && msg && <Message msg={msg} signedOut={signedOut} dirty={dirty} userId={userId} fields={() => fieldsOf(biz)} />}
+      {!stepSection && msg && <Message msg={msg} signedOut={signedOut} dirty={dirty} userId={userId} fields={() => fieldsOf(biz)} />}
 
       {on("basics") && <>
-        <SectionHead title="Business basics" help="Only the business name and city are needed to save. Everything else can wait." />
+        <SectionHead step={1} title="Business basics" help="Only the business name and city are needed to save. Everything else can wait." />
         {FIELDS.filter((f) => f.name === "name").map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
         <div>
           <label className="label" htmlFor="sector">Type of business (sector)</label>
@@ -242,17 +268,33 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       </>}
 
       {on("about") && <>
-        <SectionHead title="About and products" help="Tell buyers what you offer and who you serve. Add products with prices below." />
-        {FIELDS.filter((f) => f.name === "description" || f.name === "products").map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
+        <SectionHead step={2} title="About your business" help="What you offer, who you serve and why customers choose you. Needed to publish: at least 80 characters." />
+        <div>
+          <label className="label" htmlFor="biz-description">About your business</label>
+          <textarea id="biz-description" rows={5} maxLength={3000} className="input" value={String(biz.description ?? "")} onChange={(e) => set("description", e.target.value)} aria-describedby="desc-count" />
+          <p id="desc-count" aria-live="polite" className={`mt-1 text-sm font-semibold ${descLen >= DESCRIPTION_MIN ? "text-ok" : "text-warn"}`}>
+            {descLen >= DESCRIPTION_MIN ? `✓ ${descLen} characters. Good to publish.` : `${descLen} of ${DESCRIPTION_MIN} characters. Add ${DESCRIPTION_MIN - descLen} more to publish.`}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button type="button" className="btn btn-outline min-h-11 px-3 text-sm" onClick={() => set("description", draftDescription(biz, sectors))}>✍️ Help me write it</button>
+            <span className="text-sm text-muted">Writes a starter from your name, type of business, city and products. Edit it to sound like you.</span>
+          </div>
+        </div>
+      </>}
+
+      {on("products") && <>
+        <SectionHead step={3} title="Products & packages with prices" help="List what you sell. Add each product or package with its price below, so buyers see prices on your listing." />
+        <Input f={{ name: "products", label: "Products & services (short list)", textarea: true, help: "Example: Puto, kutsinta, bilao packages for parties" }} v={biz.products} set={set} />
+        <p className="rounded-lg bg-bg-soft p-3 text-sm text-muted">Products and packages with prices are added in the box under this step. Each one is saved right away.</p>
       </>}
 
       {on("contact") && <>
-        <SectionHead title="Contact buttons" help="Add at least one way for customers to reach you. Each one becomes a button on your listing." />
+        <SectionHead step={4} title="Contact buttons" help="Add at least one way for customers to reach you. Each one becomes a button on your listing." />
         {FIELDS.filter((f) => f.name.startsWith("contact_")).map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
       </>}
 
       {on("photos") && <>
-        <SectionHead title="Logo and photos" help="Listings with a logo and 3 or more real photos get more inquiries." />
+        <SectionHead step={5} title="Logo and photos" help="Listings with a logo and 3 or more real photos get more inquiries." />
         {supportsExtras && (
           <div className="grid grid-cols-1 gap-6 sm:flex sm:flex-wrap">
             <ImagePick label="Logo" hint="Square works best." path={biz.logo_url as string | undefined} round onPick={(e) => onSingle(e, "logo_url")} onClear={() => set("logo_url", null)} />
@@ -275,84 +317,96 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       </>}
 
       {on("hours") && <>
-        <SectionHead title="Hours, location and links" help="Tell buyers when you're open, how to find you and where else they can order." />
+        <SectionHead step={6} title="Hours, location and links" help="Tell buyers when you're open, how to find you and where else they can order. This is the last step: Save and publish puts your listing live." />
         {supportsExtras && <>
           <Input f={{ name: "hours", label: "Opening hours", help: "Example: Mon to Sat, 8am to 6pm" }} v={biz.hours} set={set} />
           <Input f={{ name: "map_landmark", label: "Landmark or barangay for directions", help: "Something public like \"near Robinsons Place\" or \"Brgy. San Jose\". Never your home address." }} v={biz.map_landmark} set={set} />
         </>}
-        {FIELDS.filter((f) => f.name === "marketplaceph_url").map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
+        <div className="rounded-xl border border-line p-4">
+          <label className="label" htmlFor="biz-marketplaceph_url">Your MarketplacePH store link</label>
+          <div className="flex flex-wrap gap-2">
+            <input id="biz-marketplaceph_url" type="text" inputMode="url" autoCapitalize="none" spellCheck={false} maxLength={300} placeholder={LINK_PLACEHOLDER.marketplaceph_url}
+              className="input min-w-0 flex-1" value={String(biz.marketplaceph_url ?? "")} onChange={(e) => set("marketplaceph_url", e.target.value)} />
+            <button type="button" onClick={syncStore} disabled={busy || !storeReady} className="btn btn-primary min-h-11 px-4" aria-describedby="sync-help">↻ Sync</button>
+          </div>
+          <p id="sync-help" className="mt-2 text-sm text-muted">
+            {storeReady
+              ? <>Press Sync to bring in your store link from <strong>{store.summary!.store!.name}</strong> on marketplaceph.com, and collect your store points.</>
+              : <>The Sync button turns on once your marketplaceph.com account is active: sign in there with your FLAME PH account and open your free store. Then Sync fills in this link for you and adds your store points.</>}
+          </p>
+          {!storeReady && <a href="https://www.marketplaceph.com/sell/new" target="_blank" rel="noopener" className="mt-1 inline-block text-sm font-bold text-primary underline">Open my free MarketplacePH store ↗</a>}
+        </div>
         {supportsExtras && (
           <fieldset className="space-y-4 rounded-xl border border-line p-4"><legend className="px-1 font-bold">Online links</legend>
-            <p className="text-sm text-muted">Paste your page or shop link, like facebook.com/yourpage</p>
-            {SOCIALS.map((x) => <Input key={x.key} f={{ name: x.key, label: x.label }} v={biz[x.key]} set={set} />)}
+            <p className="text-sm text-muted">Type your page or shop address any way you like: with or without https://, or just your page name. We turn it into a working link.</p>
+            {SOCIALS.map((x) => (
+              <div key={x.key}>
+                <label className="label" htmlFor={`biz-${x.key}`}>{x.label}</label>
+                <input id={`biz-${x.key}`} type="text" inputMode="url" autoCapitalize="none" spellCheck={false} maxLength={300} placeholder={LINK_PLACEHOLDER[x.key]}
+                  className="input" value={String(biz[x.key] ?? "")} onChange={(e) => set(x.key, e.target.value)} />
+                {linkPreview(x.key, biz[x.key])}
+              </div>
+            ))}
           </fieldset>
         )}
       </>}
 
       {on("publish") && <>
-        <SectionHead title="Check and publish" help="When everything below is ticked, press Publish. Your listing goes live in the directory right away." />
+        <SectionHead title="Publish status and checks" help="Your listing publishes automatically when you save step 6 with everything below ticked. Only listings that look confusing, unreadable, not business-related or scam-like go to a quick FLAME PH check. Publication is controlled by FLAME PH, which can still hide or remove listings that break the member rules." />
         <BusinessStatus business={biz} />
         <ListingStrength biz={biz} supportsExtras={supportsExtras} />
-        <fieldset className="rounded-xl border border-line p-4">
-          <legend className="px-1 font-bold">Needed to publish</legend>
-          <ul className="space-y-2 text-sm">
-            {completion.checks.map((check) => (
-              <li key={check.key} className="flex gap-2">
-                <span aria-hidden className={check.done ? "text-ok" : "text-muted"}>{check.done ? "✓" : "○"}</span>
-                <span><strong>{check.label}</strong>{!check.done && <> — <span className="text-muted">{check.help}</span></>}</span>
-              </li>
-            ))}
-          </ul>
-          {!ownerName.trim() && <p className="mt-3 text-sm"><Link href="/account/profile" className="font-bold underline">Complete your member profile</Link> to identify the owner or authorized representative.</p>}
-          <p className="mt-3 text-sm text-muted">Formal registration documents are optional. Aspiring entrepreneurs, home-based sellers, informal microbusinesses and startups may submit once the essentials above are complete.</p>
-        </fieldset>
+        <NeededToPublish completion={completion} goTo={goTo} ownerName={ownerName} />
         <fieldset className="rounded-xl border border-line p-4">
           <legend className="px-1 font-bold">Get a Verified badge (optional)</legend>
           <p className="text-sm text-muted">Optional evidence may include DTI, SEC, CDA, BMBE, Mayor&apos;s/Business Permit or BIR documents. Send them in Business vetting: they are encrypted, and only FLAME PH reviewers can open them.</p>
           <p className="mt-2 text-sm font-semibold">Status: {biz.verified ? "✓ Verified" : biz.verification_status === "pending" ? "Pending review" : biz.verification_status === "rejected" ? "Not approved. Please upload clearer documents." : "Not submitted"}</p>
           {!biz.verified && <Link href="/account/vetting" className="btn btn-outline mt-2 min-h-11">Open Business vetting</Link>}
         </fieldset>
-        <fieldset className="rounded-xl border border-line p-4">
-          <legend className="px-1 font-bold">Account verification for publication</legend>
+      </>}
+
+      {/* The email check is needed before anything can publish: shown on step 6 and on the status page when it isn't done. */}
+      {(on("hours") || on("publish")) && !verification.email_verified && (
+        <fieldset className="rounded-xl border border-gold/50 bg-warn-soft p-4">
+          <legend className="px-1 font-bold">Verify your email to publish</legend>
           <div className="space-y-2 text-sm">
-            <p><strong>Email:</strong> {verification.email_verified ? "✓ Verified" : "Verification required"}</p>
-            {!verification.email_verified && <>
-              <Turnstile action="auth" onToken={setEmailBotToken} resetKey={emailBotReset} />
-              <button type="button" onClick={sendVerificationEmail} disabled={busy || !emailBotToken} className="btn btn-outline">Send verification email</button>
-            </>}
-            <p><strong>Mobile:</strong> {verification.mobile_verified ? "✓ Verified" : verification.mobile_required ? "Required before submission" : "Optional and not currently required"}</p>
+            <Turnstile action="auth" onToken={setEmailBotToken} resetKey={emailBotReset} />
+            <button type="button" onClick={sendVerificationEmail} disabled={busy || !emailBotToken} className="btn btn-outline">Send verification email</button>
             {verification.mobile_required && !verification.sms_provider_configured && <p className="text-warn">SMS verification is not configured yet. FLAME PH must configure a provider before making mobile verification mandatory.</p>}
           </div>
         </fieldset>
-        <p className="rounded-xl bg-bg-soft p-4 text-sm text-muted">Each time you save, FLAME PH&apos;s automatic check runs and, if everything looks normal, your listing goes on the business directory right away, with no waiting for approval. A mini website, photos and verification documents are optional (documents earn the Verified badge). Publication is controlled by FLAME PH, which can still hide or remove listings that break the member rules.</p>
-        {dirty && <p className="rounded-lg bg-warn-soft p-3 text-sm font-semibold text-warn">Save your latest changes before publishing.</p>}
-        {biz.id && completion.complete && !dirty && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
-          <Turnstile action="business_submit" onToken={setSubmitBotToken} resetKey={submitBotReset} />
-        )}
-      </>}
+      )}
 
-      {editorSection && <>
-        {msg && <Message msg={msg} signedOut={signedOut} dirty={dirty} userId={userId} fields={() => fieldsOf(biz)} />}
-        {needsBasicsFirst && !on("basics") && (
-          <p className="rounded-lg bg-bg-soft p-3 text-sm">To save, first add your <button type="button" onClick={() => goTo("basics")} className="font-bold text-primary underline">business name and city in Business basics</button>.</p>
-        )}
-        {on("publish") ? (
-          <div className="flex flex-wrap gap-2">
-            {prev && <button type="button" onClick={() => goTo(prev)} className="btn btn-ghost">← Back</button>}
-            <button className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Save listing"}</button>
-            {biz.id && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
-              <button type="button" onClick={submitForReview} disabled={busy || dirty || !completion.complete || !submitBotToken || (verification.mobile_required && !verification.mobile_verified)} className="btn btn-flame">Publish my listing</button>
-            )}
-            {biz.id && <Link href="/account/business/preview" className="btn btn-outline">Preview private listing</Link>}
-            {biz.slug && biz.published && <Link href={`/directory/${biz.slug}`} className="btn btn-outline">View public page</Link>}
+      {stepSection && <>
+        {(on("hours") || on("publish")) && !published && submittable && (
+          <div className="rounded-xl bg-bg-soft p-3 text-sm">
+            {completion.complete
+              ? <p className="font-semibold text-ok">✓ Everything needed to publish is in. Save and publish puts your listing live right away.</p>
+              : <NeededToPublish completion={completion} goTo={goTo} ownerName={ownerName} compact />}
+            {/* Bot check for the automatic publish: usually passes by itself without the member doing anything. */}
+            {completion.complete && <div className="mt-2"><Turnstile action="business_submit" onToken={setSubmitBotToken} resetKey={submitBotReset} /></div>}
           </div>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
-            {prev && <button type="button" onClick={() => goTo(prev)} className="btn btn-ghost px-3">← Back</button>}
-            {next && <button type="button" onClick={() => goTo(next)} className="btn btn-ghost ml-auto px-3 text-muted">Skip for now</button>}
-            <button className={`btn btn-primary ${next ? "" : "ml-auto"}`} disabled={busy || needsBasicsFirst} onClick={() => { afterSave.current = next; }}>
-              {busy ? "Saving…" : next ? "Save and continue" : "Save"}
+        )}
+        {stepSection && msg && <Message msg={msg} signedOut={signedOut} dirty={dirty} userId={userId} fields={() => fieldsOf(biz)} />}
+        {needsBasicsFirst && !on("basics") && (
+          <p className="rounded-lg bg-bg-soft p-3 text-sm">To save, first add your <button type="button" onClick={() => goTo("basics")} className="font-bold text-primary underline">business name and city in step 1</button>.</p>
+        )}
+        <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
+          {prev && <button type="button" onClick={() => goTo(prev)} className="btn btn-ghost px-3">← Back</button>}
+          {next && <button type="button" onClick={() => goTo(next)} className="btn btn-ghost ml-auto px-3 text-muted">Skip for now</button>}
+          {on("publish") || on("hours") ? (
+            <button className={`btn btn-flame ${next ? "" : "ml-auto"}`} disabled={busy || needsBasicsFirst} onClick={() => { afterSave.current = null; publishAfterSave.current = true; }}>
+              {busy ? "Saving…" : published || !submittable ? "Save" : "Save and publish"}
             </button>
+          ) : (
+            <button className={`btn btn-primary ${next ? "" : "ml-auto"}`} disabled={busy || needsBasicsFirst} onClick={() => { afterSave.current = next; publishAfterSave.current = false; }}>
+              {busy ? "Saving…" : "Save and continue"}
+            </button>
+          )}
+        </div>
+        {biz.id && (
+          <div className="flex flex-wrap gap-2 text-sm">
+            <Link href="/account/business/preview" className="font-semibold text-primary underline">Preview my listing</Link>
+            {biz.slug && published && <Link href={`/directory/${biz.slug}`} className="font-semibold text-primary underline">View public page</Link>}
           </div>
         )}
       </>}
@@ -360,10 +414,64 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
   );
 }
 
+/** The items needed to publish, in the form's own words, each linked to the step where it is filled in. */
+function NeededToPublish({ completion, goTo, ownerName, compact }: { completion: ReturnType<typeof businessCompletion>; goTo: (k: SectionKey) => void; ownerName: string; compact?: boolean }) {
+  const list = compact ? completion.missing : completion.checks;
+  return (
+    <fieldset className={compact ? "" : "rounded-xl border border-line p-4"}>
+      <legend className={compact ? "font-bold" : "px-1 font-bold"}>{compact ? "Still needed to publish" : "Needed to publish"}</legend>
+      <ul className="mt-1 space-y-2 text-sm">
+        {list.map((check) => (
+          <li key={check.key} className="flex gap-2">
+            <span aria-hidden className={check.done ? "text-ok" : "text-muted"}>{check.done ? "✓" : "○"}</span>
+            <span>
+              <strong>{check.label}</strong>
+              {!check.done && <> — <span className="text-muted">{check.help}</span>{" "}
+                {check.step === "profile"
+                  ? <Link href="/account/profile" className="font-bold text-primary underline">Open My profile</Link>
+                  : <button type="button" onClick={() => goTo(check.step as SectionKey)} className="font-bold text-primary underline">Go there</button>}
+              </>}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {!compact && !ownerName.trim() && <p className="mt-3 text-sm"><Link href="/account/profile" className="font-bold underline">Complete your member profile</Link> to identify the owner or authorized representative.</p>}
+      {!compact && <p className="mt-3 text-sm text-muted">Formal registration documents are optional. Aspiring entrepreneurs, home-based sellers, informal microbusinesses and startups can publish once the essentials above are complete.</p>}
+    </fieldset>
+  );
+}
+
+/** Shows where a typed link will go, so members can see it works before saving. */
+function linkPreview(kind: LinkKind, v: unknown) {
+  if (typeof v !== "string" || !v.trim()) return null;
+  const u = normalizeLink(kind, v);
+  return u
+    ? <p className="mt-1 break-all text-xs text-ok">✓ Opens <a href={u} target="_blank" rel="noopener" className="underline">{u}</a></p>
+    : <p className="mt-1 text-xs font-semibold text-warn">That doesn&apos;t look like a web link yet. Example: {LINK_PLACEHOLDER[kind]}</p>;
+}
+
+/** A starter description from what the member already typed. Never invents facts: it only reuses their own entries. */
+function draftDescription(b: Biz, sectors: string[]) {
+  const t = (k: string) => String(b[k] ?? "").trim();
+  const name = t("name") || "We";
+  const sector = sectors.includes(t("sector")) ? t("sector").toLowerCase() : "";
+  const place = [t("city"), t("province")].filter(Boolean).join(", ");
+  const products = t("products").split(/\n|,/).map((x) => x.trim()).filter(Boolean).slice(0, 6).join(", ");
+  const current = t("description");
+  return [
+    `${name} is a ${sector ? `${sector} business` : "local business"}${place ? ` in ${place}` : ""}.`,
+    current && !current.startsWith(name) ? (/[.!?]$/.test(current) ? current : `${current}.`) : "",
+    products ? `We offer ${products}.` : "We offer [what you sell or the service you provide].",
+    "We serve [who your customers are, for example families, offices, resellers or restaurants].",
+    "Message us for prices, orders and delivery.",
+  ].filter(Boolean).join(" ");
+}
+
 /** Section title and a one-line hint, at the top of each section of the form. */
-function SectionHead({ title, help }: { title: string; help: string }) {
+function SectionHead({ step, title, help }: { step?: number; title: string; help: string }) {
   return (
     <div>
+      {step && <p className="text-xs font-bold uppercase tracking-wide text-flame-strong">Step {step} of 6</p>}
       <h2 className="text-xl font-bold">{title}</h2>
       <p className="mt-1 text-sm text-muted">{help}</p>
     </div>
