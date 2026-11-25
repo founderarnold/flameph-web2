@@ -40,6 +40,14 @@ export async function middleware(request: NextRequest) {
     to.headers.set("cache-control", "private, no-store");
     return to;
   }
+  // Signed out on a My account or Admin page: sign in, then come back to that same page (not the My account home).
+  if (!data.user && request.method === "GET" && /^\/(account|admin)(\/|$)/.test(path)) {
+    const to = new URL("/login", request.url);
+    to.searchParams.set("next", path + request.nextUrl.search);
+    const res = NextResponse.redirect(to);
+    response.cookies.getAll().forEach((c) => res.cookies.set(c));
+    return res;
+  }
   // Same address, member version: /fulfillment, /pos and /bizconsult-ai show the member version to signed-in members.
   if (memberTab && data.user) {
     const to = NextResponse.rewrite(new URL(memberTab + request.nextUrl.search, request.url), { request });
