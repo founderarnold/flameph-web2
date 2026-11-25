@@ -125,3 +125,20 @@ export async function peopleCards(supabase: SupabaseClient, ranked: { user_id: s
       logo_url: logo.get(c.id) ?? null, mutual: r.reason === "mutual" ? Number(r.detail) || 0 : 0, reason: r.reason ? reasonLabel({ reason: r.reason, detail: r.detail ?? null }) : null }];
   });
 }
+
+export type FindFilters = { q: string; industry: string; category: string; provinces: string[]; city: string; chapter: string; verified: boolean; minisite: boolean };
+
+/**
+ * Find members (find_members, 0041): every active member, not only published listings, filtered and ranked for the
+ * viewer (same city, chapter, province, shared industries, then members with a photo or logo). null before 0041.
+ */
+export async function findMembers(supabase: SupabaseClient, f: FindFilters, page = 0, perPage = 30): Promise<{ cards: Suggestion[]; total: number } | null> {
+  const { data, error } = await supabase.rpc("find_members", {
+    p_q: f.q || null, p_industry: f.industry || null, p_category: f.category || null, p_provinces: f.provinces.length ? f.provinces : null,
+    p_city: f.city || null, p_chapter: f.chapter || null, p_verified: f.verified, p_minisite: f.minisite, p_exclude_followed: false,
+    max_rows: perPage, p_offset: page * perPage,
+  });
+  if (error) return null;
+  const rows = (data ?? []) as { user_id: string; total: number }[];
+  return { cards: await peopleCards(supabase, rows.map((r) => ({ user_id: r.user_id }))), total: Number(rows[0]?.total ?? 0) };
+}

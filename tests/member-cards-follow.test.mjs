@@ -48,3 +48,23 @@ test("Follow members step and Find members have filters", async () => {
   const p = await read("src/app/account/profile/page.tsx");
   assert.match(p, /<AvatarPicker /);
 });
+
+test("0041: low-risk listings publish at once, high risk never, waiting ones published with an audit entry", async () => {
+  const m = await read("supabase/migrations/0041_open_directory.sql");
+  assert.match(m, /auto := business\.risk_level = 'low'/);
+  assert.match(m, /lifecycle_status = 'approved', publication_status = 'published', published = true/);
+  assert.match(m, /if business\.risk_level = 'high' then raise exception 'BUSINESS_HIGH_SUSPICION'/);
+  assert.match(m, /'business_auto_published'/);
+  assert.match(m, /grant execute on function public\.submit_business_for_review\(uuid, uuid\) to service_role/);
+  assert.match(m, /revoke all on function public\.find_members\([^)]*\) from public, anon/);
+  assert.match(m, /not p\.hide_from_suggestions/);
+  assert.doesNotMatch(m, /\b(drop table|delete from|truncate)\b/i);
+});
+
+test("Find members lists every member, most relevant first, with quick picks and paging", async () => {
+  const p = await read("src/app/members/page.tsx");
+  assert.match(p, /findMembers\(supabase,/);
+  assert.match(p, /most relevant to you first/);
+  assert.match(p, /Show more members/);
+  assert.match(p, /aria-label="Quick picks"/);
+});

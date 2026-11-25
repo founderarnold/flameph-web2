@@ -39,8 +39,8 @@ test("API checks completeness before consuming bot and rate-limit attempts", () 
 
 test("editor mirrors the authoritative checklist and requires saved changes", () => {
   assert.match(editor, /businessCompletion\(biz, ownerName, verification\.email_verified\)/);
-  assert.match(editor, /Required before review/);
-  assert.match(editor, /Save your latest changes before submitting/);
+  assert.match(editor, /Needed to publish/);
+  assert.match(editor, /Save your latest changes before publishing/);
   assert.match(editor, /dirty \|\| !completion\.complete/);
   assert.match(page, /select\("full_name"\)/);
   assert.match(page, /ownerName=\{profile\?\.full_name \?\? ""\}/);
