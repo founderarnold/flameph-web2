@@ -41,8 +41,13 @@ test("public statistics and tracking use publication eligibility", () => {
 
 test("legacy queries stay strict while public directory traffic moves to FlamePH Pages", () => {
   assert.match(sharedFilter, /published: true[\s\S]*publication_status: "published"[\s\S]*lifecycle_status: "approved"/i);
-  assert.equal(detail.match(/PUBLIC_BUSINESS_FILTERS/g)?.length, 4);
-  assert.match(memberProfile, /filters: \{ slug, \.\.\.PUBLIC_BUSINESS_FILTERS \}/);
+  // Profile pages and related listings read the server-checked list (active owner) and apply the same strict rule
+  // (isApprovedListing mirrors PUBLIC_BUSINESS_FILTERS; tests/directory-feed.test.mjs keeps the two equal).
+  for (const source of [detail, memberProfile]) {
+    assert.match(source, /publicBusinessBySlug/);
+    assert.match(source, /isApprovedListing\(b\)/);
+  }
+  assert.match(detail, /rows\.filter\(\(r\) => r\.sector === b\.sector && isApprovedListing/);
   assert.match(config, /source: "\/directory"[\s\S]*pages\.flameph\.org\/directory/);
   assert.match(config, /source: "\/directory\/:path\*"[\s\S]*pages\.flameph\.org\/directory/);
   assert.doesNotMatch(sitemap, /\/directory\/\$\{/i);

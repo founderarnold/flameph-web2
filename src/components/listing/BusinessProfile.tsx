@@ -4,7 +4,7 @@ import { ShareButtons } from "@/components/ShareButtons";
 import { list, mediaUrl } from "@/lib/content";
 import { SOCIALS } from "@/lib/listing";
 import { getSession } from "@/lib/auth";
-import { createPublicClient } from "@/lib/supabase/server";
+import { createAdminClient, createPublicClient } from "@/lib/supabase/server";
 import { peso } from "@/lib/growth";
 import { InquiryForm } from "@/components/listing/InquiryForm";
 import { ListingTracker } from "@/components/listing/ListingTracker";
@@ -15,7 +15,8 @@ import { reputation } from "@/lib/records-server";
 import { badgeLevel, RECORD_TAGS, type RecordTag } from "@/lib/records";
 import { relationship, type Relationship } from "@/lib/people";
 import { noteText } from "@/lib/people-rules";
-import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
+import { publicBusinesses } from "@/lib/directory";
+import { isApprovedListing } from "@/lib/directory-feed";
 import { builderHref, minisiteUrl } from "@/lib/minisites";
 
 export type B = {
@@ -38,16 +39,20 @@ const safeLink = (u?: string | null) => (u && /^https?:\/\//i.test(u) ? u : null
 export async function BusinessProfile({ business, review, basePath, note }: { business: B; review?: string; basePath: "/members" | "/directory"; note?: string }) {
   const sp = { review };
   const pub = createPublicClient();
+  const admin = createAdminClient();
   const { supabase, user } = await getSession();
   const isMember = Boolean(user);
   const b = forViewer(business, isMember || user?.id === business.owner_id) as B & { hidden_groups: string[] };
   // Products, reviews and related listings; each is empty until the 0003 database update is run.
   const [productsRes, reviewsRes, profileRes, all] = await Promise.all([
-    pub?.from("business_products").select("*").eq("business_id", b.id).order("sort").order("created_at").limit(100),
-    pub?.from("business_reviews").select("id,user_id,rating,body,reviewer_name,reviewer_city,created_at").eq("business_id", b.id).eq("hidden", false).order("created_at", { ascending: false }).limit(50),
+    // Read with the server key: the visitor rules for products and reviews also check that the owner's account is
+    // active, which a visitor can't see, so they came back empty for everyone. Callers only pass a listing that already
+    // passed the server-side public check (publicBusinessBySlug + isApprovedListing). Members-only products stay hidden.
+    b.hidden_groups.includes("products") ? null : (admin ?? pub)?.from("business_products").select("id,name,description,price,price_from,unit,min_order,photo_path,link_url,sort").eq("business_id", b.id).order("sort").order("created_at").limit(100),
+    (admin ?? pub)?.from("business_reviews").select("id,user_id,rating,body,reviewer_name,reviewer_city,created_at").eq("business_id", b.id).eq("hidden", false).order("created_at", { ascending: false }).limit(50),
     user && supabase ? supabase.from("profiles").select("full_name, mobile").eq("id", user.id).single() : null,
     // Related listings: only the same sector, newest 24 (was every public listing on every profile view).
-    b.sector ? list<B>({ table: "businesses", select: "id,name,slug,sector,city,province", filters: { ...PUBLIC_BUSINESS_FILTERS, sector: b.sector }, order: "created_at", limit: 24 }) : Promise.resolve([] as B[]),
+    b.sector ? publicBusinesses<B & { id: string; owner_id: string }>().then((rows) => rows.filter((r) => r.sector === b.sector && isApprovedListing(r as never)).slice(0, 24)) : Promise.resolve([] as B[]),
   ]);
   // Registration numbers the owner chose to show (never the TIN), the chapter, and whether this member follows the owner.
   const [regRes, chapters, rel, sitesRes, rep, ageRes] = await Promise.all([
