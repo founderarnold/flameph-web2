@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, createEmailLinkClient } from "@/lib/supabase/browser";
 import { SUPABASE_URL } from "@/lib/env";
@@ -13,6 +13,8 @@ import { businessCompletion } from "@/lib/business-completion";
 import { MODERATION_FIELD_MESSAGES, safeModerationFields } from "@/lib/business-moderation-feedback";
 import { SIGNED_OUT_MESSAGE, friendlyDbError } from "@/lib/db-errors";
 import { saveBusinessListing } from "@/app/account/business/actions";
+import { neighbour, type SectionKey } from "@/lib/listing-sections";
+import { useGoToSection } from "@/components/listing/ListingSections";
 
 type Biz = Record<string, unknown> & {
   id?: string;
@@ -55,7 +57,7 @@ const fieldsOf = (biz: Biz): Record<string, unknown> => ({
 /** Unsaved details are kept in this browser if a save fails because the sign-in expired, and come back after logging in. */
 const draftKey = (userId: string) => `flameph-listing-draft:${userId}`;
 
-export function BusinessEditor({ userId, email, ownerName, verification, initial, sectors, provinces, supportsExtras = true }: { userId: string; email: string; ownerName: string; verification: AccountVerificationStatus; initial: Biz | null; sectors: string[]; provinces: string[]; supportsExtras?: boolean }) {
+export function BusinessEditor({ userId, email, ownerName, verification, initial, sectors, provinces, supportsExtras = true, section = "basics", query = "" }: { userId: string; email: string; ownerName: string; verification: AccountVerificationStatus; initial: Biz | null; sectors: string[]; provinces: string[]; supportsExtras?: boolean; section?: SectionKey; query?: string }) {
   const supabase = createClient();
   const router = useRouter();
   const [biz, setBiz] = useState<Biz>(initial ?? { photos: [], verification_docs: [], published: false, lifecycle_status: "draft", publication_status: "unpublished" });
@@ -68,6 +70,9 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
   const [dirty, setDirty] = useState(false);
   const [signedOut, setSignedOut] = useState(false);
   const completion = businessCompletion(biz, ownerName, verification.email_verified);
+  const goTo = useGoToSection(query);
+  /** Where "Save and continue" goes once the save worked. */
+  const afterSave = useRef<SectionKey | null>(null);
   useEffect(() => {
     try {
       const saved = localStorage.getItem(draftKey(userId));
@@ -112,6 +117,8 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    const then = afterSave.current;
+    afterSave.current = null;
     setBusy(true); setMsg(null);
     const fields = fieldsOf(biz);
     // Saved on the server as the member signed in right now, so an expired or switched browser sign-in can't cause a raw database error.
@@ -128,8 +135,8 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
     setSignedOut(false);
     setBiz((b) => ({ ...b, id: res.id, slug: res.slug }));
     setDirty(false);
-    setMsg({ ok: true, text: res.partial ? "Saved! Logo, hours and links will be saved once FLAME PH finishes a database update." : "Saved!" });
-    router.refresh();
+    setMsg({ ok: true, text: res.partial ? "Saved! Logo, hours and links will be saved once FLAME PH finishes a database update." : then ? "Saved! On to the next section." : "Saved!" });
+    if (then) goTo(then); else router.refresh();
   }
 
   async function sendVerificationEmail() {
@@ -188,103 +195,177 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
     router.refresh();
   }
 
+  const on = (k: SectionKey) => section === k;
+  const prev = neighbour(section, -1);
+  const next = neighbour(section, 1);
+  const editorSection = !["details", "website"].includes(section);
+  const needsBasicsFirst = !String(biz.name ?? "").trim() || !String(biz.city ?? "").trim();
+
   return (
-    <form id="business-details" onSubmit={save} className="card mt-6 space-y-4 p-5">
-      <BusinessStatus business={biz} />
+    <form id="business-details" onSubmit={save} className={editorSection ? "card mt-4 space-y-4 p-5" : "mt-4 space-y-3"}>
       {biz.risk_level === "high" && <ModerationCorrection business={biz} />}
-      <ListingStrength biz={biz} supportsExtras={supportsExtras} />
-      <fieldset className="rounded-xl border border-line p-4">
-        <legend className="px-1 font-bold">Needed to publish</legend>
-        <ul className="space-y-2 text-sm">
-          {completion.checks.map((check) => (
-            <li key={check.key} className="flex gap-2">
-              <span aria-hidden className={check.done ? "text-ok" : "text-muted"}>{check.done ? "✓" : "○"}</span>
-              <span><strong>{check.label}</strong>{!check.done && <> — <span className="text-muted">{check.help}</span></>}</span>
-            </li>
-          ))}
-        </ul>
-        {!ownerName.trim() && <p className="mt-3 text-sm"><Link href="/account/profile" className="font-bold underline">Complete your member profile</Link> to identify the owner or authorized representative.</p>}
-        <p className="mt-3 text-sm text-muted">Formal registration documents are optional. Aspiring entrepreneurs, home-based sellers, informal microbusinesses and startups may submit once the essentials above are complete.</p>
-      </fieldset>
-      {FIELDS.slice(0, 1).map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
-      <div>
-        <label className="label" htmlFor="sector">Sector</label>
-        <select id="sector" className="input" value={String(biz.sector ?? "")} onChange={(e) => set("sector", e.target.value)}>
-          <option value="">Pumili…</option>{sectors.map((s) => <option key={s}>{s}</option>)}
-        </select>
-      </div>
-      {FIELDS.slice(1, 4).map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
-      <div>
-        <label className="label" htmlFor="province">Province</label>
-        <select id="province" className="input" value={String(biz.province ?? "")} onChange={(e) => set("province", e.target.value)}>
-          <option value="">Pumili…</option>{provinces.map((s) => <option key={s}>{s}</option>)}
-        </select>
-      </div>
-      <fieldset className="space-y-4 rounded-xl border border-line p-4"><legend className="px-1 font-bold">Contact buttons</legend>
-        {FIELDS.slice(4).map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
-      </fieldset>
-      {supportsExtras && <>
-        <fieldset className="space-y-4 rounded-xl border border-line p-4"><legend className="px-1 font-bold">Logo & cover photo</legend>
+      {/* Changes typed in another section and not saved yet stay here until saved, even while another section is open. */}
+      {!editorSection && dirty && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-warn-soft p-3 text-sm font-semibold text-warn">
+          <span>You have listing changes that aren&apos;t saved yet.</span>
+          <button className="btn btn-primary min-h-11 px-3 text-sm" disabled={busy}>{busy ? "Saving…" : "Save them now"}</button>
+        </div>
+      )}
+      {!editorSection && msg && <Message msg={msg} signedOut={signedOut} dirty={dirty} userId={userId} fields={() => fieldsOf(biz)} />}
+
+      {on("basics") && <>
+        <SectionHead title="Business basics" help="Only the business name and city are needed to save. Everything else can wait." />
+        {FIELDS.filter((f) => f.name === "name").map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
+        <div>
+          <label className="label" htmlFor="sector">Type of business (sector)</label>
+          <select id="sector" className="input" value={String(biz.sector ?? "")} onChange={(e) => set("sector", e.target.value)}>
+            <option value="">Pumili…</option>{sectors.map((s) => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+        {FIELDS.filter((f) => f.name === "city").map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
+        <div>
+          <label className="label" htmlFor="province">Province</label>
+          <select id="province" className="input" value={String(biz.province ?? "")} onChange={(e) => set("province", e.target.value)}>
+            <option value="">Pumili…</option>{provinces.map((s) => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+      </>}
+
+      {on("about") && <>
+        <SectionHead title="About and products" help="Tell buyers what you offer and who you serve. Add products with prices below." />
+        {FIELDS.filter((f) => f.name === "description" || f.name === "products").map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
+      </>}
+
+      {on("contact") && <>
+        <SectionHead title="Contact buttons" help="Add at least one way for customers to reach you. Each one becomes a button on your listing." />
+        {FIELDS.filter((f) => f.name.startsWith("contact_")).map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
+      </>}
+
+      {on("photos") && <>
+        <SectionHead title="Logo and photos" help="Listings with a logo and 3 or more real photos get more inquiries." />
+        {supportsExtras && (
           <div className="grid grid-cols-1 gap-6 sm:flex sm:flex-wrap">
             <ImagePick label="Logo" hint="Square works best." path={biz.logo_url as string | undefined} round onPick={(e) => onSingle(e, "logo_url")} onClear={() => set("logo_url", null)} />
             <ImagePick label="Cover photo" hint="Wide photo of your shop or products." path={biz.cover_url as string | undefined} onPick={(e) => onSingle(e, "cover_url")} onClear={() => set("cover_url", null)} />
           </div>
-        </fieldset>
-        <fieldset className="space-y-4 rounded-xl border border-line p-4"><legend className="px-1 font-bold">Opening hours & location</legend>
+        )}
+        <div>
+          <p className="label">Photos (up to 6)</p>
+          <div className="flex flex-wrap gap-2">
+            {(biz.photos ?? []).map((p) => (
+              <div key={p} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`${SUPABASE_URL}/storage/v1/object/public/media/${p}`} alt="" className="h-20 w-20 rounded-lg object-cover" />
+                <button type="button" aria-label="Remove photo" onClick={() => set("photos", (biz.photos ?? []).filter((x) => x !== p))} className="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full bg-fg text-bg">×</button>
+              </div>
+            ))}
+          </div>
+          {(biz.photos?.length ?? 0) < 6 && <input type="file" accept="image/*" multiple onChange={onPhotos} className="mt-2 block min-h-11" aria-label="Upload photos" />}
+        </div>
+      </>}
+
+      {on("hours") && <>
+        <SectionHead title="Hours, location and links" help="Tell buyers when you're open, how to find you and where else they can order." />
+        {supportsExtras && <>
           <Input f={{ name: "hours", label: "Opening hours", help: "Example: Mon to Sat, 8am to 6pm" }} v={biz.hours} set={set} />
           <Input f={{ name: "map_landmark", label: "Landmark or barangay for directions", help: "Something public like \"near Robinsons Place\" or \"Brgy. San Jose\". Never your home address." }} v={biz.map_landmark} set={set} />
-        </fieldset>
-        <fieldset className="space-y-4 rounded-xl border border-line p-4"><legend className="px-1 font-bold">Online links</legend>
-          <p className="text-sm text-muted">Paste your page or shop link, like facebook.com/yourpage</p>
-          {SOCIALS.map((x) => <Input key={x.key} f={{ name: x.key, label: x.label }} v={biz[x.key]} set={set} />)}
-        </fieldset>
-      </>}
-      <div>
-        <p className="label">Photos (up to 6)</p>
-        <div className="flex flex-wrap gap-2">
-          {(biz.photos ?? []).map((p) => (
-            <div key={p} className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${SUPABASE_URL}/storage/v1/object/public/media/${p}`} alt="" className="h-20 w-20 rounded-lg object-cover" />
-              <button type="button" aria-label="Remove photo" onClick={() => set("photos", (biz.photos ?? []).filter((x) => x !== p))} className="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full bg-fg text-bg">×</button>
-            </div>
-          ))}
-        </div>
-        {(biz.photos?.length ?? 0) < 6 && <input type="file" accept="image/*" multiple onChange={onPhotos} className="mt-2 block min-h-11" aria-label="Upload photos" />}
-      </div>
-      <fieldset className="rounded-xl border border-line p-4">
-        <legend className="px-1 font-bold">Get a Verified badge (optional)</legend>
-        <p className="text-sm text-muted">Optional evidence may include DTI, SEC, CDA, BMBE, Mayor&apos;s/Business Permit or BIR documents. Send them in Business vetting: they are encrypted, and only FLAME PH reviewers can open them.</p>
-        <p className="mt-2 text-sm font-semibold">Status: {biz.verified ? "✓ Verified" : biz.verification_status === "pending" ? "Pending review" : biz.verification_status === "rejected" ? "Not approved. Please upload clearer documents." : "Not submitted"}</p>
-        {!biz.verified && <Link href="/account/vetting" className="btn btn-outline mt-2 min-h-11">Open Business vetting</Link>}
-      </fieldset>
-      <fieldset className="rounded-xl border border-line p-4">
-        <legend className="px-1 font-bold">Account verification for publication</legend>
-        <div className="space-y-2 text-sm">
-          <p><strong>Email:</strong> {verification.email_verified ? "✓ Verified" : "Verification required"}</p>
-          {!verification.email_verified && <>
-            <Turnstile action="auth" onToken={setEmailBotToken} resetKey={emailBotReset} />
-            <button type="button" onClick={sendVerificationEmail} disabled={busy || !emailBotToken} className="btn btn-outline">Send verification email</button>
-          </>}
-          <p><strong>Mobile:</strong> {verification.mobile_verified ? "✓ Verified" : verification.mobile_required ? "Required before submission" : "Optional and not currently required"}</p>
-          {verification.mobile_required && !verification.sms_provider_configured && <p className="text-warn">SMS verification is not configured yet. FLAME PH must configure a provider before making mobile verification mandatory.</p>}
-        </div>
-      </fieldset>
-      <p className="rounded-xl bg-bg-soft p-4 text-sm text-muted">Saving updates your draft. When everything above is ticked, press Publish: FLAME PH&apos;s automatic checks run and your listing goes live right away, with no waiting for approval. Publication is controlled by FLAME PH, which can still hide or remove listings that break the member rules.</p>
-      {dirty && <p className="rounded-lg bg-warn-soft p-3 text-sm font-semibold text-warn">Save your latest changes before publishing.</p>}
-      {biz.id && completion.complete && !dirty && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
-        <Turnstile action="business_submit" onToken={setSubmitBotToken} resetKey={submitBotReset} />
-      )}
-      {msg && <p role="status" className={`rounded-lg p-3 font-semibold ${msg.ok ? "bg-ok-soft text-ok" : "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200"}`}>{msg.text}{signedOut && !msg.ok && <> <a className="underline" href="/login?next=%2Faccount%2Fbusiness" onClick={() => { try { if (dirty) localStorage.setItem(draftKey(userId), JSON.stringify(fieldsOf(biz))); } catch { /* storage blocked */ } }}>Log in again</a></>}</p>}
-      <div className="flex flex-wrap gap-2">
-        <button className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Save listing"}</button>
-        {biz.id && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
-          <button type="button" onClick={submitForReview} disabled={busy || dirty || !completion.complete || !submitBotToken || (verification.mobile_required && !verification.mobile_verified)} className="btn btn-flame">Publish my listing</button>
+        </>}
+        {FIELDS.filter((f) => f.name === "marketplaceph_url").map((f) => <Input key={f.name} f={f} v={biz[f.name]} set={set} />)}
+        {supportsExtras && (
+          <fieldset className="space-y-4 rounded-xl border border-line p-4"><legend className="px-1 font-bold">Online links</legend>
+            <p className="text-sm text-muted">Paste your page or shop link, like facebook.com/yourpage</p>
+            {SOCIALS.map((x) => <Input key={x.key} f={{ name: x.key, label: x.label }} v={biz[x.key]} set={set} />)}
+          </fieldset>
         )}
-        {biz.id && <Link href="/account/business/preview" className="btn btn-outline">Preview private listing</Link>}
-        {biz.slug && biz.published && <Link href={`/directory/${biz.slug}`} className="btn btn-outline">View public page</Link>}
-      </div>
+      </>}
+
+      {on("publish") && <>
+        <SectionHead title="Check and publish" help="When everything below is ticked, press Publish. Your listing goes live in the directory right away." />
+        <BusinessStatus business={biz} />
+        <ListingStrength biz={biz} supportsExtras={supportsExtras} />
+        <fieldset className="rounded-xl border border-line p-4">
+          <legend className="px-1 font-bold">Needed to publish</legend>
+          <ul className="space-y-2 text-sm">
+            {completion.checks.map((check) => (
+              <li key={check.key} className="flex gap-2">
+                <span aria-hidden className={check.done ? "text-ok" : "text-muted"}>{check.done ? "✓" : "○"}</span>
+                <span><strong>{check.label}</strong>{!check.done && <> — <span className="text-muted">{check.help}</span></>}</span>
+              </li>
+            ))}
+          </ul>
+          {!ownerName.trim() && <p className="mt-3 text-sm"><Link href="/account/profile" className="font-bold underline">Complete your member profile</Link> to identify the owner or authorized representative.</p>}
+          <p className="mt-3 text-sm text-muted">Formal registration documents are optional. Aspiring entrepreneurs, home-based sellers, informal microbusinesses and startups may submit once the essentials above are complete.</p>
+        </fieldset>
+        <fieldset className="rounded-xl border border-line p-4">
+          <legend className="px-1 font-bold">Get a Verified badge (optional)</legend>
+          <p className="text-sm text-muted">Optional evidence may include DTI, SEC, CDA, BMBE, Mayor&apos;s/Business Permit or BIR documents. Send them in Business vetting: they are encrypted, and only FLAME PH reviewers can open them.</p>
+          <p className="mt-2 text-sm font-semibold">Status: {biz.verified ? "✓ Verified" : biz.verification_status === "pending" ? "Pending review" : biz.verification_status === "rejected" ? "Not approved. Please upload clearer documents." : "Not submitted"}</p>
+          {!biz.verified && <Link href="/account/vetting" className="btn btn-outline mt-2 min-h-11">Open Business vetting</Link>}
+        </fieldset>
+        <fieldset className="rounded-xl border border-line p-4">
+          <legend className="px-1 font-bold">Account verification for publication</legend>
+          <div className="space-y-2 text-sm">
+            <p><strong>Email:</strong> {verification.email_verified ? "✓ Verified" : "Verification required"}</p>
+            {!verification.email_verified && <>
+              <Turnstile action="auth" onToken={setEmailBotToken} resetKey={emailBotReset} />
+              <button type="button" onClick={sendVerificationEmail} disabled={busy || !emailBotToken} className="btn btn-outline">Send verification email</button>
+            </>}
+            <p><strong>Mobile:</strong> {verification.mobile_verified ? "✓ Verified" : verification.mobile_required ? "Required before submission" : "Optional and not currently required"}</p>
+            {verification.mobile_required && !verification.sms_provider_configured && <p className="text-warn">SMS verification is not configured yet. FLAME PH must configure a provider before making mobile verification mandatory.</p>}
+          </div>
+        </fieldset>
+        <p className="rounded-xl bg-bg-soft p-4 text-sm text-muted">Saving updates your draft. When everything above is ticked, press Publish: FLAME PH&apos;s automatic checks run and your listing goes live right away, with no waiting for approval. Publication is controlled by FLAME PH, which can still hide or remove listings that break the member rules.</p>
+        {dirty && <p className="rounded-lg bg-warn-soft p-3 text-sm font-semibold text-warn">Save your latest changes before publishing.</p>}
+        {biz.id && completion.complete && !dirty && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
+          <Turnstile action="business_submit" onToken={setSubmitBotToken} resetKey={submitBotReset} />
+        )}
+      </>}
+
+      {editorSection && <>
+        {msg && <Message msg={msg} signedOut={signedOut} dirty={dirty} userId={userId} fields={() => fieldsOf(biz)} />}
+        {needsBasicsFirst && !on("basics") && (
+          <p className="rounded-lg bg-bg-soft p-3 text-sm">To save, first add your <button type="button" onClick={() => goTo("basics")} className="font-bold text-primary underline">business name and city in Business basics</button>.</p>
+        )}
+        {on("publish") ? (
+          <div className="flex flex-wrap gap-2">
+            {prev && <button type="button" onClick={() => goTo(prev)} className="btn btn-ghost">← Back</button>}
+            <button className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Save listing"}</button>
+            {biz.id && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
+              <button type="button" onClick={submitForReview} disabled={busy || dirty || !completion.complete || !submitBotToken || (verification.mobile_required && !verification.mobile_verified)} className="btn btn-flame">Publish my listing</button>
+            )}
+            {biz.id && <Link href="/account/business/preview" className="btn btn-outline">Preview private listing</Link>}
+            {biz.slug && biz.published && <Link href={`/directory/${biz.slug}`} className="btn btn-outline">View public page</Link>}
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
+            {prev && <button type="button" onClick={() => goTo(prev)} className="btn btn-ghost px-3">← Back</button>}
+            {next && <button type="button" onClick={() => goTo(next)} className="btn btn-ghost ml-auto px-3 text-muted">Skip for now</button>}
+            <button className={`btn btn-primary ${next ? "" : "ml-auto"}`} disabled={busy || needsBasicsFirst} onClick={() => { afterSave.current = next; }}>
+              {busy ? "Saving…" : next ? "Save and continue" : "Save"}
+            </button>
+          </div>
+        )}
+      </>}
     </form>
+  );
+}
+
+/** Section title and a one-line hint, at the top of each section of the form. */
+function SectionHead({ title, help }: { title: string; help: string }) {
+  return (
+    <div>
+      <h2 className="text-xl font-bold">{title}</h2>
+      <p className="mt-1 text-sm text-muted">{help}</p>
+    </div>
+  );
+}
+
+function Message({ msg, signedOut, dirty, userId, fields }: { msg: { ok: boolean; text: string }; signedOut: boolean; dirty: boolean; userId: string; fields: () => Record<string, unknown> }) {
+  return (
+    <p role="status" className={`rounded-lg p-3 font-semibold ${msg.ok ? "bg-ok-soft text-ok" : "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200"}`}>
+      {msg.text}
+      {signedOut && !msg.ok && <> <a className="underline" href="/login?next=%2Faccount%2Fbusiness" onClick={() => { try { if (dirty) localStorage.setItem(draftKey(userId), JSON.stringify(fields())); } catch { /* storage blocked */ } }}>Log in again</a></>}
+    </p>
   );
 }
 
