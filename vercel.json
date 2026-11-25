@@ -6,6 +6,7 @@
     { "path": "/api/cron/privacy", "schedule": "45 18 * * *" },
     { "path": "/api/cron/security", "schedule": "5 * * * *" },
     { "path": "/api/cron/release", "schedule": "0 0 * * *" },
-    { "path": "/api/cron/partner-cases", "schedule": "20 * * * *" }
+    { "path": "/api/cron/partner-cases", "schedule": "20 * * * *" },
+    { "path": "/api/cron/directory", "schedule": "35 * * * *" }
   ]
 }

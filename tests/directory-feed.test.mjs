@@ -48,7 +48,7 @@ test("the feed route is public, read only and uses the approved-listing rule", a
 });
 
 test("admins see submitted and not-yet-submitted listings by default, and can approve them", async () => {
-  assert.match(WAITING_FILTER, /lifecycle_status\.in\.\(submitted,draft\)/);
+  assert.match(WAITING_FILTER, /lifecycle_status\.in\.\(submitted,draft,pending_review\)/);
   assert.match(WAITING_FILTER, /verification_status\.eq\.pending/);
   assert.ok(waitingLabel({ published: false, lifecycle_status: "submitted", risk_level: "needs_review" }));
   assert.ok(waitingLabel({ published: false, lifecycle_status: "draft", risk_level: "needs_review" }));
@@ -56,8 +56,8 @@ test("admins see submitted and not-yet-submitted listings by default, and can ap
   assert.equal(waitingLabel({ published: false, lifecycle_status: "draft", risk_level: "high" }), null);
   assert.equal(waitingLabel({ published: false, lifecycle_status: "needs_correction", risk_level: "high" }), null);
   const page = await readFile(new URL("../src/app/admin/directory/page.tsx", import.meta.url), "utf8");
-  assert.match(page, /q\.or\(WAITING_FILTER\)/);
-  assert.match(page, /value="approve_legitimate" className="btn btn-primary">Approve and publish/);
+  assert.match(page, /applyView\(/);
+  assert.match(page, /value="approve_legitimate" className="btn btn-primary" pendingText="Publishing…">Approve and publish/);
   const home = await readFile(new URL("../src/app/admin/page.tsx", import.meta.url), "utf8");
   assert.match(home, /\.or\(WAITING_FILTER\)/);
 });

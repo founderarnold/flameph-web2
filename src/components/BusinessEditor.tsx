@@ -138,8 +138,22 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       return;
     }
     setSignedOut(false);
-    setBiz((b) => ({ ...b, id: res.id, slug: res.slug }));
+    const outcome = res.review?.outcome;
+    setBiz((b) => ({ ...b, id: res.id, slug: res.slug,
+      ...(outcome === "publish" ? { risk_level: "low", lifecycle_status: "approved", publication_status: "published", published: true } : {}),
+      ...(outcome === "hold" ? { risk_level: "needs_review", lifecycle_status: "pending_review", publication_status: "unpublished", published: false } : {}) }));
     setDirty(false);
+    const extra = res.partial ? " Logo, hours and links will be saved once FLAME PH finishes a database update." : "";
+    // The automatic directory check already ran on save (listing-auto-review): published or held, nothing more to send.
+    if (outcome === "publish" || outcome === "hold") {
+      setMsg({ ok: true, text: (outcome === "publish"
+        ? "Saved and published! Your business is in the FLAME PH business directory now (it can take about a minute to appear)."
+        : res.review?.emailNotConfirmed
+          ? "Saved. Please confirm your email address (see Account verification), then press Save again to go live."
+          : "Saved. Something looked unusual, so a FLAME PH admin will take a quick look before it goes on the directory.") + extra });
+      if (then) goTo(then); else router.refresh();
+      return;
+    }
     setMsg({ ok: true, text: res.partial ? "Saved! Logo, hours and links will be saved once FLAME PH finishes a database update." : then ? "Saved! On to the next step." : "Saved!" });
     const canPublish = publish && completion.complete && submitBotToken && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft"));
     if (canPublish) return submitForReview(res.id);

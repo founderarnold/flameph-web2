@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { checkRateLimit, retryAfterHeaders } from "@/lib/rate-limit";
 import { moderateBusinessContent } from "@/lib/business-moderation";
+import { autoReviewListing } from "@/lib/listing-auto-review";
 
 const BUSINESS_MODERATION_SELECT = "id,owner_id,name,sector,description,products,city,province,contact_email,contact_phone,contact_viber,contact_messenger,website_url,facebook_url,photos,logo_url";
 
@@ -88,5 +89,8 @@ export async function POST(req: Request) {
       : "Could not submit your business. Please try again.";
     return NextResponse.json({ error: message }, { status: /NOT_FOUND/i.test(error.message) ? 404 : 400 });
   }
-  return NextResponse.json({ ok: true, riskLevel: assessment.riskLevel });
+  // Same rule as saving: the automatic directory check (email, personal and business details) decides if it goes live.
+  const review = await autoReviewListing(admin, businessId).catch(() => null);
+  const live = review ? review.outcome === "publish" || (review.outcome === "skip" && assessment.riskLevel === "low") : assessment.riskLevel === "low";
+  return NextResponse.json({ ok: true, riskLevel: live ? "low" : "needs_review" });
 }
