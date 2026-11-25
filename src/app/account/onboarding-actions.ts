@@ -69,6 +69,30 @@ export async function saveChapter(fd: FormData) {
 }
 
 /** Follow or unfollow a member. Returns to the page it came from (onboarding, the feed or a profile). */
+/** Saves (or removes, with null) the member's photo. Only a file in their own folder of the media bucket is accepted. */
+export async function saveAvatar(path: string | null): Promise<{ ok: boolean }> {
+  const { supabase, user } = await requireUser("/account/profile");
+  const value = path === null ? null : String(path).slice(0, 300);
+  if (value !== null && !(value.startsWith(`${user.id}/`) && /^[0-9a-f-]{36}\/[A-Za-z0-9._-]{1,200}$/.test(value))) return { ok: false };
+  const { error } = await supabase.from("profiles").update({ avatar_url: value }).eq("id", user.id);
+  revalidatePath("/account/profile");
+  revalidatePath("/members", "layout");
+  return { ok: !error };
+}
+
+/** Follow or unfollow without reloading the page (used by FollowButton). Returns whether it was saved. */
+export async function setFollow(memberId: string, follow: boolean): Promise<{ ok: boolean }> {
+  const { supabase, user } = await requireUser("/home");
+  const target = uuid(String(memberId ?? "").slice(0, 40));
+  if (!target || target === user.id) return { ok: false };
+  const { error } = follow
+    ? await supabase.from("member_follows").upsert({ follower_id: user.id, followee_id: target }, { onConflict: "follower_id,followee_id", ignoreDuplicates: true })
+    : await supabase.from("member_follows").delete().eq("follower_id", user.id).eq("followee_id", target);
+  revalidatePath("/home");
+  revalidatePath("/members", "layout");
+  return { ok: !error };
+}
+
 export async function toggleFollow(fd: FormData) {
   const { supabase, user } = await requireUser("/home");
   const target = uuid(s(fd.get("member_id"), 40));

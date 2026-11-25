@@ -6,6 +6,7 @@ import { PROVINCES } from "@/content/ph-provinces";
 import { saveMemberType, saveRegistration, removeRegistration } from "../investor-actions";
 import { InvestorWarning } from "@/components/feed/InvestorWarning";
 import { Notice } from "@/components/ui";
+import { AvatarUploader } from "@/components/shell/AvatarUploader";
 import { INVESTOR_ERRORS, MEMBER_TYPES, REGISTRATION_LABEL_MEANING, REGISTRATION_LABEL_MEANING_TL, REGULATORS, registrationLabel, type MemberType, type Regulator } from "@/lib/investor";
 
 const INVESTOR_DONE: Record<string, string> = {
@@ -35,6 +36,7 @@ export default async function Profile({ searchParams }: { searchParams: Promise<
           <StagePicker back="/account/profile?welcome=1" narrow />
         </div>
       )}
+      <div className="card mt-6 p-5"><AvatarUploader userId={user.id} name={p?.full_name ?? ""} current={(p?.avatar_url as string | null | undefined) ?? null} /></div>
       <form action={saveProfile} className="card mt-6 space-y-4 p-5">
         <div><label className="label" htmlFor="fn">Full name *</label><input id="fn" name="full_name" required defaultValue={p?.full_name ?? ""} autoComplete="name" className="input" /></div>
         <div><label className="label" htmlFor="mb">Mobile number</label><input id="mb" name="mobile" type="tel" inputMode="tel" defaultValue={p?.mobile ?? ""} placeholder="09XX XXX XXXX" className="input" /></div>

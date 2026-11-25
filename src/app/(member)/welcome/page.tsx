@@ -5,18 +5,20 @@ import { INDUSTRIES } from "@/lib/industries";
 import { PROVINCES } from "@/content/ph-provinces";
 import { STAGES, STAGE_KEYS } from "@/lib/growth";
 import { STEPS, STEP_TITLES, stepOf, type Step } from "@/lib/onboarding";
-import { followingIds, peopleCards, suggestedPeople } from "@/lib/suggestions";
+import { filteredPeople, followingIds, peopleCards, suggestedPeople } from "@/lib/suggestions";
+import { INDUSTRY_NAMES } from "@/lib/industries";
 import { saveChapter, saveIndustries, saveLocation, saveOnboardingProfile, skipOnboarding } from "@/app/account/onboarding-actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Notice } from "@/components/ui";
 import { SuggestedMemberCard } from "@/components/shell/MemberCard";
+import { AvatarUploader } from "@/components/shell/AvatarUploader";
 
 export const metadata = { title: "Welcome" };
 
 type Chapter = { id: string; name: string; region: string | null; province: string | null; city: string | null; status: string };
 
 /** First-run onboarding: industries, chapter, follow members, finish the profile. Every step can be skipped. */
-export default async function Welcome({ searchParams }: { searchParams: Promise<{ step?: string; error?: string; where?: string }> }) {
+export default async function Welcome({ searchParams }: { searchParams: Promise<{ step?: string; error?: string; where?: string; industry?: string; province?: string }> }) {
   const sp = await searchParams;
   const step = stepOf(sp.step);
   const { supabase, user } = await requireUser(`/welcome?step=${step}`);
@@ -51,8 +53,9 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
 
       {step === "chapter" && <ChapterStep supabase={supabase} userId={user.id} p={p} where={sp.where === "1"} />}
 
-      {step === "follow" && <FollowStep userId={user.id} supabase={supabase} p={p} />}
+      {step === "follow" && <FollowStep userId={user.id} supabase={supabase} p={p} industry={INDUSTRY_NAMES.includes(sp.industry ?? "") ? sp.industry! : ""} province={PROVINCES.includes(sp.province ?? "") ? sp.province! : ""} />}
 
+      {step === "profile" && <div className="card p-4"><AvatarUploader userId={user.id} name={(p?.full_name as string) ?? ""} current={(p?.avatar_url as string | null | undefined) ?? null} /></div>}
       {step === "profile" && (
         <form action={saveOnboardingProfile} className="space-y-4">
           <div><label className="label" htmlFor="ob-name">Your full name</label><input id="ob-name" name="full_name" autoComplete="name" maxLength={120} defaultValue={p?.full_name ?? ""} className="input" /></div>
@@ -183,10 +186,12 @@ async function ChapterStep({ supabase, userId, p, where }: { supabase: Supa; use
   );
 }
 
-async function FollowStep({ userId, supabase, p }: { userId: string; supabase: Supa; p: Record<string, unknown> | null }) {
+async function FollowStep({ userId, supabase, p, industry, province }: { userId: string; supabase: Supa; p: Record<string, unknown> | null; industry: string; province: string }) {
   const following = await followingIds(supabase, userId);
+  const filtered = Boolean(industry || province);
   const [suggested, followed] = await Promise.all([
-    suggestedPeople(supabase, userId, { industries: p?.industries as string[] | undefined, chapter_id: p?.chapter_id as string | undefined, province: p?.province as string | undefined }, 12, { exclude: following }),
+    filtered ? filteredPeople(supabase, { industry, province }, following, 12)
+      : suggestedPeople(supabase, userId, { industries: p?.industries as string[] | undefined, chapter_id: p?.chapter_id as string | undefined, province: p?.province as string | undefined }, 12, { exclude: following }),
     peopleCards(supabase, [...following].slice(0, 12).map((user_id) => ({ user_id }))),
   ]);
   // People just followed stay on the screen (as "Following") so the list doesn't jump.
@@ -194,11 +199,20 @@ async function FollowStep({ userId, supabase, p }: { userId: string; supabase: S
   return (
     <div className="space-y-4">
       <p className="text-muted">Members near you, in your chapter and in your industries. Follow them to see their posts in your feed. You follow {following.size} so far.</p>
+      <form action="/welcome" className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]" role="search" aria-label="Filter members">
+        <input type="hidden" name="step" value="follow" />
+        <label htmlFor="fi" className="sr-only">Industry or business category</label>
+        <select id="fi" name="industry" defaultValue={industry} className="input min-h-11"><option value="">All industries</option>{INDUSTRY_NAMES.map((x) => <option key={x}>{x}</option>)}</select>
+        <label htmlFor="fp" className="sr-only">Province</label>
+        <select id="fp" name="province" defaultValue={province} className="input min-h-11"><option value="">All provinces</option>{PROVINCES.map((x) => <option key={x}>{x}</option>)}</select>
+        <button className="btn btn-outline min-h-11">Filter</button>
+      </form>
+      {filtered && <p className="text-sm text-muted">Showing members{industry ? ` in ${industry}` : ""}{province ? ` in ${province}` : ""}. <Link href="/welcome?step=follow" className="underline">Clear filters</Link></p>}
       {people.length === 0 ? (
         <Notice tone="info">No suggestions yet. Members appear here as more people join near you and in your industries.</Notice>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {people.map((b) => <li key={b.id}><SuggestedMemberCard b={b} following={following.has(b.owner_id)} back="/welcome?step=follow" /></li>)}
+          {people.map((b) => <li key={b.id}><SuggestedMemberCard b={b} following={following.has(b.owner_id)} back={`/welcome?step=follow${industry ? `&industry=${encodeURIComponent(industry)}` : ""}${province ? `&province=${encodeURIComponent(province)}` : ""}`} /></li>)}
         </ul>
       )}
       <Link href="/welcome?step=profile" className="btn btn-primary min-h-11 w-full">Next</Link>

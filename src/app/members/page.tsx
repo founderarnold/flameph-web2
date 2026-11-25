@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { INDUSTRY_NAMES } from "@/lib/industries";
 import { list } from "@/lib/content";
 import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
-import { followingIds, type SuggestedBiz } from "@/lib/suggestions";
+import { followingIds, peopleCards, type Suggestion, type SuggestedBiz } from "@/lib/suggestions";
 import { SuggestedMemberCard } from "@/components/shell/MemberCard";
 import { REGIONS, filterDirectory, filtersQuery, readFilters } from "@/lib/directory-search";
 
@@ -28,6 +28,9 @@ export default async function Members({ searchParams }: { searchParams: Promise<
   const shown = filterDirectory(rows.filter((b) => b.owner_id !== user.id), f, withMinisite);
   const back = `/members${filtersQuery(f)}`;
   const filtered = Boolean(f.q || f.industry || f.chapter || f.region || f.minisite);
+  // Photo, business name, followers and verified badge for the members on this page (falls back to the listing card).
+  const rich = new Map((await peopleCards(supabase, shown.slice(0, 60).map((b) => ({ user_id: b.owner_id })))).map((c) => [c.owner_id, c]));
+  const card = (b: Row): Suggestion => { const c = rich.get(b.owner_id); return c ? { ...b, ...c, id: b.id, slug: b.slug ?? c.slug, sector: b.sector ?? c.sector } : b; };
   return (
     <div className="container-x py-6">
       <div className="mx-auto max-w-3xl space-y-5">
@@ -48,7 +51,7 @@ export default async function Members({ searchParams }: { searchParams: Promise<
         <p className="text-sm text-muted" role="status">{shown.length} {shown.length === 1 ? "member" : "members"}{filtered && <> · <Link href="/members" className="underline">Clear filters</Link></>}</p>
         {shown.length === 0 ? <p className="text-muted">No members match. <Link href="/members" className="underline">Show all</Link></p> : (
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {shown.slice(0, 60).map((b) => <li key={b.id}><SuggestedMemberCard b={b} following={following.has(b.owner_id)} back={back} minisite={withMinisite.has(b.owner_id)} /></li>)}
+            {shown.slice(0, 60).map((b) => <li key={b.id}><SuggestedMemberCard b={card(b)} following={following.has(b.owner_id)} back={back} minisite={withMinisite.has(b.owner_id)} /></li>)}
           </ul>
         )}
         {shown.length > 60 && <p className="text-sm text-muted">Showing the first 60. Add a filter to narrow it down.</p>}
