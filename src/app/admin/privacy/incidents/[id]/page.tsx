@@ -34,14 +34,14 @@ export default async function IncidentPage({ params, searchParams }: { params: P
         <p className="text-sm">Aware: {when(i.aware_at)} · Deadline: {when(i.deadline_at)} · Contained: {when(i.contained_at)} · NPC told: {when(i.npc_notified_at)}{i.npc_reference ? ` (ref ${i.npc_reference})` : ""} · Members told: {i.members_notified_at ? `${when(i.members_notified_at)}, ${i.members_notified_count ?? 0}` : "not yet"}</p>
         {steps.length > 0 && <><p className="font-semibold">Still to do</p><ol className="list-decimal space-y-1 pl-5 text-sm">{steps.map((st) => <li key={st}>{st}</li>)}</ol></>}
         <div className="flex flex-wrap gap-2">
-          {!i.contained_at && <form action={updateIncident}><input type="hidden" name="id" value={i.id} /><button name="step" value="contained" className="btn btn-outline min-h-11">Contained</button></form>}
-          {i.status !== "closed" && <form action={updateIncident}><input type="hidden" name="id" value={i.id} /><button name="step" value="close" className="btn btn-outline min-h-11">Close the incident</button></form>}
+          {!i.contained_at && <form action={updateIncident}><input type="hidden" name="incident_id" value={i.id} /><button name="step" value="contained" className="btn btn-outline min-h-11">Contained</button></form>}
+          {i.status !== "closed" && <form action={updateIncident}><input type="hidden" name="incident_id" value={i.id} /><button name="step" value="close" className="btn btn-outline min-h-11">Close the incident</button></form>}
         </div>
       </section>
 
       <form action={updateIncident} className="card space-y-2 p-4">
         <h2 className="text-lg font-bold">Details</h2>
-        <input type="hidden" name="id" value={i.id} />
+        <input type="hidden" name="incident_id" value={i.id} />
         <input type="hidden" name="step" value="details" />
         <label className="label" htmlFor="t">Title</label><input id="t" name="title" defaultValue={i.title} maxLength={200} className="input w-full" />
         <label className="label" htmlFor="sm">What happened</label><textarea id="sm" name="summary" defaultValue={i.summary ?? ""} rows={3} maxLength={4000} className="input w-full" />
@@ -61,7 +61,7 @@ export default async function IncidentPage({ params, searchParams }: { params: P
         <p className="text-sm">Use the NPC&apos;s online breach reporting system (start at the <a className="text-mph underline" href={OFFICIAL_LINKS.NPC} target="_blank" rel="noopener">NPC website</a>). Copy this draft, check every line, then record the date and reference below.</p>
         <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-bg-soft p-3 text-xs">{npcDraft(i)}</pre>
         <form action={updateIncident} className="grid gap-2 sm:grid-cols-3">
-          <input type="hidden" name="id" value={i.id} /><input type="hidden" name="step" value="npc" />
+          <input type="hidden" name="incident_id" value={i.id} /><input type="hidden" name="step" value="npc" />
           <div><label className="label" htmlFor="na">When you sent it (Manila time; empty = now)</label><input id="na" name="npc_at" type="datetime-local" className="input w-full" /></div>
           <div><label className="label" htmlFor="nr">NPC reference</label><input id="nr" name="npc_reference" maxLength={200} className="input w-full" /></div>
           <button className="btn btn-outline min-h-11 self-end">Record the NPC notice</button>

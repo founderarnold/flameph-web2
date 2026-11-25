@@ -64,7 +64,7 @@ export async function startOffer(fd?: FormData) {
 
 /** Saves screen 1, 3 or 5. "Save draft" stays; "Save and continue" goes on. Formats are checked; blanks are fine until sending. */
 export async function saveOfferStep(fd: FormData) {
-  const { offer, admin, user } = await ownOffer(uuid(fd.get("id")));
+  const { offer, admin, user } = await ownOffer(uuid(fd.get("offer_id")));
   if (offer.kind !== "supplier") go(formPath(offer.id, 1));   // service offers save through ./service-actions
   const step = Math.min(OFFER_LAST_STEP, Math.max(1, Number(fd.get("step")) || 1));
   const next = fd.get("intent") === "next";

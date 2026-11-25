@@ -70,7 +70,7 @@ export async function startComplaint(fd: FormData) {
 
 /** Saves the draft (the member only). Blanks are fine until sending. */
 export async function saveComplaint(fd: FormData) {
-  const { c, admin, user, side } = await myCase(uuid(fd.get("id")));
+  const { c, admin, user, side } = await myCase(uuid(fd.get("complaint_id")));
   const send = fd.get("intent") === "send";
   if (side !== "member" || c.status !== "draft") go(casePath(c.id, "error=locked"));
   const bad = (code: string): never => go(casePath(c.id, `error=${code}`, "#form"));

@@ -54,7 +54,7 @@ export default async function PrivacyRequests({ searchParams }: { searchParams: 
                 {r.kind === "closure" && <p className="text-sm">Closes automatically on {day(r.due_at)} if the member doesn&apos;t turn switch 1 back on.</p>}
                 <div className="flex flex-wrap gap-2 text-sm">
                   {r.user_id && <a className="btn btn-outline min-h-11" href={`/admin/privacy/export/${r.user_id}`}>Download this member&apos;s data</a>}
-                  {r.status === "open" && <form action={updateRequest}><input type="hidden" name="id" value={r.id} /><button name="step" value="start" className="btn btn-outline min-h-11">I&apos;m handling it</button></form>}
+                  {r.status === "open" && <form action={updateRequest}><input type="hidden" name="request_id" value={r.id} /><button name="step" value="start" className="btn btn-outline min-h-11">I&apos;m handling it</button></form>}
                   {r.kind === "closure" && r.status === "open" && <form action={closeNow}><input type="hidden" name="id" value={r.id} /><button className="btn btn-outline min-h-11">Close the account now</button></form>}
                 </div>
                 {r.kind === "erasure" && (
@@ -65,7 +65,7 @@ export default async function PrivacyRequests({ searchParams }: { searchParams: 
                       <button className="btn btn-danger min-h-11">Erase now</button>
                     </form>
                     <form action={updateRequest} className="space-y-2 pt-3">
-                      <input type="hidden" name="id" value={r.id} />
+                      <input type="hidden" name="request_id" value={r.id} />
                       <label className="label" htmlFor={`hold-${r.id}`}>Why keep it for now (a legal reason, such as an open dispute)</label>
                       <input id={`hold-${r.id}`} name="response" className="input w-full" maxLength={500} />
                       <div className="flex flex-wrap gap-2"><button name="step" value="hold" className="btn btn-outline min-h-11">Put on hold</button>{r.hold_reason && <button name="step" value="release" className="btn btn-outline min-h-11">Release hold</button>}</div>
@@ -74,7 +74,7 @@ export default async function PrivacyRequests({ searchParams }: { searchParams: 
                 )}
                 {r.kind !== "erasure" && r.kind !== "closure" && (
                   <form action={updateRequest} className="space-y-2 text-sm">
-                    <input type="hidden" name="id" value={r.id} />
+                    <input type="hidden" name="request_id" value={r.id} />
                     <label className="label" htmlFor={`resp-${r.id}`}>Your answer (the member sees it)</label>
                     <textarea id={`resp-${r.id}`} name="response" rows={3} maxLength={2000} className="input w-full" />
                     <label className="flex min-h-11 items-center gap-2"><input type="checkbox" name="tell" defaultChecked className="size-5" />Also send it to the member by email and in-app</label>

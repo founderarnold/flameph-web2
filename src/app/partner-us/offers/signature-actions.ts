@@ -24,8 +24,9 @@ const yesNo = (v: unknown) => (v === "yes" ? true : v === "no" ? false : null);
 const today = () => new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
 const isDate = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(Date.parse(d));
 
-async function ownSignature(fd: FormData, step: number) {
-  const ctx = await ownOffer(uuid(fd.get("id")));
+/** key: the save-step forms send "offer_id" (a field named "id" hides the form's own id and drops the pressed button). */
+async function ownSignature(fd: FormData, step: number, key = "id") {
+  const ctx = await ownOffer(uuid(fd.get(key)));
   if (ctx.offer.kind !== "manufacturer") go(formPath(ctx.offer.id, step));
   if (!OFFER_EDITABLE.includes(ctx.offer.status)) go(formPath(ctx.offer.id, step, "error=locked"));
   return ctx;
@@ -34,7 +35,7 @@ async function ownSignature(fd: FormData, step: number) {
 /** Saves screen 1, 4 or 5. "Save draft" stays; "Save and continue" goes on. Formats are checked; blanks are fine until sending. */
 export async function saveSignatureStep(fd: FormData) {
   const step = Math.min(OFFER_LAST_STEP, Math.max(1, Number(fd.get("step")) || 1));
-  const { offer, admin, user } = await ownSignature(fd, step);
+  const { offer, admin, user } = await ownSignature(fd, step, "offer_id");
   const next = fd.get("intent") === "next";
   const bad = (code: string): never => go(formPath(offer.id, step, `error=${code}`));
   const patch: Record<string, unknown> = {};

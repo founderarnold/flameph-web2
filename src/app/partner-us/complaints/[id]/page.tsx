@@ -70,7 +70,7 @@ export default async function ComplaintPage({ params, searchParams }: { params: 
 
       {draft && side === "member" && (
         <form id="form" action={saveComplaint} className="card scroll-mt-24 space-y-4 p-4 sm:p-6">
-          <input type="hidden" name="id" value={c.id} />
+          <input type="hidden" name="complaint_id" value={c.id} />
           <div>
             <h2 className="text-xl font-extrabold">What happened</h2>
             <p className="text-sm text-muted" lang="fil">Ikuwento ang nangyari. Puwedeng i-save at ituloy mamaya.</p>

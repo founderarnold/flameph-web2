@@ -120,7 +120,7 @@ export async function ServiceOffer({ o, docs, history, sp }: { o: ServiceOfferRo
 
       {editable && (step === 1 || step === 3) && (
         <form action={saveServiceStep} className="card space-y-4 p-4 sm:p-6">
-          <input type="hidden" name="id" value={o.id} /><input type="hidden" name="step" value={step} />
+          <input type="hidden" name="offer_id" value={o.id} /><input type="hidden" name="step" value={step} />
           <div>
             <h2 className="text-xl font-extrabold">{stepInfo.title}</h2>
             <p className="text-sm text-muted" lang="fil">{stepInfo.fil}. Puwedeng i-save at ituloy mamaya.</p>
@@ -257,7 +257,7 @@ export async function ServiceOffer({ o, docs, history, sp }: { o: ServiceOfferRo
           </div>
 
           <form action={saveServiceStep} className="space-y-3 rounded-xl border border-line p-3 sm:p-4">
-            <input type="hidden" name="id" value={o.id} /><input type="hidden" name="step" value={4} />
+            <input type="hidden" name="offer_id" value={o.id} /><input type="hidden" name="step" value={4} />
             <TextArea name="portfolio" label="Your portfolio" value={o.portfolio} max={1500} rows={3} placeholder="e.g. 40 sari-sari stores and 12 bakeries since 2019; sample report attached; www.example.ph/work" help="Describe past work or give links. A description or at least one sample file below is needed to send." />
             <SubmitButton className="btn btn-outline min-h-11 w-full sm:w-auto" pendingText="Saving…">Save portfolio</SubmitButton>
           </form>
@@ -356,7 +356,7 @@ export async function ServiceOffer({ o, docs, history, sp }: { o: ServiceOfferRo
           <PartnerMoneyNotice />
           {editable ? (
             <form action={saveServiceStep} className="space-y-3 rounded-xl border border-line p-3 sm:p-4">
-              <input type="hidden" name="id" value={o.id} /><input type="hidden" name="step" value={OFFER_LAST_STEP} />
+              <input type="hidden" name="offer_id" value={o.id} /><input type="hidden" name="step" value={OFFER_LAST_STEP} />
               <Text name="commission_pct" label="Proposed commission (% of net sales)" value={num(o.commission_pct)} need max={6} inputMode="decimal" placeholder="e.g. 12" help={`${COMMISSION_HELP} The program's starting target for services is 12%; yours may differ.`} />
               <TextArea name="commission_note" label="Other benefits for members or chapters (optional)" value={o.commission_note} max={500} rows={2} placeholder="e.g. Free tax-filing workshop for each chapter once a year" />
               <SubmitButton className="btn btn-outline min-h-11 w-full sm:w-auto" pendingText="Saving…">Save</SubmitButton>
