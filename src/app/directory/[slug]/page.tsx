@@ -1,10 +1,15 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { list } from "@/lib/content";
-import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
+import { publicBusinessBySlug } from "@/lib/directory";
+import { isApprovedListing } from "@/lib/directory-feed";
 import { BusinessProfile, type B } from "@/components/listing/BusinessProfile";
 
-const get = async (slug: string) => (await list<B>({ table: "businesses", filters: { slug, ...PUBLIC_BUSINESS_FILTERS }, limit: 1 }))[0];
+// Read through the server-checked directory list: visitors can't read the owner's profile row, so the database's
+// "active owner" rule hides every listing from a plain visitor query (that made these pages 404 for visitors).
+const get = async (slug: string) => {
+  const b = await publicBusinessBySlug<B & { id: string; owner_id: string; slug: string }>(slug);
+  return b && isApprovedListing(b) ? b : undefined;
+};
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const b = await get((await params).slug);

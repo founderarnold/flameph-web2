@@ -86,7 +86,7 @@ test("query audit: lists that grow are read page by page, every public list is b
   assert.match(await read("src/app/admin/ai/page.tsx"), /db\.rpc\("ai_usage_daily", \{ p_days: 30 \}\)/);
   const content = await read("src/lib/content.ts");
   assert.match(content, /req = req\.limit\(Math\.min\(q\.limit \?\? LIST_DEFAULT_LIMIT, 1000\)\);/);
-  assert.match(await read("src/components/listing/BusinessProfile.tsx"), /filters: \{ \.\.\.PUBLIC_BUSINESS_FILTERS, sector: b\.sector \}, order: "created_at", limit: 24/);
+  assert.match(await read("src/components/listing/BusinessProfile.tsx"), /r\.sector === b\.sector && isApprovedListing\(r as never\)\)\.slice\(0, 24\)/);
   assert.match(await read("src/app/account/group-order-actions.ts"), /for \(let i = 0; i < members\.length; i \+= 10\)/);
 });
 

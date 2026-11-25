@@ -61,3 +61,20 @@ test("admins see submitted and not-yet-submitted listings by default, and can ap
   const home = await readFile(new URL("../src/app/admin/page.tsx", import.meta.url), "utf8");
   assert.match(home, /\.or\(WAITING_FILTER\)/);
 });
+
+test("isApprovedListing checks exactly the PUBLIC_BUSINESS_FILTERS fields and values", async () => {
+  const { PUBLIC_BUSINESS_FILTERS } = await import("../src/lib/public-business.ts");
+  const base = { name: "A", slug: "a", sector: null, city: null, province: null };
+  assert.equal(isApprovedListing({ ...base, ...PUBLIC_BUSINESS_FILTERS }), true);
+  for (const key of Object.keys(PUBLIC_BUSINESS_FILTERS)) {
+    assert.equal(isApprovedListing({ ...base, ...PUBLIC_BUSINESS_FILTERS, [key]: "other" }), false, key);
+  }
+});
+
+test("profile pages do not 404 for visitors: they read the server-checked list, not a plain visitor query", async () => {
+  for (const path of ["../src/app/members/[slug]/page.tsx", "../src/app/directory/[slug]/page.tsx"]) {
+    const src = await readFile(new URL(path, import.meta.url), "utf8");
+    assert.match(src, /publicBusinessBySlug/);
+    assert.doesNotMatch(src, /list<B>\(\{ table: "businesses"/);
+  }
+});

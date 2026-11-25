@@ -15,7 +15,8 @@ import { reputation } from "@/lib/records-server";
 import { badgeLevel, RECORD_TAGS, type RecordTag } from "@/lib/records";
 import { relationship, type Relationship } from "@/lib/people";
 import { noteText } from "@/lib/people-rules";
-import { PUBLIC_BUSINESS_FILTERS } from "@/lib/public-business";
+import { publicBusinesses } from "@/lib/directory";
+import { isApprovedListing } from "@/lib/directory-feed";
 import { builderHref, minisiteUrl } from "@/lib/minisites";
 
 export type B = {
@@ -47,7 +48,7 @@ export async function BusinessProfile({ business, review, basePath, note }: { bu
     pub?.from("business_reviews").select("id,user_id,rating,body,reviewer_name,reviewer_city,created_at").eq("business_id", b.id).eq("hidden", false).order("created_at", { ascending: false }).limit(50),
     user && supabase ? supabase.from("profiles").select("full_name, mobile").eq("id", user.id).single() : null,
     // Related listings: only the same sector, newest 24 (was every public listing on every profile view).
-    b.sector ? list<B>({ table: "businesses", select: "id,name,slug,sector,city,province", filters: { ...PUBLIC_BUSINESS_FILTERS, sector: b.sector }, order: "created_at", limit: 24 }) : Promise.resolve([] as B[]),
+    b.sector ? publicBusinesses<B & { id: string; owner_id: string }>().then((rows) => rows.filter((r) => r.sector === b.sector && isApprovedListing(r as never)).slice(0, 24)) : Promise.resolve([] as B[]),
   ]);
   // Registration numbers the owner chose to show (never the TIN), the chapter, and whether this member follows the owner.
   const [regRes, chapters, rel, sitesRes, rep, ageRes] = await Promise.all([
