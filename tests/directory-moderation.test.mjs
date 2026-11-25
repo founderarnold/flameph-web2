@@ -23,7 +23,7 @@ test("database policy blocks businesses owned by suspended members", () => {
 test("admins can hide, restore, ban, and guarded-delete listings", () => {
   const actions = read("src/app/admin/actions.ts");
   const page = read("src/app/admin/directory/page.tsx");
-  assert.match(actions, /action === "hide"/);
+  assert.match(actions, /\n  hide: \{ published: false, publication_status: "unpublished" \}/);
   assert.match(actions, /action === "restore"/);
   assert.match(actions, /action === "ban_owner"/);
   assert.match(actions, /action === "delete_business"/);

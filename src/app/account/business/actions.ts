@@ -1,9 +1,10 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { EXTRA_FIELDS } from "@/lib/listing";
 import { regionOf } from "@/content/ph-regions";
 import { SIGNED_OUT_MESSAGE, friendlyDbError } from "@/lib/db-errors";
+import { checkListingAfterSave } from "@/lib/listing-auto-review";
 
 /**
  * Saves the member's own business listing on the server.
@@ -19,8 +20,11 @@ import { SIGNED_OUT_MESSAGE, friendlyDbError } from "@/lib/db-errors";
 const TEXT = ["name", "sector", "description", "products", "city", "province", "contact_messenger", "contact_viber", "contact_phone", "contact_email", "marketplaceph_url"] as const;
 const LIMITS: Record<string, number> = { description: 4000, products: 4000 };
 
+/** What the automatic directory check did after the save (owner rule 25 Nov 2026: normal listings go public at once). */
+export type ListingReview = { outcome: "publish" | "hold" | "high" | "skip" | "error"; emailNotConfirmed: boolean };
+
 export type SaveListingResult =
-  | { ok: true; id: string; slug: string; partial: boolean }
+  | { ok: true; id: string; slug: string; partial: boolean; review?: ListingReview }
   | { ok: false; error: string; signedOut?: boolean };
 
 const str = (v: unknown, max = 300) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -79,7 +83,13 @@ export async function saveBusinessListing(input: Record<string, unknown>, opts: 
     console.error("saveBusinessListing", user.id, res.error?.code, res.error?.message);
     return { ok: false, error: friendlyDbError(res.error, "your listing"), signedOut: res.error?.code === "42501" || undefined };
   }
+  // Automatic directory check: a listing with nothing unusual goes on the public directory now. Documents, photos and a
+  // mini website are optional. If the check cannot run, the listing is simply saved and the hourly check picks it up.
+  // The save above used the member's own session (row level security). The check runs separately on the server.
+  const r = await checkListingAfterSave(String(res.data.id));
+  const review: ListingReview | undefined = r ? { outcome: r.outcome, emailNotConfirmed: r.codes.includes("email_not_verified") } : undefined;
+  if (r && r.outcome !== "skip" && r.outcome !== "error") { revalidateTag("directory"); revalidateTag("content"); revalidatePath("/directory"); }
   revalidatePath("/account/business");
   revalidatePath("/account");
-  return { ok: true, id: String(res.data.id), slug: String(res.data.slug), partial };
+  return { ok: true, id: String(res.data.id), slug: String(res.data.slug), partial, review };
 }

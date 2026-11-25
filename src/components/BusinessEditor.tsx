@@ -126,9 +126,19 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       return;
     }
     setSignedOut(false);
-    setBiz((b) => ({ ...b, id: res.id, slug: res.slug }));
+    const outcome = res.review?.outcome;
+    setBiz((b) => ({ ...b, id: res.id, slug: res.slug,
+      ...(outcome === "publish" ? { risk_level: "low", lifecycle_status: "approved", publication_status: "published", published: true } : {}),
+      ...(outcome === "hold" ? { risk_level: "needs_review", lifecycle_status: "pending_review", publication_status: "unpublished", published: false } : {}) }));
     setDirty(false);
-    setMsg({ ok: true, text: res.partial ? "Saved! Logo, hours and links will be saved once FLAME PH finishes a database update." : "Saved!" });
+    const extra = res.partial ? " Logo, hours and links will be saved once FLAME PH finishes a database update." : "";
+    setMsg({ ok: true, text: (outcome === "publish"
+      ? "Saved and published! Your business is in the FLAME PH business directory now (it can take about a minute to appear)."
+      : outcome === "hold" && res.review?.emailNotConfirmed
+        ? "Saved. Please confirm your email address (see Account verification below), then press Save again to go live."
+        : outcome === "hold"
+          ? "Saved. Something looked unusual, so a FLAME PH admin will take a quick look before it goes on the directory."
+          : "Saved!") + extra });
     router.refresh();
   }
 
@@ -270,7 +280,7 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
           {verification.mobile_required && !verification.sms_provider_configured && <p className="text-warn">SMS verification is not configured yet. FLAME PH must configure a provider before making mobile verification mandatory.</p>}
         </div>
       </fieldset>
-      <p className="rounded-xl bg-bg-soft p-4 text-sm text-muted">Saving updates your draft. When everything above is ticked, press Publish: FLAME PH&apos;s automatic checks run and your listing goes live right away, with no waiting for approval. Publication is controlled by FLAME PH, which can still hide or remove listings that break the member rules.</p>
+      <p className="rounded-xl bg-bg-soft p-4 text-sm text-muted">Press Save listing: FLAME PH&apos;s automatic check runs and, if everything looks normal, your listing goes on the business directory right away, with no waiting for approval. A mini website, photos and verification documents are optional (documents earn the Verified badge). Publication is controlled by FLAME PH, which can still hide or remove listings that break the member rules.</p>
       {dirty && <p className="rounded-lg bg-warn-soft p-3 text-sm font-semibold text-warn">Save your latest changes before publishing.</p>}
       {biz.id && completion.complete && !dirty && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
         <Turnstile action="business_submit" onToken={setSubmitBotToken} resetKey={submitBotReset} />

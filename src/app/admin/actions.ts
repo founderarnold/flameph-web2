@@ -6,6 +6,7 @@ import { friendlyDbError } from "@/lib/db-errors";
 import { adminContext } from "@/lib/admin/guard";
 import { getAdminTable, PK, type AdminField } from "@/lib/admin/config";
 import { getRealEstateAdminSection } from "@/lib/real-estate-admin";
+import { autoReviewWaiting } from "@/lib/listing-auto-review";
 
 const slugify = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 60);
 
@@ -127,80 +128,119 @@ export async function setRealEstateStatus(fd: FormData) {
   redirect(`/admin/real-estate/${section}?saved=1`);
 }
 
-export async function verifyBusiness(fd: FormData) {
-  const ctx = await adminContext(["super_admin", "admin"]);
-  const id = String(fd.get("id")); const decision = String(fd.get("decision"));
-  const note = String(fd.get("note") ?? "") || null;
-  const patch = decision === "approve" ? { verified: true, verification_status: "approved", verification_note: note }
-    : decision === "reject" ? { verified: false, verification_status: "rejected", verification_note: note }
-    : decision === "unpublish" ? { published: false } : null;
-  if (!patch) return;
-  await ctx.db.from("businesses").update(patch).eq("id", id);
-  await ctx.audit(`business_${decision}`, "businesses", id, { note });
-  revalidateTag("content"); revalidateTag("stats");
+/**
+ * The listing id on Directory verification forms. The field is called "business_id", never "id": a form field named
+ * "id" hides the form's own id property in the browser, and React then drops the value of the button that was
+ * pressed (Approve and publish, Reject, ...), so the server saw no action and silently did nothing (fixed 25 Nov 2026).
+ */
+const businessIdOf = (fd: FormData) => String(fd.get("business_id") ?? fd.get("id") ?? "");
+
+/** Where to go back to after a Directory verification button: the same filter and page the admin was on. */
+function directoryBack(fd: FormData, params: Record<string, string>) {
+  const raw = String(fd.get("return_to") ?? "");
+  const url = new URL(raw.startsWith("/admin/directory") ? raw : "/admin/directory", "https://x.invalid");
+  for (const k of ["done", "error", "name", "published", "held", "checked", "failed", "moderated", "reviewed"]) url.searchParams.delete(k);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  const id = businessIdOf(fd);
+  return `${url.pathname}?${url.searchParams.toString()}#${id ? `b-${id}` : "top"}`;
+}
+
+function revalidateDirectory(slug?: string | null) {
+  revalidateTag("content"); revalidateTag("stats"); revalidateTag("directory");
+  revalidatePath("/directory");
+  if (slug) revalidatePath(`/directory/${slug}`);
   revalidatePath("/admin/directory");
 }
 
+export async function verifyBusiness(fd: FormData) {
+  const ctx = await adminContext(["super_admin", "admin"]);
+  const id = businessIdOf(fd); const decision = String(fd.get("decision"));
+  const note = String(fd.get("note") ?? "") || null;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+  // "published: false" alone is put back by the database while publication_status stays "published", so set both.
+  const patch = decision === "approve" ? { verified: true, verification_status: "approved", verification_note: note }
+    : decision === "reject" ? { verified: false, verification_status: "rejected", verification_note: note }
+    : decision === "unpublish" ? { published: false, publication_status: "unpublished" } : null;
+  if (!patch) return;
+  const { data: row, error } = await ctx.db.from("businesses").update(patch).eq("id", id).select("name,slug").maybeSingle();
+  if (error || !row) redirect(directoryBack(fd, { error: "save-failed" }));
+  await ctx.audit(`business_${decision}`, "businesses", id, { note });
+  revalidateDirectory(row.slug);
+  redirect(directoryBack(fd, { done: `doc_${decision}`, name: row.name }));
+}
+
+const MODERATION_PATCH: Record<string, Record<string, unknown>> = {
+  hide: { published: false, publication_status: "unpublished" },
+  restore: { published: true, publication_status: "published", lifecycle_status: "approved", risk_level: "low" },
+  approve_legitimate: { risk_level: "low", moderation_reason_categories: [], moderation_fields: [], lifecycle_status: "approved", publication_status: "published", published: true },
+  request_correction: { risk_level: "needs_review", lifecycle_status: "needs_correction", publication_status: "unpublished", published: false },
+  keep_quarantined: { risk_level: "high", lifecycle_status: "needs_correction", publication_status: "unpublished", published: false },
+  reject: { lifecycle_status: "rejected", publication_status: "unpublished", published: false },
+  suspend: { lifecycle_status: "suspended", publication_status: "unpublished", published: false },
+};
+
 export async function moderateBusiness(fd: FormData) {
   const ctx = await adminContext(["super_admin", "admin"]);
-  const id = String(fd.get("id") ?? "");
+  const id = businessIdOf(fd);
   const action = String(fd.get("moderation_action") ?? "");
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) redirect(directoryBack(fd, { error: "not-found" }));
   const { data: business } = await ctx.db.from("businesses").select("id,owner_id,slug,name,published,risk_level,lifecycle_status,publication_status").eq("id", id).maybeSingle();
-  if (!business) return;
+  if (!business) redirect(directoryBack(fd, { error: "not-found" }));
 
-  if (action === "hide") {
-    await ctx.db.from("businesses").update({ published: false, publication_status: "unpublished" }).eq("id", id);
-  } else if (action === "restore") {
+  if (action === "restore" || action === "approve_legitimate") {
     const { data: owner } = await ctx.db.from("profiles").select("status").eq("id", business.owner_id).maybeSingle();
-    if (owner?.status !== "active") redirect("/admin/directory?all=1&error=owner-suspended");
-    await ctx.db.from("businesses").update({ published: true, publication_status: "published", lifecycle_status: "approved", risk_level: "low" }).eq("id", id);
-  } else if (action === "approve_legitimate") {
-    const { data: owner } = await ctx.db.from("profiles").select("status").eq("id", business.owner_id).maybeSingle();
-    if (owner?.status !== "active") redirect("/admin/directory?all=1&error=owner-suspended");
-    await ctx.db.from("businesses").update({ risk_level: "low", moderation_reason_categories: [], moderation_fields: [], lifecycle_status: "approved", publication_status: "published", published: true }).eq("id", id);
-  } else if (action === "request_correction") {
-    await ctx.db.from("businesses").update({ risk_level: "needs_review", lifecycle_status: "needs_correction", publication_status: "unpublished", published: false }).eq("id", id);
-  } else if (action === "keep_quarantined") {
-    await ctx.db.from("businesses").update({ risk_level: "high", lifecycle_status: "needs_correction", publication_status: "unpublished", published: false }).eq("id", id);
-  } else if (action === "reject") {
-    await ctx.db.from("businesses").update({ lifecycle_status: "rejected", publication_status: "unpublished", published: false }).eq("id", id);
-  } else if (action === "suspend") {
-    await ctx.db.from("businesses").update({ lifecycle_status: "suspended", publication_status: "unpublished", published: false }).eq("id", id);
+    if (owner?.status !== "active") redirect(directoryBack(fd, { error: "owner-suspended", name: business.name }));
+  }
+  if (MODERATION_PATCH[action]) {
+    // Every change is read back, so a refused write shows an error instead of looking like nothing happened.
+    const { data: row, error } = await ctx.db.from("businesses").update(MODERATION_PATCH[action]).eq("id", id).select("published").maybeSingle();
+    if (error || !row) {
+      console.error("moderateBusiness", action, id, error?.code, error?.message);
+      redirect(directoryBack(fd, { error: "save-failed", name: business.name }));
+    }
+    if ((action === "approve_legitimate" || action === "restore") && !row.published) redirect(directoryBack(fd, { error: "not-published", name: business.name }));
   } else if (action === "ban_owner") {
-    await Promise.all([
+    const [p, b] = await Promise.all([
       ctx.db.from("profiles").update({ status: "suspended" }).eq("id", business.owner_id),
       // publication_status is what the listing rules read; "published" alone is put back by the database (Phase 12 fix).
       ctx.db.from("businesses").update({ published: false, publication_status: "unpublished" }).eq("owner_id", business.owner_id),
     ]);
+    if (p.error || b.error) redirect(directoryBack(fd, { error: "save-failed", name: business.name }));
   } else if (action === "delete_business") {
-    if (!ctx.roles.includes("super_admin") || String(fd.get("confirmation") ?? "") !== "DELETE") return;
-    await ctx.db.from("businesses").delete().eq("id", id);
-  } else return;
+    if (!ctx.roles.includes("super_admin") || String(fd.get("confirmation") ?? "") !== "DELETE") redirect(directoryBack(fd, { error: "delete-confirm", name: business.name }));
+    const { error } = await ctx.db.from("businesses").delete().eq("id", id);
+    if (error) redirect(directoryBack(fd, { error: "save-failed", name: business.name }));
+  } else redirect(directoryBack(fd, { error: "unknown-action" }));
 
   await ctx.audit(`business_${action}`, "businesses", id, { owner_id: business.owner_id, name: business.name });
-  revalidateTag("content"); revalidateTag("stats"); revalidateTag("directory");
-  revalidatePath("/directory");
-  revalidatePath(`/directory/${business.slug}`);
-  revalidatePath("/admin/directory");
-  redirect("/admin/directory?all=1&moderated=1");
+  revalidateDirectory(business.slug);
+  redirect(directoryBack(fd, { done: action, name: business.name }));
+}
+
+/** "Check waiting listings now": runs the automatic directory check on every listing that is not public yet. */
+export async function runDirectoryAutoCheck(fd: FormData) {
+  const ctx = await adminContext(["super_admin", "admin"]);
+  const results = await autoReviewWaiting(ctx.db);
+  const count = (o: string) => results.filter((r) => r.outcome === o).length;
+  await ctx.audit("business_auto_check_run", "businesses", undefined, { checked: results.length, published: count("publish"), held: count("hold") + count("high") });
+  revalidateDirectory();
+  redirect(directoryBack(fd, { done: "auto_check", checked: String(results.length), published: String(count("publish")), held: String(count("hold") + count("high")), failed: String(count("error")) }));
 }
 
 export async function reviewLegacyBusiness(fd: FormData) {
   const ctx = await adminContext(["super_admin", "admin"]);
-  const id = String(fd.get("id") ?? "");
+  const id = businessIdOf(fd);
   const decision = String(fd.get("legacy_decision") ?? "");
   const note = String(fd.get("note") ?? "").trim().slice(0, 1000) || null;
-  if (!/^[0-9a-f-]{36}$/i.test(id) || !["confirm_quarantine", "restore_public", "clear_review"].includes(decision)) return;
+  if (!/^[0-9a-f-]{36}$/i.test(id) || !["confirm_quarantine", "restore_public", "clear_review"].includes(decision)) redirect(directoryBack(fd, { error: "unknown-action" }));
   const { error } = await ctx.db.rpc("review_business_legacy_assessment", {
     p_business_id: id,
     p_decision: decision,
     p_actor_id: ctx.user.id,
     p_note: note,
   });
-  revalidateTag("content"); revalidateTag("stats"); revalidateTag("directory");
-  revalidatePath("/admin/directory");
-  redirect(`/admin/directory?all=1&${error ? "error=legacy-review" : "reviewed=1"}`);
+  revalidateDirectory();
+  redirect(directoryBack(fd, error ? { error: "legacy-review" } : { done: `legacy_${decision}` }));
 }
 
 /** Founders give or remove any role. Admins give or remove only the four partner roles (Partner Step 1). Audited. */
