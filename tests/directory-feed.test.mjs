@@ -78,3 +78,9 @@ test("profile pages do not 404 for visitors: they read the server-checked list, 
     assert.doesNotMatch(src, /list<B>\(\{ table: "businesses"/);
   }
 });
+
+test("profile products and reviews are read with the server key after the public check, members-only products stay hidden", async () => {
+  const src = await readFile(new URL("../src/components/listing/BusinessProfile.tsx", import.meta.url), "utf8");
+  assert.match(src, /b\.hidden_groups\.includes\("products"\) \? null : \(admin \?\? pub\)\?\.from\("business_products"\)\.select\("id,name,description,price,price_from,unit,min_order,photo_path,link_url,sort"\)/);
+  assert.match(src, /\(admin \?\? pub\)\?\.from\("business_reviews"\)[^\n]*\.eq\("hidden", false\)/);
+});
