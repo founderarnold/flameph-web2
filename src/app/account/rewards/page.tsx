@@ -31,7 +31,7 @@ export default async function Rewards({ searchParams }: { searchParams: Promise<
   const rows = [
     { key: "referral" as const, label: "Members you invited", hint: "They join with your link and confirm their email." },
     { key: "event" as const, label: "Trainings and events registered", hint: "Register on the Trainings or Workshops pages." },
-    { key: "milestone" as const, label: "Growth milestones reached", hint: "Tick them on your Growth path." },
+    { key: "milestone" as const, label: "Growth milestones reached", hint: "Tick them on your Growth path, or finish your business storefront in My business listing." },
     { key: "review" as const, label: "Reviews written for other members", hint: "Help other buyers decide." },
     { key: "deal" as const, label: "Buy-together deals joined", hint: "Save money with other members." },
     { key: "record" as const, label: "Transaction records counted", hint: "Deals both members confirmed. A voided record no longer counts." },
