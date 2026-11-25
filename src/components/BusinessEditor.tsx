@@ -179,8 +179,12 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       }
       return setMsg({ ok: false, text: result?.error ?? "Could not submit your business. Please try again." });
     }
-    setBiz((current) => ({ ...current, risk_level: result?.riskLevel === "needs_review" ? "needs_review" : "low", moderation_fields: [], lifecycle_status: "submitted", publication_status: "unpublished", published: false }));
-    setMsg({ ok: true, text: "Submitted for FLAME PH review. Your business remains private until it is approved and published." });
+    const live = result?.riskLevel === "low";
+    setBiz((current) => ({ ...current, risk_level: live ? "low" : "needs_review", moderation_fields: [],
+      lifecycle_status: live ? "approved" : "submitted", publication_status: live ? "published" : "unpublished", published: live }));
+    setMsg({ ok: true, text: live
+      ? "Published! Your business is now in the FLAME PH directory and on pages.flameph.org/directory (it can take about a minute to appear)."
+      : "Sent for a quick FLAME PH check because something looked unusual (for example a business name already listed). We'll publish it once checked." });
     router.refresh();
   }
 
@@ -190,7 +194,7 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       {biz.risk_level === "high" && <ModerationCorrection business={biz} />}
       <ListingStrength biz={biz} supportsExtras={supportsExtras} />
       <fieldset className="rounded-xl border border-line p-4">
-        <legend className="px-1 font-bold">Required before review</legend>
+        <legend className="px-1 font-bold">Needed to publish</legend>
         <ul className="space-y-2 text-sm">
           {completion.checks.map((check) => (
             <li key={check.key} className="flex gap-2">
@@ -266,8 +270,8 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
           {verification.mobile_required && !verification.sms_provider_configured && <p className="text-warn">SMS verification is not configured yet. FLAME PH must configure a provider before making mobile verification mandatory.</p>}
         </div>
       </fieldset>
-      <p className="rounded-xl bg-bg-soft p-4 text-sm text-muted">Saving updates your draft. Publication is controlled by FLAME PH&apos;s review process and cannot be enabled from the browser.</p>
-      {dirty && <p className="rounded-lg bg-warn-soft p-3 text-sm font-semibold text-warn">Save your latest changes before submitting for review.</p>}
+      <p className="rounded-xl bg-bg-soft p-4 text-sm text-muted">Saving updates your draft. When everything above is ticked, press Publish: FLAME PH&apos;s automatic checks run and your listing goes live right away, with no waiting for approval. Publication is controlled by FLAME PH, which can still hide or remove listings that break the member rules.</p>
+      {dirty && <p className="rounded-lg bg-warn-soft p-3 text-sm font-semibold text-warn">Save your latest changes before publishing.</p>}
       {biz.id && completion.complete && !dirty && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
         <Turnstile action="business_submit" onToken={setSubmitBotToken} resetKey={submitBotReset} />
       )}
@@ -275,7 +279,7 @@ export function BusinessEditor({ userId, email, ownerName, verification, initial
       <div className="flex flex-wrap gap-2">
         <button className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Save listing"}</button>
         {biz.id && ["draft", "needs_correction", "rejected"].includes(String(biz.lifecycle_status ?? "draft")) && (
-          <button type="button" onClick={submitForReview} disabled={busy || dirty || !completion.complete || !submitBotToken || (verification.mobile_required && !verification.mobile_verified)} className="btn btn-flame">Submit for review</button>
+          <button type="button" onClick={submitForReview} disabled={busy || dirty || !completion.complete || !submitBotToken || (verification.mobile_required && !verification.mobile_verified)} className="btn btn-flame">Publish my listing</button>
         )}
         {biz.id && <Link href="/account/business/preview" className="btn btn-outline">Preview private listing</Link>}
         {biz.slug && biz.published && <Link href={`/directory/${biz.slug}`} className="btn btn-outline">View public page</Link>}
@@ -289,7 +293,7 @@ function ModerationCorrection({ business }: { business: Biz }) {
   return (
     <section className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100" aria-labelledby="moderation-correction-title">
       <h2 id="moderation-correction-title" className="font-bold">Business Information Needs Correction</h2>
-      <p className="mt-1 text-sm">This listing is not currently shown in the FLAME PH directory. Some information needs correction before it can be submitted for review.</p>
+      <p className="mt-1 text-sm">This listing is not currently shown in the FLAME PH directory. Some information needs correction before it can be published.</p>
       <ul className="mt-3 list-disc space-y-1 pl-5 text-sm">
         {(fields.length ? fields : ["profile" as const]).map((field) => <li key={field}>{MODERATION_FIELD_MESSAGES[field]}</li>)}
       </ul>

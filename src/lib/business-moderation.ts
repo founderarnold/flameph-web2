@@ -82,7 +82,11 @@ export function moderateBusinessContent(business: Business, context: { others: B
   const high = (nameStrong && descriptionStrong)
     || strongFields.size >= 3
     || (duplicateSignals >= 2 && (nameStrong || descriptionStrong));
-  const riskLevel: ModerationRisk = high ? "high" : signals.length ? "needs_review" : "low";
+  // Open directory (0041): a listing is published without an admin unless a strong signal or a duplicate business name
+  // (possible impersonation) is found. Weaker signals (a shared contact, extra links, quick resubmission) are still
+  // recorded for admins to see, but no longer hold the listing back.
+  const holds = signals.some((signal) => signal.strong || signal.category === "duplicate_business_name");
+  const riskLevel: ModerationRisk = high ? "high" : holds ? "needs_review" : "low";
   const suspiciousFields = [...new Set(signals.map((signal) => signal.field))];
   return { riskLevel, signals, reasonCategories: [...new Set(signals.map((signal) => signal.category))], suspiciousFields };
 }

@@ -74,3 +74,10 @@ test("owner feedback is friendly while admin controls expose review evidence and
   for (const action of ["approve_legitimate", "request_correction", "keep_quarantined", "reject", "suspend"]) assert.match(admin, new RegExp(action));
   assert.match(admin, /moderationHistory/);
 });
+
+test("open directory: weak signals alone are recorded but do not hold a listing back", async () => {
+  const { moderateBusinessContent } = await loadModerationModule();
+  const shared = moderateBusinessContent(valid("Maria's Bakery"), { others: [], recentSubmissions: 2 });
+  assert.equal(shared.riskLevel, "low");
+  assert.ok(shared.reasonCategories.includes("rapid_resubmission"));
+});
