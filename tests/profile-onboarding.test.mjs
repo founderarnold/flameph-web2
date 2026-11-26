@@ -17,7 +17,10 @@ const migration = await read("supabase/migrations/0016_profile_onboarding.sql");
 const industries = await load("src/lib/industries.ts");
 const privacy = (await load("src/lib/privacy.ts")).mod;
 const completionDep = await load("src/lib/business-completion.ts");
-const completion = (await load("src/lib/profile-completion.ts", { "@/lib/business-completion": completionDep.url })).mod;
+const psgcDep = await load("src/content/ph-psgc.ts");
+const provincesDep = await load("src/content/ph-provinces.ts");
+const townsDep = await load("src/lib/ph-towns.ts", { "@/content/ph-psgc": psgcDep.url, "@/content/ph-provinces": provincesDep.url });
+const completion = (await load("src/lib/profile-completion.ts", { "@/lib/business-completion": completionDep.url, "@/lib/ph-towns": townsDep.url })).mod;
 const regions = (await load("src/content/ph-regions.ts")).mod;
 const provinces = (await load("src/content/ph-provinces.ts")).mod;
 const onboarding = (await load("src/lib/onboarding.ts")).mod;
@@ -68,12 +71,15 @@ test("completion meter: specific next steps with links, done at 100%", () => {
   assert.equal(empty.next[0].label, "Confirm your email");
   for (const s of empty.steps) assert.match(s.href, /^\/(welcome|account)/);
   const full = completion.memberCompletion({
-    profile: { full_name: "Maria Santos", province: "Pampanga", city: "San Fernando", business_stage: "grow", industries: ["Agriculture"], chapter_id: "c1" },
+    profile: { full_name: "Maria Santos", province: "Pampanga", city: "San Fernando City", business_stage: "grow", industries: ["Agriculture"], chapter_id: "c1" },
     business: { name: "Farm", sector: "Agriculture", subsector: "Fruits", description: "x".repeat(90), city: "San Fernando", province: "Pampanga", contact_phone: "0917", photos: ["a.jpg"] },
     follows: 3, emailVerified: true,
   });
   assert.equal(full.complete, true, JSON.stringify(full.next));
   assert.equal(full.percent, 100);
+  // A city typed by hand (not picked from the list) still asks the member to choose it.
+  const typed = completion.memberCompletion({ profile: { province: "Pampanga", city: "San Fernando" }, business: null, follows: 0, emailVerified: true });
+  assert.equal(typed.steps.find((s) => s.key === "location").done, false);
 });
 
 test("onboarding: four steps in order, each skippable; new members start there", async () => {

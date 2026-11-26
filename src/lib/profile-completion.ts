@@ -1,4 +1,5 @@
 import { businessCompletion } from "@/lib/business-completion";
+import { validPlace } from "@/lib/ph-towns";
 
 export type CompletionStep = { key: string; label: string; help: string; href: string; done: boolean };
 
@@ -16,7 +17,7 @@ export function memberCompletion({ profile, business, follows, emailVerified }: 
   const steps: CompletionStep[] = [
     { key: "email", label: "Confirm your email", help: "So members and buyers can trust you. We send a code to your email.", href: "/account/business", done: emailVerified },
     { key: "name", label: "Add your full name", help: "Members and buyers see who they are dealing with.", href: "/welcome?step=profile", done: has(p.full_name) },
-    { key: "location", label: "Add your province and city", help: "We use it to find members and opportunities near you.", href: "/welcome?step=profile", done: has(p.province) && has(p.city) },
+    { key: "location", label: "Choose your province and city", help: "Pick them from the lists. We use them to find members and opportunities near you.", href: "/account/profile", done: validPlace(p.province ?? "", p.city ?? "") },
     { key: "stage", label: "Choose your business stage", help: "So we can show the right trainings and opportunities.", href: "/welcome?step=profile", done: has(p.business_stage) },
     { key: "industries", label: "Pick the industries you care about", help: "Your feed and suggestions follow these.", href: "/welcome?step=industries", done: (p.industries?.length ?? 0) > 0 },
     { key: "chapter", label: "Join a chapter", help: "Your local group of FLAME PH entrepreneurs.", href: "/welcome?step=chapter", done: has(p.chapter_id) },
