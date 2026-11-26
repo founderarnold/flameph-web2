@@ -27,6 +27,14 @@ export default async function Page() {
   const [stats, growth, provinces, settings, stories] = await Promise.all([getStats(), getGrowth(), getProvinces(), getSettings(), list<Story>({ table: "stories_public", order: "created_at" })]);
   const minRatings = settings.stat_thresholds?.ai_helpful_min_ratings ?? 20;
   const max = Math.max(1, ...(growth ?? []).map((g) => Number(g.total)));
+  // Members who have not filled in a province are not in any province card, so
+  // show them as their own card and say so in the intro: the cards then add up
+  // to the "Registered members" total. Both numbers count email-confirmed members.
+  const withProvince = (provinces ?? []).reduce((sum, p) => sum + Number(p.members), 0);
+  const noProvince = stats && provinces ? Math.max(0, stats.members - withProvince) : 0;
+  const provinceIntro = stats && provinces && provinces.length > 0
+    ? `${withProvince} of ${stats.members} members have set their province${noProvince > 0 ? `; ${noProvince} have not set it yet` : ""}.`
+    : undefined;
   const launch = settings.launch_date ? new Date(settings.launch_date).toLocaleDateString("en-PH", { dateStyle: "long" }) : null;
   return (
     <>
@@ -64,10 +72,11 @@ export default async function Page() {
           </figure>
         ) : <p className="text-muted">The chart appears once members start signing up.</p>}
       </Section>
-      <Section title="Provinces reached">
+      <Section title="Provinces reached" intro={provinceIntro}>
         {provinces && provinces.length > 0 ? (
           <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
             {provinces.map((p) => <li key={p.province} className="card flex justify-between p-3"><span>{p.province}</span><b>{p.members}</b></li>)}
+            {noProvince > 0 && <li className="card flex justify-between border-dashed p-3 text-muted"><span>Province not set yet</span><b>{noProvince}</b></li>}
           </ul>
         ) : <p className="text-muted">No provinces yet. Be the first from yours!</p>}
       </Section>
