@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { sendEmail, NOTIFY_TO } from "@/lib/email";
 import { feedResult } from "@/lib/member-shell";
 import { courseKey } from "@/lib/academy";
+import { validPlace } from "@/lib/ph-towns";
 
 const STAGES = ["discover", "start", "build", "grow", "scale"];
 const s = (v: FormDataEntryValue | null, max = 120) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -12,12 +13,16 @@ const s = (v: FormDataEntryValue | null, max = 120) => (typeof v === "string" ? 
 export async function saveProfile(fd: FormData) {
   const { supabase, user } = await requireUser();
   const stage = s(fd.get("business_stage"));
+  const province = s(fd.get("province"));
+  const city = s(fd.get("city"));
+  // Both come from the drop-down lists, and the city must be in that province.
+  if (!validPlace(province, city)) redirect("/account/profile?error=place");
   // Consents are no longer saved here: they are separate switches in Settings (member_consents), kept in step with the profile flags.
   await supabase.from("profiles").update({
     full_name: s(fd.get("full_name")) || null,
     mobile: s(fd.get("mobile"), 20) || null,
-    province: s(fd.get("province")) || null,
-    city: s(fd.get("city")) || null,
+    province,
+    city,
     business_stage: STAGES.includes(stage) ? stage : null,
   }).eq("id", user.id);
   revalidateTag("stats");

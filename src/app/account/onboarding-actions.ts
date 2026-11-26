@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isIndustry, subsOf } from "@/lib/industries";
-import { PROVINCES } from "@/content/ph-provinces";
+import { validPlace } from "@/lib/ph-towns";
 import { regionOf } from "@/content/ph-regions";
 import { visibilityFromForm, type RegistrationVisibility } from "@/lib/privacy";
 import { feedResult } from "@/lib/member-shell";
@@ -35,8 +35,9 @@ export async function saveIndustries(fd: FormData) {
 export async function saveLocation(fd: FormData) {
   const { supabase, user } = await requireUser("/welcome");
   const province = s(fd.get("province"));
-  if (!PROVINCES.includes(province)) redirect("/welcome?step=chapter&where=1&error=province");
-  const { error } = await supabase.from("profiles").update({ province, city: s(fd.get("city")) || null }).eq("id", user.id);
+  const city = s(fd.get("city"));
+  if (!validPlace(province, city)) redirect("/welcome?step=chapter&where=1&error=place");
+  const { error } = await supabase.from("profiles").update({ province, city }).eq("id", user.id);
   revalidatePath("/home");
   redirect(error ? "/welcome?step=chapter&where=1&error=save" : "/welcome?step=chapter");
 }
@@ -100,11 +101,14 @@ export async function setFollow(memberId: string, follow: boolean): Promise<{ ok
 export async function saveOnboardingProfile(fd: FormData) {
   const { supabase, user } = await requireUser("/welcome");
   const province = s(fd.get("province"));
+  const city = s(fd.get("city"));
   const stage = s(fd.get("business_stage"));
+  // Province and city are required here, from the drop-down lists (the rest of the site stays open without them).
+  if (!validPlace(province, city)) redirect("/welcome?step=profile&error=place");
   const { error } = await supabase.from("profiles").update({
     full_name: s(fd.get("full_name")) || null,
-    province: PROVINCES.includes(province) ? province : null,
-    city: s(fd.get("city")) || null,
+    province,
+    city,
     business_stage: STAGES.includes(stage) ? stage : null,
   }).eq("id", user.id);
   if (error) after("profile", "save");

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { saveProfile } from "../actions";
 import { StagePicker } from "@/components/StagePicker";
-import { PROVINCES } from "@/content/ph-provinces";
+import { ProvinceCityPicker } from "@/components/ProvinceCityPicker";
+import { validPlace } from "@/lib/ph-towns";
 import { saveMemberType, saveRegistration, removeRegistration } from "../investor-actions";
 import { InvestorWarning } from "@/components/feed/InvestorWarning";
 import { Notice } from "@/components/ui";
@@ -44,16 +45,15 @@ export default async function Profile({ searchParams }: { searchParams: Promise<
           <AvatarPicker userId={user.id} name={p.full_name ?? ""} avatarPath={(p.avatar_path as string | null) ?? null} logoPath={logo} />
         </section>
       )}
+      {sp.error === "place" ? (
+        <div role="alert" className="mt-6"><Notice tone="danger">Please choose your province and your city or municipality from the lists. Your profile was not saved yet.</Notice></div>
+      ) : p && !validPlace(p.province ?? "", p.city ?? "") && (
+        <div role="status" className="mt-6"><Notice tone="info">Please choose your province and your city or municipality from the lists below, then press Save profile. We use them to put you in your local chapter and show members and events near you.</Notice></div>
+      )}
       <form action={saveProfile} className="card mt-6 space-y-4 p-5">
         <div><label className="label" htmlFor="fn">Full name *</label><input id="fn" name="full_name" required defaultValue={p?.full_name ?? ""} autoComplete="name" className="input" /></div>
         <div><label className="label" htmlFor="mb">Mobile number</label><input id="mb" name="mobile" type="tel" inputMode="tel" defaultValue={p?.mobile ?? ""} placeholder="09XX XXX XXXX" className="input" /></div>
-        <div>
-          <label className="label" htmlFor="pv">Province *</label>
-          <select id="pv" name="province" required defaultValue={p?.province ?? ""} className="input">
-            <option value="" disabled>Pumili…</option>{PROVINCES.map((x) => <option key={x}>{x}</option>)}
-          </select>
-        </div>
-        <div><label className="label" htmlFor="ct">City / Municipality *</label><input id="ct" name="city" required defaultValue={p?.city ?? ""} className="input" /></div>
+        <ProvinceCityPicker province={p?.province ?? null} city={p?.city ?? null} idPrefix="pf" />
         <div>
           <label className="label" htmlFor="st">Business stage</label>
           <select id="st" name="business_stage" defaultValue={p?.business_stage ?? ""} className="input">

@@ -10,6 +10,7 @@ import { list } from "@/lib/content";
 import { OPPORTUNITY_KINDS, STAGES, type Opportunity, type Stage, dateLabel, matches, notExpired } from "@/lib/growth";
 import { accountVerificationStatus } from "@/lib/account-verification";
 import { needsConsentPrompt } from "@/lib/consents";
+import { validPlace } from "@/lib/ph-towns";
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ denied?: string; consents?: string }> }) {
   const { supabase, user } = await requireUser();
@@ -43,7 +44,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     ...upcoming.map((e) => ({ key: e.id, title: e.title, sub: `${new Date(e.starts_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium" })}${e.city ? ` · ${e.city}` : ""}`, href: e.type === "webinar" || e.type === "training" ? "/trainings-webinars" : "/workshops" })),
   ];
   const stage = p?.business_stage as Stage | null;
-  const incomplete = !p?.full_name || !p?.province || !p?.city;
+  const incomplete = !p?.full_name || !validPlace(p?.province ?? "", p?.city ?? "");
   const listing = biz ? ({ ...biz, product_count: productCount } as Listing) : null;
   const photos = listing?.photos?.length ?? 0;
   const steps = [

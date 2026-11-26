@@ -3,6 +3,8 @@ import { requireUser } from "@/lib/auth";
 import { list } from "@/lib/content";
 import { INDUSTRIES } from "@/lib/industries";
 import { PROVINCES } from "@/content/ph-provinces";
+import { ProvinceCityPicker } from "@/components/ProvinceCityPicker";
+import { validPlace } from "@/lib/ph-towns";
 import { STAGES, STAGE_KEYS } from "@/lib/growth";
 import { STEPS, STEP_TITLES, stepOf, type Step } from "@/lib/onboarding";
 import { browseMembers, followingIds, peopleCards, suggestedPeople, withCardDetails, type FollowFilters } from "@/lib/suggestions";
@@ -33,7 +35,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
         <div className="mt-2 grid grid-cols-4 gap-1.5" aria-hidden>{STEPS.map((s, i) => <span key={s} className={`h-1.5 rounded-full ${i < n ? "bg-primary" : "bg-line"}`} />)}</div>
         <h1 className="mt-4 text-2xl font-extrabold">{STEP_TITLES[step]}</h1>
       </div>
-      {sp.error === "province" ? <Notice tone="danger">Please choose your province.</Notice> : sp.error && <Notice tone="danger">That didn&apos;t save. Please try again. If it keeps happening, skip this step for now and finish it later from your feed.</Notice>}
+      {sp.error === "province" || sp.error === "place" ? <Notice tone="danger">Please choose your province and your city or municipality from the lists.</Notice> : sp.error && <Notice tone="danger">That didn&apos;t save. Please try again. If it keeps happening, skip this step for now and finish it later from your feed.</Notice>}
 
       {step === "industries" && (
         <form action={saveIndustries} className="space-y-4">
@@ -59,11 +61,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
         <form action={saveOnboardingProfile} className="space-y-4">
           {p && "avatar_path" in p && <ProfilePhoto supabase={supabase} userId={user.id} name={p.full_name ?? ""} avatarPath={(p.avatar_path as string | null) ?? null} />}
           <div><label className="label" htmlFor="ob-name">Your full name</label><input id="ob-name" name="full_name" autoComplete="name" maxLength={120} defaultValue={p?.full_name ?? ""} className="input" /></div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div><label className="label" htmlFor="ob-prov">Province</label>
-              <select id="ob-prov" name="province" defaultValue={p?.province ?? ""} className="input"><option value="">Choose…</option>{PROVINCES.map((x) => <option key={x}>{x}</option>)}</select></div>
-            <div><label className="label" htmlFor="ob-city">City or municipality</label><input id="ob-city" name="city" maxLength={120} defaultValue={p?.city ?? ""} className="input" /></div>
-          </div>
+          <ProvinceCityPicker province={p?.province ?? null} city={p?.city ?? null} idPrefix="ob" />
           <fieldset>
             <legend className="label">Where is your business now?</legend>
             <div className="grid gap-2">
@@ -92,16 +90,12 @@ type Home = { id: string; name: string; slug: string | null; province: string | 
 type Catalog = { slug: string; name: string; sector: string; priority: boolean; sort: number };
 type Supa = Awaited<ReturnType<typeof requireUser>>["supabase"];
 
-/** Where the member's business is, asked here when the profile has no province yet (it decides the local chapter). */
+/** Where the member's business is, asked here when the profile has no province and listed city yet (it decides the local chapter). */
 function LocationForm({ province, city }: { province: string | null; city: string | null }) {
   return (
     <form action={saveLocation} className="card space-y-4 p-4">
       <p className="text-muted">Tell us where your business is, and we&apos;ll put you in your local chapter.</p>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div><label className="label" htmlFor="loc-prov">Province</label>
-          <select id="loc-prov" name="province" required defaultValue={province ?? ""} className="input min-h-11"><option value="">Choose…</option>{PROVINCES.map((x) => <option key={x}>{x}</option>)}</select></div>
-        <div><label className="label" htmlFor="loc-city">City or municipality</label><input id="loc-city" name="city" maxLength={120} defaultValue={city ?? ""} autoComplete="address-level2" className="input min-h-11" /></div>
-      </div>
+      <ProvinceCityPicker province={province} city={city} idPrefix="loc" />
       <SubmitButton className="btn btn-primary min-h-11 w-full" pendingText="Finding your chapter…">Show my chapter</SubmitButton>
     </form>
   );
@@ -116,7 +110,7 @@ async function ChapterStep({ supabase, userId, p, where }: { supabase: Supa; use
   const city = (p?.city as string | null) ?? null;
   const current = (p?.chapter_id as string | null) ?? null;
   const industries = (p?.industries as string[] | null) ?? [];
-  if (!province || where) return <LocationForm province={province} city={city} />;
+  if (!validPlace(province ?? "", city ?? "") || where) return <LocationForm province={province} city={city} />;
 
   const [{ data: homeRows }, chapters, { data: catalog }, { data: mine }] = await Promise.all([
     supabase.rpc("home_chapter"),
