@@ -3,10 +3,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { MEMBER_LINKS, isActive } from "@/lib/member-nav";
-import { FEED, TABS } from "@/lib/member-shell";
+import { FEED } from "@/lib/member-shell";
 
 /** On tablets and computers the header shows the site menus, so the member app (Home feed and the five tabs) lives here. */
-const APP_LINKS = [{ href: FEED, label: "Home feed" }, ...TABS.map((t) => ({ href: t.href, label: t.key === "more" ? "More: all pages" : t.label }))];
+const APP_LINKS = [
+  { href: FEED, label: "Home feed" }, { href: "/workspace", label: "Workspace" }, { href: "/workspace/inbox", label: "Inbox" },
+  { href: "/group-order", label: "Group Order" }, { href: "/fulfillment", label: "Fulfillment" }, { href: "/new-post", label: "New Post" },
+  { href: "/pos", label: "Flame POS" }, { href: "/more", label: "More: all pages" },
+];
 
 /** Header "Account" button for signed-in members: opens the member menu so every member page is one click away from anywhere. */
 export function AccountMenu({ label }: { label: string }) {
