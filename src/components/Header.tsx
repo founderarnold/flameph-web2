@@ -9,7 +9,7 @@ import { HomeButton } from "./shell/HomeButton";
 import { NAV } from "@/lib/nav";
 import { getDict, getLang } from "@/lib/i18n";
 
-export type HeaderMember = { unread: number; inbox: number; latest: string | null };
+export type HeaderMember = { unread: number; inbox: number; latest: string | null; staff?: boolean };
 
 /**
  * One header for every page, for visitors and signed-in members alike (owner, 22 Nov 2026).
@@ -39,7 +39,7 @@ export async function Header({ member }: { member?: HeaderMember }) {
         )}
         <DesktopNav groups={NAV} lang={lang} />
         <div className="ml-auto flex shrink-0 items-center gap-1 lg:gap-2">
-          <SiteSearch />
+          <SiteSearch audience={{ signedIn: !!member, staff: !!member?.staff }} />
           {member ? (
             <>
               <Link href="/messages" data-shell="messages" aria-label={member.unread ? `Messages, ${member.unread} unread` : "Messages"}
