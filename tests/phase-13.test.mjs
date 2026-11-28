@@ -54,7 +54,7 @@ test("live check scripts: read-only, the device matrix, More-vs-sitemap, and the
   const nav = await read("src/components/shell/MemberTabsNav.tsx");
   assert.match(nav, /min-h-14/); assert.match(nav, /whitespace-nowrap/);
   const { TABS } = await load("src/lib/member-shell.ts");
-  assert.deepEqual(TABS.map((t) => t.label), ["Group Order", "Fulfillment", "New Post", "Flame POS", "More"]);
+  assert.deepEqual(TABS.map((t) => t.label), ["Home", "Workspace", "Create", "Inbox", "Menu"]);
 });
 
 test("release monitor: server-only, capped, anonymous, with retention in the Privacy Notice", async () => {

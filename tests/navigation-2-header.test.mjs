@@ -25,7 +25,7 @@ test("benefit labels use the consolidated names", () => {
 });
 
 test("header uses expandable site search instead of language toggle", () => {
-  assert.match(header, /<SiteSearch\s*\/>/);
+  assert.match(header, /<SiteSearch audience=\{\{ signedIn: !!member, staff: !!member\?\.staff \}\} \/>/);
   assert.doesNotMatch(header, /LangToggle/);
   assert.match(search, /aria-label="Search FLAME PH"/);
   assert.match(search, /action="\/search"/);

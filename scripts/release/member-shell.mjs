@@ -41,7 +41,7 @@ async function shell(browser, engine, width) {
   const bar = await page.evaluate(() => {
     const nav = document.querySelector("[data-shell='bottom-bar']");
     if (!nav) return null;
-    return [...nav.querySelectorAll("a")].map((a) => {
+    return [...nav.querySelectorAll("a, button")].map((a) => {
       const label = a.querySelector("[data-tab-label]") ?? a;
       const r = a.getBoundingClientRect(), lr = label.getBoundingClientRect();
       const cs = getComputedStyle(label);
