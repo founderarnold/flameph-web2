@@ -3,29 +3,53 @@
 /** The Home feed: the landing screen after sign-in and the place every finished action returns to. */
 export const FEED = "/home";
 
-export type Tab = { key: "group-order" | "fulfillment" | "new-post" | "pos" | "more"; href: string; label: string; visitorHref: string };
+export type TabKey = "home" | "workspace" | "create" | "inbox" | "menu" | "explore" | "join" | "tools";
+/** `href` null: the tab opens a sheet (Create) or the menu drawer (Menu) instead of a page. */
+export type Tab = { key: TabKey; href: string | null; label: string };
 
 /**
- * Bottom bar, in the owner's order. Each is a top-level tab: the phone's back button from any of them returns to the feed.
- * Phones show this bar to visitors too (owner, 22 Nov 2026). `visitorHref` is where a tab goes before sign-in: the public
- * page when there is one, otherwise sign-up. Visitors' More opens the full site menu instead of a page.
+ * Phone bottom bar for signed-in members (navigation Phase 1; the owner chose these tabs on 28 Nov 2026, replacing the
+ * 16/22 Nov bar Group Order, Fulfillment, New Post, Flame POS, More). Group Order, Fulfillment and Flame POS stay as big
+ * shortcuts at the top of the Menu, and Start a Group Order is in Create.
  */
 export const TABS: Tab[] = [
-  { key: "group-order", href: "/group-order", label: "Group Order", visitorHref: "/deals" },
-  { key: "fulfillment", href: "/fulfillment", label: "Fulfillment", visitorHref: "/fulfillment" },
-  { key: "new-post", href: "/new-post", label: "New Post", visitorHref: "/join?next=%2Fnew-post" },
-  { key: "pos", href: "/pos", label: "Flame POS", visitorHref: "/pos" },
-  { key: "more", href: "/more", label: "More", visitorHref: "/more" },
+  { key: "home", href: FEED, label: "Home" },
+  { key: "workspace", href: "/workspace", label: "Workspace" },
+  { key: "create", href: null, label: "Create" },
+  { key: "inbox", href: "/workspace/inbox", label: "Inbox" },
+  { key: "menu", href: null, label: "Menu" },
 ];
+
+/** Phone bottom bar for visitors (not signed in). Menu opens the same drawer, with Join and Log in at the top. */
+export const VISITOR_TABS: Tab[] = [
+  { key: "home", href: "/", label: "Home" },
+  { key: "explore", href: "/explore", label: "Explore" },
+  { key: "join", href: "/join", label: "Join Free" },
+  { key: "tools", href: "/benefits", label: "Free Tools" },
+  { key: "menu", href: null, label: "Menu" },
+];
+
+/**
+ * Top-level member pages: the phone's back button from any of them returns to the feed, not out of the app.
+ * The old bottom-tab pages keep this behaviour so nothing changes for members who use them.
+ */
+export const TOP_LEVEL = ["/workspace", "/workspace/inbox", "/group-order", "/fulfillment", "/new-post", "/pos", "/more"];
 
 /** For signed-in members these public addresses show the member version (same URL; visitors keep the public page). */
 export const MEMBER_REWRITES: Record<string, string> = { "/fulfillment": "/m/fulfillment", "/pos": "/m/pos", "/bizconsult-ai": "/m/ai", "/academy": "/m/academy", "/volunteering": "/m/volunteering" };
 
-/** The tab a page belongs to. The member pages behind /fulfillment and /pos (/m/...) count as those tabs. */
+/** The member tab a page belongs to. Inbox is checked before Workspace (its address is inside /workspace). */
 export const activeTab = (pathname: string) => {
-  const p = Object.entries(MEMBER_REWRITES).find(([, to]) => pathname === to)?.[0] ?? pathname;
-  return TABS.find((t) => p === t.href || p.startsWith(`${t.href}/`)) ?? null;
+  if (pathname === FEED) return TABS[0];
+  if (pathname === "/workspace/inbox") return TABS[3];
+  if (pathname === "/new-post") return TABS[2];
+  if (pathname === "/workspace" || pathname.startsWith("/workspace/")) return TABS[1];
+  return null;
 };
+
+/** The visitor tab a page belongs to. */
+export const activeVisitorTab = (pathname: string) =>
+  VISITOR_TABS.find((t) => t.href && (t.href === "/" ? pathname === "/" : pathname === t.href || pathname.startsWith(`${t.href}/`))) ?? null;
 
 /** Kinds of finished action the feed can scroll to and confirm. */
 export type FeedDone = "posted" | "post-held" | "post-deleted" | "commented" | "comment-held" | "group-order-started" | "group-order-joined" | "group-order-left" | "deal-confirmed" | "profile" | "consents" | "onboarded";

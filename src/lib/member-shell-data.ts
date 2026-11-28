@@ -1,7 +1,8 @@
 import "server-only";
 import { cache } from "react";
-import { getSession } from "@/lib/auth";
-import { list } from "@/lib/content";
+import { getSession, isStaffRole } from "@/lib/auth";
+import { list, mediaUrl } from "@/lib/content";
+import { roleLinks, type MenuMember } from "@/lib/mobile-menu";
 import { recordsWaiting } from "@/lib/records-server";
 
 /** The signed-in member for the shell, once per request (the layout and the page share it). */
@@ -50,4 +51,27 @@ export async function latestFeedAt(): Promise<string | null> {
   const newest = ((member as { data: Stamp[] | null }).data ?? [])[0]?.created_at;
   const times = [opps[0]?.created_at, deals[0]?.created_at, posts[0]?.published_at, newest].filter(Boolean).map((t) => new Date(t as string).getTime()).filter((n) => !Number.isNaN(n));
   return times.length ? new Date(Math.max(...times)).toISOString() : null;
+}
+
+/**
+ * What the phone menu shows about the member: name, photo, tier and the dashboards their roles open. Two small reads,
+ * made with the page (in parallel with the counts above), so opening the menu needs no database call.
+ */
+export async function menuMember(): Promise<MenuMember | null> {
+  const { supabase, user, roles } = await shellSession();
+  if (!supabase || !user) return null;
+  const [profile, partner] = await Promise.all([
+    supabase.from("profiles").select("full_name, avatar_path, tier").eq("id", user.id).maybeSingle(),
+    supabase.from("partner_profiles").select("status").eq("user_id", user.id).maybeSingle(),
+  ]);
+  const p = (profile.data ?? {}) as { full_name?: string | null; avatar_path?: string | null; tier?: string | null };
+  const tier = (p.tier || "free").replace(/^\w/, (c) => c.toUpperCase());
+  const accredited = !partner.error && (partner.data as { status?: string } | null)?.status === "accredited";
+  return {
+    name: p.full_name?.trim() || (user.email ?? "Member").split("@")[0],
+    avatar: p.avatar_path ? mediaUrl(p.avatar_path) ?? null : null,
+    tier,
+    staff: isStaffRole(roles),
+    roleLinks: roleLinks({ roles, accredited }),
+  };
 }

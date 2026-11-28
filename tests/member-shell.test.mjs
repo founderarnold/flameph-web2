@@ -55,12 +55,16 @@ test("More has the groups the owner asked for", async () => {
 });
 
 // ---- Home feed and tabs -----------------------------------------------------------
-test("five tabs in the owner's order", () => {
-  assert.deepEqual(shell.TABS.map((t) => t.label), ["Group Order", "Fulfillment", "New Post", "Flame POS", "More"]);
+test("five tabs in the owner's order (owner chose the new tabs on 28 Nov 2026)", () => {
+  assert.deepEqual(shell.TABS.map((t) => t.label), ["Home", "Workspace", "Create", "Inbox", "Menu"]);
+  assert.deepEqual(shell.VISITOR_TABS.map((t) => t.label), ["Home", "Explore", "Join Free", "Free Tools", "Menu"]);
   assert.equal(shell.FEED, "/home");
-  assert.equal(shell.activeTab("/group-order")?.key, "group-order");
-  assert.equal(shell.activeTab("/home"), null);
-  assert.equal(shell.activeTab("/m/pos")?.key, "pos");
+  assert.equal(shell.activeTab("/home")?.key, "home");
+  assert.equal(shell.activeTab("/workspace/inbox")?.key, "inbox");
+  assert.equal(shell.activeTab("/workspace/calculators")?.key, "workspace");
+  assert.equal(shell.activeTab("/group-order"), null);
+  // The old tab pages keep "back goes to the feed".
+  for (const p of ["/group-order", "/fulfillment", "/new-post", "/pos", "/more", "/workspace", "/workspace/inbox"]) assert.ok(shell.TOP_LEVEL.includes(p), p);
 });
 
 test("finished actions return to the feed, scrolled to the result", async () => {
@@ -79,8 +83,8 @@ test("signed-in members land on the feed; visitors keep the public site", () => 
   assert.match(middleware, /const MEMBER_HOME = FEED;/);
   assert.match(middleware, /NextResponse\.rewrite\(new URL\(memberTab/);
   // One header and one phone bar for everyone (owner, 22 Nov 2026); members get their own items in them.
-  assert.match(layout, /<Header member=\{member \? \{ unread, inbox, latest \} : undefined\} \/>/);
-  assert.match(layout, /member \? <MemberBottomBar \/> : <MemberBottomBar visitor=/);
+  assert.match(layout, /<Header member=\{member \? \{ unread, inbox, latest, staff: !!menu\?\.staff \} : undefined\} \/>/);
+  assert.match(layout, /<MemberBottomBar menu=\{barMenu\} member=\{member && menu \? \{ inbox, menu \} : null\} \/>/);
   // No Supabase call for visitors: the session is only checked when the sign-in cookie is there.
   assert.match(layout, /const member = signedIn \? Boolean\(\(await shellSession\(\)\)\.user\) : false;/);
 });
@@ -91,14 +95,14 @@ test("Home is never more than one tap away", () => {
   assert.match(homeButton, /<span>Home<\/span>/);
   assert.match(homeButton, /window\.scrollTo\(\{ top: 0/);
   // b. tapping the active tab goes to the feed
-  assert.match(tabsNav, /if \(current\?\.href === href\) \{ e\.preventDefault\(\); router\.push\(FEED\); \}/);
+  assert.match(tabsNav, /if \(current\?\.href !== href\) return;\s*e\.preventDefault\(\);[\s\S]*else router\.push\(FEED\);/);
   // c. back from a top-level tab goes to the feed
   assert.match(tabsNav, /window\.history\.pushState\(\{ \.\.\.state, \[GUARD\]: true \}/);
   assert.match(tabsNav, /router\.replace\(FEED\)/);
 });
 
 test("top bar: Home, search and Messages with an unread count; Home dot for unseen posts", () => {
-  assert.match(topBar, /<SiteSearch \/>/);
+  assert.match(topBar, /<SiteSearch audience=\{\{ signedIn: !!member/);
   assert.match(topBar, /href="\/messages"/);
   assert.match(topBar, /href="\/workspace\/inbox"/);
   assert.match(topBar, /CountBadge count=\{member\.unread\}/);

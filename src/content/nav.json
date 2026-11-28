@@ -29,8 +29,8 @@
   { "key": "opportunities", "label": "Opportunities", "fil": "Mga Oportunidad", "items": [
     { "label": "FLAME PH Opportunities", "href": "/opportunities" },
     { "label": "Start or Grow a Business", "href": "https://www.negosyodepot.com", "external": true },
-    { "label": "Sell Products or Find Customers", "href": "https://www.marketplaceph.com", "external": true },
-    { "label": "Jobs & Hiring on MarketplacePH", "href": "https://www.marketplaceph.com", "external": true },
+    { "label": "Sell Products or Find Customers", "href": "https://www.marketplaceph.com/sell/new", "external": true },
+    { "label": "Jobs & Hiring on MarketplacePH", "href": "https://www.marketplaceph.com/jobs", "external": true },
     { "label": "Easy Startup for Aspiring Managers", "href": "https://www.managerspizza.com", "external": true },
     { "label": "Real Estate for MSMEs", "href": "/real-estate-for-msmes" },
     { "label": "Affiliate & Referral Opportunities", "href": "/get-involved/affiliate" }

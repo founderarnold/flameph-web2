@@ -10,11 +10,10 @@ import { RegisterSW } from "@/components/RegisterSW";
 import { EmailLinkSignIn } from "@/components/EmailLinkSignIn";
 import { KaFlameFab } from "@/components/KaFlameFab";
 import { MemberBottomBar } from "@/components/shell/MemberTabsNav";
-import { inboxCount, latestFeedAt, shellSession, unreadMessages } from "@/lib/member-shell-data";
+import { inboxCount, latestFeedAt, menuMember, shellSession, unreadMessages } from "@/lib/member-shell-data";
 import { cookies } from "next/headers";
 import { getDict, getLang } from "@/lib/i18n";
 import { FOUNDERS, ORG, PURPOSE, TAGLINES } from "@/lib/site";
-import { NAV } from "@/lib/nav";
 
 export const metadata: Metadata = {
   metadataBase: new URL(ORG.url),
@@ -56,9 +55,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [lang, t, c] = await Promise.all([getLang(), getDict(), cookies()]);
   const signedIn = c.getAll().some((x) => x.name.startsWith("sb-") && x.name.includes("auth-token"));
   // One header and one five-tab phone bar for everyone (owner, 22 Nov 2026). Members get their Home button, Messages,
-  // Inbox and Account in the header; visitors' tabs open public pages or sign-up, and their More tab opens the site menu.
+  // Inbox and Account in the header. On phones the Menu tab opens the phone menu for everyone.
   const member = signedIn ? Boolean((await shellSession()).user) : false;
-  const [unread, inbox, latest] = member ? await Promise.all([unreadMessages(), inboxCount(), latestFeedAt()]) : [0, 0, null];
+  const [unread, inbox, latest, menu] = member ? await Promise.all([unreadMessages(), inboxCount(), latestFeedAt(), menuMember()]) : [0, 0, null, null];
+  const barMenu = { lang, labels: { menu: t.menu, close: t.close, login: t.login, account: t.account, joinFree: t.joinFree } };
   return (
     <html
       lang={lang === "fil" ? "fil" : "en-PH"}
@@ -68,11 +68,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       }}
     >
       <body className="min-h-screen font-sans antialiased">
-        <Header member={member ? { unread, inbox, latest } : undefined} />
+        <Header member={member ? { unread, inbox, latest, staff: !!menu?.staff } : undefined} />
         <main id="main">{children}</main>
         <PageShareBar />
         <Footer />
-        {member ? <MemberBottomBar /> : <MemberBottomBar visitor={{ groups: NAV, lang, labels: { menu: t.menu, close: t.close, login: t.login, account: t.account, joinFree: t.joinFree } }} />}
+        {/* Phone bar: members Home, Workspace, Create, Inbox, Menu; visitors Home, Explore, Join Free, Free Tools, Menu (owner, 28 Nov 2026). */}
+        <MemberBottomBar menu={barMenu} member={member && menu ? { inbox, menu } : null} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         {signedIn && <KaFlameFab />}
         <RegisterSW />

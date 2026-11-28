@@ -12,7 +12,7 @@ type Action = {
   image: string;
 };
 
-const ACTIONS: Action[] = [
+export const ACTIONS: Action[] = [
   { title: "Start a Business", text: "Explore business ideas, packages and practical guidance. Halimbawa: pumili ng negosyong pasok sa puhunan at skills mo.", href: "https://www.negosyodepot.com/#/explore", external: true, accent: "#0b4fd1", image: "/goal-cards/start-business.webp" },
   { title: "Grow My Business", text: "Use training, tools, resources and community connections. Halimbawa: alamin kung paano dagdagan ang sales at ayusin ang operations.", href: "/explore", accent: "#24a467", image: "/goal-cards/grow-business.webp" },
   { title: "Sell My Products", text: "Reach more customers through MarketplacePH. Halimbawa: ilagay online ang produkto para mas maraming makakita at bumili.", href: "https://www.marketplaceph.com/sell/new", external: true, accent: "#ef3340", image: "/goal-cards/sell-products.webp" },

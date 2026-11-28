@@ -47,7 +47,10 @@ test("the go page frames the other app as part of the same ecosystem and refuses
 test("goal cards, menus and More send MarketplacePH and NegosyoDepot links through /go; all 28 cards stay", async () => {
   const door = await read("src/components/EcosystemFrontDoor.tsx");
   assert.match(door, /viaGo\(action\.href, action\.title\)/);
-  for (const f of ["src/components/DesktopNav.tsx", "src/components/MobileMenu.tsx", "src/components/Footer.tsx", "src/app/(member)/more/page.tsx"]) assert.match(await read(f), /viaGo\(it\.href, it\.label\)/, f);
+  for (const f of ["src/components/DesktopNav.tsx", "src/components/Footer.tsx", "src/app/(member)/more/page.tsx"]) assert.match(await read(f), /viaGo\(it\.href, it\.label\)/, f);
+  // The phone menu (navigation Phase 1) and its Create sheet do the same.
+  assert.match(await read("src/components/MobileMenuBody.tsx"), /link\.external \? viaGo\(target, link\.label\)/);
+  assert.match(await read("src/components/shell/CreateSheet.tsx"), /a\.external \? viaGo\(a\.href, a\.label\)/);
   const footer = await read("src/components/Footer.tsx");
   assert.match(footer, /<EcosystemFooter here="flameph" \/>/);
   for (const m of door.matchAll(/href: "(https:\/\/www\.(marketplaceph|negosyodepot)\.com[^"]*)"/g)) assert.notEqual(E.viaGo(m[1]), m[1], `${m[1]} is a listed page`);

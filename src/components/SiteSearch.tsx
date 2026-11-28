@@ -3,15 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { searchSite } from "@/lib/site-search";
+import type { SearchAudience, searchSite as SearchFn } from "@/lib/site-search";
+import { viaGo } from "@/lib/ecosystem";
 
-export function SiteSearch() {
+/** `audience`: who is searching, so results only list pages they can open (visitors: public pages; members: also member pages). */
+export function SiteSearch({ audience = { signedIn: false } }: { audience?: SearchAudience } = {}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const pathname = usePathname();
   const root = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
-  const results = useMemo(() => searchSite(query, 6), [query]);
+  const { signedIn, staff } = audience;
+  // The search list loads the first time the panel opens, not with every page.
+  const [search, setSearch] = useState<typeof SearchFn | null>(null);
+  useEffect(() => {
+    if (open && !search) void import("@/lib/site-search").then((m) => setSearch(() => m.searchSite));
+  }, [open, search]);
+  const results = useMemo(() => (search ? search(query, 6, { signedIn, staff }) : []), [search, query, signedIn, staff]);
 
   useEffect(() => {
     setOpen(false);
@@ -79,7 +87,7 @@ export function SiteSearch() {
                 <ul aria-label="Search suggestions">
                   {results.map((result) => (
                     <li key={result.href}>
-                      <Link href={result.href} className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-bg-soft">
+                      <Link href={result.external ? viaGo(result.href, result.title) : result.href} className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-bg-soft">
                         <span className="font-semibold">{result.title}</span>
                         <span className="text-xs text-muted">{result.section}</span>
                       </Link>

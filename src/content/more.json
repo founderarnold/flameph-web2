@@ -65,6 +65,8 @@
         { "label": "FLAME POS", "href": "/pos" },
         { "label": "NegosyoDepot", "href": "https://www.negosyodepot.com", "external": true },
         { "label": "MarketplacePH", "href": "https://www.marketplaceph.com", "external": true },
+        { "label": "Sell a product on MarketplacePH", "href": "https://www.marketplaceph.com/sell/new", "external": true },
+        { "label": "Jobs and hiring on MarketplacePH", "href": "https://www.marketplaceph.com/jobs", "external": true },
         { "label": "Manager's Pizza", "href": "https://www.managerspizza.com", "external": true }
       ]
     },

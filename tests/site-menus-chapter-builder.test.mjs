@@ -23,10 +23,11 @@ test("one five-tab phone bar for everyone, hidden from 768px up", async () => {
   const shell = await read("src/lib/member-shell.ts");
   assert.equal((bar.match(/md:hidden/g) ?? []).length, 2);
   assert.doesNotMatch(bar, /lg:hidden/);
-  // Visitors: public pages where they exist, sign-up for New Post, and More opens the full site menu.
-  assert.match(shell, /key: "group-order", href: "\/group-order", label: "Group Order", visitorHref: "\/deals"/);
-  assert.match(shell, /key: "new-post", href: "\/new-post", label: "New Post", visitorHref: "\/join\?next=%2Fnew-post"/);
-  assert.match(bar, /<MobileMenu groups=\{menu\.groups\}/);
+  // Visitors: Home, Explore, Join Free, Free Tools, and Menu opens the phone menu (owner, 28 Nov 2026).
+  assert.match(shell, /key: "explore", href: "\/explore", label: "Explore"/);
+  assert.match(shell, /key: "join", href: "\/join", label: "Join Free"/);
+  assert.match(shell, /key: "tools", href: "\/benefits", label: "Free Tools"/);
+  assert.match(bar, /<MobileMenu lang=\{menu\.lang\} signedIn=\{!!member\}/);
   assert.match(await read("src/components/Footer.tsx"), /pb-24 md:pb-0/);
 });
 

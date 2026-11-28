@@ -2,12 +2,16 @@ import Link from "next/link";
 import { PageHero, Section } from "@/components/ui";
 import { meta } from "@/lib/meta";
 import { searchSite } from "@/lib/site-search";
+import { viaGo } from "@/lib/ecosystem";
+import { isStaffRole } from "@/lib/auth";
+import { shellSession } from "@/lib/member-shell-data";
 
 export const metadata = meta("Search", "Search FLAME PH pages, programs, benefits and opportunities.", "/search");
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const query = (await searchParams).q?.trim() ?? "";
-  const results = searchSite(query, 50);
+  const { user, roles } = await shellSession();
+  const results = searchSite(query, 50, { signedIn: !!user, staff: !!user && isStaffRole(roles) });
 
   return (
     <>
@@ -25,7 +29,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             {results.length ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {results.map((result) => (
-                  <Link key={result.href} href={result.href} className="card block p-5 hover:border-primary">
+                  <Link key={result.href} href={result.external ? viaGo(result.href, result.title) : result.href} className="card block p-5 hover:border-primary">
                     <span className="text-xs font-bold uppercase tracking-wide text-flame-strong">{result.section}</span>
                     <h3 className="mt-2 text-lg font-extrabold text-primary">{result.title}</h3>
                     <span className="mt-4 inline-flex font-bold text-mph">Open page →</span>
